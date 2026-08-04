@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Dettagliato</title>
+    <title>Sunclock 24H Completo</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -51,7 +51,6 @@
             height: 100%;
         }
 
-        /* Numeri delle ore 1-24 */
         .hour-num {
             position: absolute;
             font-size: 14px;
@@ -66,7 +65,6 @@
             margin-top: -15px;
         }
 
-        /* La Luna */
         #moon-icon {
             position: absolute;
             font-size: 22px;
@@ -76,7 +74,6 @@
             display: none;
         }
 
-        /* Lancette */
         .hand {
             position: absolute;
             bottom: 50%;
@@ -167,15 +164,14 @@
         const cy = 250;
         const radius = 245;
 
-        // Palette con notte rigorosamente nera (#000000) e tonalità dettagliate
         const PALETTE = {
             night: '#000000',         
             astro: '#172554',         
             naut: '#1e3a8a',          
             civil: '#3b82f6',         
-            sunriseSunset: '#f97316', // Arancione per alba e tramonto
-            golden: '#eab308',        // Giallo per l'ora d'oro
-            day: '#bae6fd'            // Azzurro per il giorno
+            sunriseSunset: '#f97316', 
+            golden: '#eab308',        
+            day: '#bae6fd'            
         };
 
         let cachedTimes = null;
@@ -213,7 +209,7 @@
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
             document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nightEnd); 
+            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
             document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
             document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
         }
@@ -228,12 +224,15 @@
         }
 
         function drawSunSlices(times) {
+            // Estrazione di tutti i parametri della tabella
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hNautDawn = timeToHours(times.nauticalDawn);
             const hDawn = timeToHours(times.dawn);
             const hSunrise = timeToHours(times.sunrise);
             const hSunriseEnd = timeToHours(times.sunriseEnd);
             const hGoldenEnd = timeToHours(times.goldenHourEnd);
+            
+            const hSolarNoon = timeToHours(times.solarNoon);
             
             const hGoldenStart = timeToHours(times.goldenHour);
             const hSunsetStart = timeToHours(times.sunsetStart);
@@ -242,24 +241,23 @@
             const hNautDusk = timeToHours(times.nauticalDusk);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
 
-            // Sfondo predefinito: Notte nera
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
             const rSlices = radius - 25;
 
-            // Sequenza completa delle fasce basata sulla tabella degli eventi
+            // Disegno di tutte le fasce corrispondenti alla tabella
             drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
             drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
             drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba -> Fine dell'alba
-            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Ora d'oro mattino
-            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);           // Giorno
-            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Ora d'oro sera
-            drawSector(hSunsetStart, hSunset, PALETTE.sunriseSunset, rSlices);    // Inizio tramonto -> Tramonto
-            drawSector(hSunset, hDusk, PALETTE.civil, rSlices);
-            drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);
-            drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);
+            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba -> Fine alba
+            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Fine ora d'oro mattino
+            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);           // Giorno (fino a inizio ora d'oro sera)
+            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Inizio ora d'oro sera -> Inizio tramonto
+            drawSector(hSunsetStart, hSunset, PALETTE.sunriseSunset, rSlices);    // Tramonto
+            drawSector(hSunset, hDusk, PALETTE.civil, rSlices);                   // Crepuscolo civile
+            drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);                  // Crepuscolo nautico
+            drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);             // Crepuscolo astronomico
         }
 
         function drawSector(startH, endH, color, r) {
