@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Perfetto</title>
+    <title>Sunclock 24H Notte Perfetta</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -240,13 +240,13 @@
         const radius = 248;
 
         const PALETTE = {
-            night: '#000000',         
-            astro: '#172554',         
-            naut: '#1e3a8a',          
-            civil: '#3b82f6',         
-            sunriseSunset: '#f97316', 
-            golden: '#eab308',        
-            day: '#bae6fd'            
+            night: '#000000',         // Notte profonda
+            astro: '#172554',         // Crepuscolo Astronomico
+            naut: '#1e3a8a',          // Crepuscolo Nautico
+            civil: '#3b82f6',         // Crepuscolo Civile
+            sunriseSunset: '#f97316', // Alba / Tramonto
+            golden: '#eab308',        // Ora d'oro
+            day: '#bae6fd'            // Giorno
         };
 
         let cachedTimes = null;
@@ -328,9 +328,24 @@
         }
 
         function drawSunSlices(times) {
+            // Sfondo interamente NERO notturno di base per evitare vuoti
             ctx.fillStyle = PALETTE.night;
-            ctx.fillRect(0, 0, 500, 500);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
 
+            const hAstroDawn = timeToHours(times.astronomicalDawn);
+            const hAstroDusk = timeToHours(times.astronomicalDusk);
+
+            // 1. Disegna la Notte Profonda in 2 tranche se a cavallo di mezzanotte
+            if (hAstroDusk > hAstroDawn) {
+                drawSector(hAstroDusk, 24, PALETTE.night, radius);
+                drawSector(0, hAstroDawn, PALETTE.night, radius);
+            } else {
+                drawSector(hAstroDusk, hAstroDawn, PALETTE.night, radius);
+            }
+
+            // 2. Disegna tutti gli altri intervalli crepuscolari e diurni sopra la notte
             const intervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
