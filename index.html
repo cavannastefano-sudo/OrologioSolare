@@ -499,7 +499,7 @@
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            const rawIntervals = [
+            let rawIntervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
                 { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
@@ -513,10 +513,11 @@
                 { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
             ];
 
-            rawIntervals.forEach(interval => {
-                if (interval.start !== null && interval.end !== null && interval.start < interval.end) {
-                    drawSector(interval.start, interval.end, interval.color, radius);
-                }
+            let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null && i.start <= i.end);
+            validIntervals.sort((a, b) => a.start - b.start);
+
+            validIntervals.forEach(interval => {
+                drawSector(interval.start, interval.end, interval.color, radius);
             });
         }
 
