@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Perfetto</title>
+    <title>Sunclock 24H Definitivo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
@@ -51,15 +51,15 @@
 
         .hour-num {
             position: absolute;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
             text-align: center;
-            line-height: 32px;
+            line-height: 30px;
             z-index: 10;
-            margin-left: -16px;
-            margin-top: -16px;
+            margin-left: -15px;
+            margin-top: -15px;
             border-radius: 50%;
         }
 
@@ -82,9 +82,9 @@
             z-index: 20;
         }
 
-        #hand-hour { width: 6px; height: 38%; background: #ff7f00; } /* Arancione (Ora locale) */
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } /* Rossa (Secondi) */
-        #hand-utc { width: 4px; height: 42%; background: #16a34a; } /* Verde (UTC) */
+        #hand-hour { width: 6px; height: 38%; background: #ff7f00; } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
+        #hand-utc { width: 4px; height: 42%; background: #16a34a; } 
 
         #center-dot {
             position: absolute;
@@ -161,15 +161,14 @@
         const cy = 250;
         const radius = 245;
 
-        // Palette identica all'originale sunclock.net
         const PALETTE = {
-            night: '#101e2a',         // Notte profonda
-            astro: '#23466b',         // Crepuscolo Astronomico
-            naut: '#4675a8',          // Crepuscolo Nautico
-            civil: '#7ba4d4',         // Crepuscolo Civile
-            golden: '#fde047',        // Ora d'oro (Giallo)
-            sunriseSunset: '#ff7f00', // Alba / Tramonto (Arancione)
-            day: '#e3f2fd'            // Giorno (Azzurro chiaro)
+            night: '#101e2a',         
+            astro: '#23466b',         
+            naut: '#4675a8',          
+            civil: '#7ba4d4',         
+            golden: '#fde047',        
+            sunriseSunset: '#ff7f00', 
+            day: '#e3f2fd'            
         };
 
         function initClock() {
@@ -179,7 +178,7 @@
                         updateSunClock(position.coords.latitude, position.coords.longitude);
                     },
                     (error) => {
-                        updateSunClock(41.9028, 12.4964); // Fallback Roma
+                        updateSunClock(41.9028, 12.4964); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
                     }
                 );
@@ -214,9 +213,9 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
-        // Correzione asse: 12 in alto (-90 gradi), 24 in basso, in senso orario
+        // 12 in alto (-90° / -Math.PI/2), 24 in basso, scorrimento orario
         function hoursToAngle(h) {
-            return ((h - 12) / 24) * Math.PI * 2;
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function drawSunSlices(times) {
@@ -232,7 +231,6 @@
             const hNautDusk = timeToHours(times.nauticalDusk);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
 
-            // Sfondo predefinito: Notte
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
@@ -241,11 +239,11 @@
             drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
             drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
             drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            drawSector(hSunrise - 0.1, hSunrise + 0.1, PALETTE.sunriseSunset, rSlices);
+            drawSector(hSunrise - 0.08, hSunrise + 0.08, PALETTE.sunriseSunset, rSlices);
             drawSector(hSunrise, hGoldenEnd, PALETTE.golden, rSlices);
             drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
             drawSector(hGoldenStart, hSunset, PALETTE.golden, rSlices);
-            drawSector(hSunset - 0.1, hSunset + 0.1, PALETTE.sunriseSunset, rSlices);
+            drawSector(hSunset - 0.08, hSunset + 0.08, PALETTE.sunriseSunset, rSlices);
             drawSector(hSunset, hDusk, PALETTE.civil, rSlices);
             drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);
             drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);
@@ -262,7 +260,7 @@
 
         function drawMinuteRing() {
             for (let i = 0; i < 60; i++) {
-                const angle = ((i - 15) / 60) * Math.PI * 2;
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const isMajor = i % 5 === 0;
                 const len = isMajor ? 10 : 5;
 
@@ -299,7 +297,9 @@
             const hSunset = timeToHours(times.sunset);
 
             for (let i = 1; i <= 24; i++) {
-                const angleRad = hoursToAngle(i);
+                // Gestione per posizionare il 24 in basso (24 o 0 ore) e 12 in alto
+                const hourVal = i === 24 ? 0 : i;
+                const angleRad = hoursToAngle(hourVal);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
@@ -310,12 +310,11 @@
                 div.style.top = `${hy}px`;
                 div.innerText = i;
 
-                // Sfondo semitrasparente bianco dietro i numeri nel giorno e scuro nella notte per leggibilità
-                if (i >= 7 && i <= 19) {
-                    div.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+                if (hourVal >= hSunrise && hourVal < hSunset) {
+                    div.style.backgroundColor = 'rgba(255, 255, 255, 0.75)';
                     div.style.color = '#0f172a';
                 } else {
-                    div.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+                    div.style.backgroundColor = 'rgba(15, 23, 42, 0.75)';
                     div.style.color = '#ffffff';
                 }
 
@@ -346,15 +345,17 @@
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360;
-            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+            // Conversione lancette allineate con 12 in alto (aggiunta di -90 gradi / -Math.PI/2 implicita nel computo dei gradi orari)
+            // (h / 24) * 360 dà l'angolo partendo da destra, sottraendo 90 gradi lo portiamo in alto.
+            const hourDeg = (h / 24) * 360 - 90;
+            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg + 90}deg)`;
 
-            const secDeg = (s / 60) * 360;
-            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+            const secDeg = (s / 60) * 360 - 90;
+            document.getElementById('hand-second').style.transform = `rotate(${secDeg + 90}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360;
-            document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
+            const utcDeg = (utcHours / 24) * 360 - 90;
+            document.getElementById('hand-utc').style.transform = `rotate(${utcDeg + 90}deg)`;
         }
 
         initClock();
