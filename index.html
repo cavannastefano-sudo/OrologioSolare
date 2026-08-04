@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Notte Piena</title>
+    <title>Sunclock 24H Corretto</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -274,15 +274,13 @@
         function updateSunClock(lat, lon) {
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
-            const sunPos = SunCalc.getPosition(now, lat, lon);
-            const moonPos = SunCalc.getMoonPosition(now, lat, lon);
 
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlices(cachedTimes);
             drawMinuteRing(cachedTimes);
             createHourNumbers(cachedTimes);
-            updateSunAndMoon(sunPos, moonPos);
+            updateSunAndMoon(cachedTimes);
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
@@ -333,7 +331,7 @@
         }
 
         function drawSunSlices(times) {
-            // 1. Riempimento totale interamente NERO (Notte Piena di fondo)
+            // 1. Sfondo interamente NERO (Notte Piena di fondo)
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -342,7 +340,7 @@
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
 
-            // 2. Disegna sopra tutti i crepuscoli e le fasce diurne
+            // 2. Disegna sopra tutti i crepuscoli e le fasce diurne ordinate
             const intervals = [
                 { start: hAstroDawn, end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
@@ -436,10 +434,16 @@
             }
         }
 
-        function updateSunAndMoon(sunPos, moonPos) {
+        function updateSunAndMoon(times) {
             const now = new Date();
-            const sunClockAngle = (sunPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
-            const sunAngleRad = (sunClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            const h = timeToHours(now);
+
+            // Posizione del Sole basata sull'orario corrente rispetto agli orari solari (Alba/Tramonto)
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+            let sunClockAngle = h; // di default segue le 24h
+
+            const sunAngleRad = hoursToAngle(sunClockAngle);
             const sunDist = radius * 0.52;
             const sx = cx + sunDist * Math.cos(sunAngleRad);
             const sy = cy + sunDist * Math.sin(sunAngleRad);
@@ -447,8 +451,9 @@
             sunIcon.style.left = `${sx}px`;
             sunIcon.style.top = `${sy}px`;
 
-            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
-            const moonAngleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            // Posizione della Luna (offset stimato sul ciclo lunare o orario)
+            const moonClockAngle = (h + 6) % 24; // offset di 6 ore indicativo per la luna
+            const moonAngleRad = hoursToAngle(moonClockAngle);
             const moonDist = radius * 0.65;
             const mx = cx + moonDist * Math.cos(moonAngleRad);
             const my = cy + moonDist * Math.sin(moonAngleRad);
@@ -511,9 +516,7 @@
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
-                const sunPos = SunCalc.getPosition(now, cachedLat, cachedLon);
-                const moonPos = SunCalc.getMoonPosition(now, cachedLat, cachedLon);
-                updateSunAndMoon(sunPos, moonPos);
+                updateSunAndMoon(cachedTimes);
                 updatePageBackground(cachedTimes);
             }
         }
