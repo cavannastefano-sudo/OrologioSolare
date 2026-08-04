@@ -117,6 +117,7 @@
             z-index: 20;
         }
 
+        /* Le lancette puntano verso l'ALTO di default in CSS (0 gradi = Top) */
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
         #hand-minute { width: 4px; height: 42%; background: #38bdf8; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
@@ -422,8 +423,10 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // LOGICA ESATTA VIRTUALGEOFF: 
+        // 0 o 24 = Basso (+ Pi/2), 12 = Alto (- Pi/2). Avanzamento Orario.
         function hoursToAngle(h) {
-            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -496,10 +499,13 @@
 
         function drawMinuteRing(times) {
             for (let i = 0; i < 60; i++) {
-                const hourEquivalent = (i / 60) * 24;
-                const sectorColor = getIntervalColor(hourEquivalent, times);
+                // Allineiamo il colore della tacca dei minuti all'ora esatta che ha accanto (es. tacca in alto prende il colore delle ore 12)
+                let hEq = (i / 60) * 24 - 12;
+                if(hEq < 0) hEq += 24;
+                const sectorColor = getIntervalColor(hEq, times);
 
-                const angle = ((i - 15) / 60) * Math.PI * 2 - Math.PI / 2;
+                // Minuti da 0 (Top, -Pi/2) in senso orario
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 14 : 7;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -523,10 +529,11 @@
             const hSunrise = timeToHours(times.sunrise);
             const hSunset = timeToHours(times.sunset);
 
+            // Costruiamo i numeri da 1 a 24
             const hRadius = radius * 0.65;
             for (let i = 1; i <= 24; i++) {
-                const hourValue = i === 24 ? 24 : i;
-                const angleRad = hoursToAngle(hourValue === 24 ? 0 : hourValue);
+                const hourValue = i;
+                const angleRad = hoursToAngle(hourValue);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
@@ -547,9 +554,10 @@
                 container.appendChild(div);
             }
 
+            // Minuti ogni 5
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = ((m - 15) / 60) * Math.PI * 2 - Math.PI / 2;
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
@@ -611,17 +619,19 @@
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            const hourDeg = ((h - 12) / 24) * 360 - 90;
+            // Lancette per l'orologio matematico esatto (12 in alto = 0 gradi in CSS, 24 in basso = 180 gradi)
+            const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const minuteDeg = ((m - 15) / 60) * 360 - 90;
+            // Lancette minuti/secondi (0 in alto = 0 gradi)
+            const minuteDeg = (m / 60) * 360;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-            const secDeg = ((s - 15) / 60) * 360 - 90;
+            const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = ((utcHours - 12) / 24) * 360 - 90;
+            const utcDeg = (utcHours / 24) * 360 - 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
