@@ -432,7 +432,7 @@
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlices(cachedTimes);
-            drawSolarMeridianLines(cachedTimes); // Linee reali di Mezzogiorno e Mezzanotte solare
+            drawSolarMeridianLines(cachedTimes); // Linee fisse corrette per Mezzogiorno e Mezzanotte solare
             drawMinuteRing(cachedTimes);
             createClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
@@ -524,11 +524,11 @@
             ctx.fill();
         }
 
-        // Disegna la linea bianca per il Mezzogiorno solare e quella rossa per la Mezzanotte solare
+        // Posizionamento corretto delle linee del meridiano solare basato sulla geometria del quadrante 24h
         function drawSolarMeridianLines(times) {
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
-                const noonAngle = hoursToAngle(noonHours) - Math.PI / 2;
+                const noonAngle = (noonHours / 24) * Math.PI * 2 - Math.PI / 2;
                 ctx.beginPath();
                 ctx.moveTo(cx, cy);
                 ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
@@ -539,7 +539,7 @@
 
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
-                const nadirAngle = hoursToAngle(nadirHours) - Math.PI / 2;
+                const nadirAngle = (nadirHours / 24) * Math.PI * 2 - Math.PI / 2;
                 ctx.beginPath();
                 ctx.moveTo(cx, cy);
                 ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
