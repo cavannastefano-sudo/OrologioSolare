@@ -3,12 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Preciso</title>
+    <title>Sunclock 24H App</title>
+    <!-- Collegamento al Manifest per installare l'app su Chrome e dispositivi Mobile -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
+        :root {
+            --bg-color: #000000;
+        }
+
         body {
-            background-color: #000000;
+            background-color: var(--bg-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -18,6 +26,8 @@
             margin: 0;
             color: #f8fafc;
             transition: background-color 1s ease;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         h1 {
@@ -28,8 +38,8 @@
 
         #clock-wrapper {
             position: relative;
-            width: 500px;
-            height: 500px;
+            width: min(90vw, 480px);
+            height: min(90vw, 480px);
         }
 
         #clock-face {
@@ -53,7 +63,7 @@
 
         .hour-num {
             position: absolute;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #cbd5e1;
             width: 30px;
@@ -76,8 +86,9 @@
         }
 
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
-        #hand-utc { width: 4px; height: 42%; background: #22c55e; } 
+        #hand-minute { width: 4px; height: 42%; background: #38bdf8; z-index: 22; } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
+        #hand-utc { width: 4px; height: 40%; background: #22c55e; } 
 
         #center-dot {
             position: absolute;
@@ -102,8 +113,9 @@
             color: #cbd5e1;
             text-align: center;
             border: 1px solid #475569;
-            width: 460px;
+            width: min(90vw, 460px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-sizing: border-box;
         }
 
         .info-grid {
@@ -144,11 +156,13 @@
             background: #1e293b;
             padding: 20px;
             border-radius: 12px;
-            width: 380px;
+            width: 90%;
+            max-width: 380px;
             max-height: 80vh;
             overflow-y: auto;
             border: 1px solid #475569;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-sizing: border-box;
         }
         .modal-header {
             display: flex;
@@ -187,6 +201,7 @@
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             <div id="hour-numbers-container"></div>
             <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
             <div id="center-dot"></div>
@@ -222,7 +237,6 @@
     </div>
 
     <script>
-        // Configurazione forzata degli angoli solari esatti per SunCalc
         SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -292,8 +306,8 @@
         }
 
         function hoursToAngle(h) {
-            // 12 in alto (-Math.PI / 2) e 24 in basso
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            // 12 in alto (ore 12 = -PI/2) e 24 in basso (ore 24 = +PI/2)
+            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -369,7 +383,7 @@
                 const hourEquivalent = (i / 60) * 24;
                 const sectorColor = getIntervalColor(hourEquivalent, times);
 
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = ((i - 30) / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 14 : 7;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -467,17 +481,21 @@
         function updateHands() {
             const now = new Date();
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+            const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // 12 in alto (-90 gradi offset)
-            const hourDeg = (h / 24) * 360 - 90;
+            // 12 in alto (offset -90 gradi corretto con - 12 ore)
+            const hourDeg = ((h - 12) / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const secDeg = (s / 60) * 360 - 90;
+            const minuteDeg = ((m - 30) / 60) * 360 - 90;
+            document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+
+            const secDeg = ((s - 30) / 60) * 360 - 90;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 - 90;
+            const utcDeg = ((utcHours - 12) / 24) * 360 - 90;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
@@ -487,6 +505,10 @@
 
         initClock();
         setInterval(updateHands, 50);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.service.worker.js');
+        }
     </script>
 </body>
 </html>
