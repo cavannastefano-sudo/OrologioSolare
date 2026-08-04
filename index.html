@@ -106,28 +106,18 @@
         }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
-        /* Stili corretti e ingranditi per centrare perfettamente i numeri senza sfasamenti */
-        .hour-num, .min-num {
+        /* Stili per i minuti sul bordo esterno */
+        .min-num {
             position: absolute;
             font-weight: bold;
             text-align: center;
             z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-size: 12px;
+            color: #94a3b8;
+            width: 28px;
+            height: 20px;
             transform: translate(-50%, -50%);
             pointer-events: none;
-        }
-        .hour-num { 
-            font-size: 15px; 
-            width: 32px; 
-            height: 32px; 
-        }
-        .min-num { 
-            font-size: 11px; 
-            color: #94a3b8; 
-            width: 26px; 
-            height: 20px; 
         }
         
         .hand {
@@ -391,7 +381,7 @@
             drawSunSlices(cachedTimes);
             drawSolarMeridianLines(cachedTimes);
             drawMinuteRing(cachedTimes);
-            createClockNumbers(cachedTimes);
+            drawClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
@@ -528,37 +518,31 @@
             }
         }
 
-        function createClockNumbers(times) {
+        // Numeri disegnati direttamente nel canvas per centratura e dimensioni perfette
+        function drawClockNumbers(times) {
             const container = document.getElementById('clock-elements-container');
             container.innerHTML = '';
             
             const hSunrise = timeToHours(times.sunrise);
             const hSunset = timeToHours(times.sunset);
 
+            // Disegno delle ore direttamente nel canvas
+            ctx.font = 'bold 15px sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
             const hRadius = radius * 0.68;
             for (let i = 1; i <= 24; i++) {
-                const hourValue = i;
-                const angleRad = hoursToAngle(hourValue);
-                
+                const angleRad = hoursToAngle(i);
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
-                const div = document.createElement('div');
-                div.className = 'hour-num';
-                div.style.left = `${hx}px`;
-                div.style.top = `${hy}px`;
-                div.innerText = hourValue;
-
-                const checkHour = hourValue === 24 ? 0 : hourValue;
-                if (checkHour < hSunrise || checkHour > hSunset) {
-                    div.style.color = '#ffffff';
-                } else {
-                    div.style.color = '#0f172a';
-                }
-
-                container.appendChild(div);
+                const checkHour = i === 24 ? 0 : i;
+                ctx.fillStyle = (checkHour < hSunrise || checkHour > hSunset) ? '#ffffff' : '#0f172a';
+                ctx.fillText(i, hx, hy);
             }
 
+            // Minuti sul bordo esterno
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
@@ -570,7 +554,6 @@
                 div.style.left = `${mx}px`;
                 div.style.top = `${my}px`;
                 div.innerText = String(m).padStart(2, '0');
-
                 container.appendChild(div);
             }
         }
