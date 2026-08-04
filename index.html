@@ -226,7 +226,7 @@
             document.getElementById('txt-sunrise').innerText = formatTime(times.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(times.sunset);
             document.getElementById('txt-noon').innerText = formatTime(times.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(times.nightEnd); // o nadir approssimativo
+            document.getElementById('txt-midnight').innerText = formatTime(times.nightEnd); 
             document.getElementById('txt-mgold').innerText = formatTime(times.goldenHourEnd);
             document.getElementById('txt-egold').innerText = formatTime(times.goldenHour);
         }
@@ -237,13 +237,10 @@
         }
 
         function hoursToAngle(h) {
-            // 24 ore = 360 gradi. 
-            // Visto che il 24 (00:00) è in basso, partiamo da +90 gradi (Math.PI / 2) in senso orario.
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function drawSunSlices(times) {
-            // Estrazione orari chiave
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hNautDawn = timeToHours(times.nauticalDawn);
             const hDawn = timeToHours(times.dawn);
@@ -255,35 +252,20 @@
             const hDusk = timeToHours(times.dusk);
             const hNautDusk = timeToHours(times.nauticalDusk);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
-            const hSolarNoon = timeToHours(times.solarNoon);
 
-            // Sfondo predefinito: Notte profonda (Nero)
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
-            // Disegno sequenziale delle fasce dal centro (raggio ridotto per lasciare spazio alla ghiera dei minuti)
             const rSlices = radius - 25;
 
-            // Mattino (Dawn / Crepuscoli / Alba / Ora d'oro)
             drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
             drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
             drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            
-            // Momento esatto dell'alba (finestra stretta di transizione arancione)
             drawSector(hSunrise - 0.1, hSunrise + 0.1, PALETTE.sunriseSunset, rSlices);
-            
-            // Ora d'oro mattino (Giallo)
             drawSector(hSunrise, hGoldenEnd, PALETTE.golden, rSlices);
-            
-            // Pieno Giorno
             drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
-
-            // Sera (Ora d'oro / Tramonto / Crepuscoli)
             drawSector(hGoldenStart, hSunset, PALETTE.golden, rSlices);
-            
-            // Momento esatto del tramonto (Arancione)
             drawSector(hSunset - 0.1, hSunset + 0.1, PALETTE.sunriseSunset, rSlices);
-            
             drawSector(hSunset, hDusk, PALETTE.civil, rSlices);
             drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);
             drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);
@@ -337,7 +319,6 @@
             const hSunset = timeToHours(times.sunset);
 
             for (let i = 1; i <= 24; i++) {
-                // Il 24 è in basso (angolo corrispondente a 24 / 0 ore)
                 const checkHour = i === 24 ? 0 : i;
                 const angleRad = hoursToAngle(checkHour);
                 
@@ -350,7 +331,6 @@
                 div.style.top = `${hy}px`;
                 div.innerText = i;
 
-                // Testo chiaro sulle ore notturne o scure
                 if (checkHour < hSunrise || checkHour > hSunset) {
                     div.style.color = '#ffffff';
                 } else {
@@ -364,7 +344,6 @@
         function updateMoon(moonPos) {
             const moonIcon = document.getElementById('moon-icon');
             const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
-            // Adattamento della rotazione al nuovo orientamento con 24 in basso (+90 gradi)
             const angleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
             const dist = radius * 0.52;
             const mx = cx + dist * Math.cos(angleRad);
@@ -384,18 +363,17 @@
             const now = new Date();
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
+            const m = now.getMinutes() + now.getSeconds() / 60;
 
-            // Lancetta 24h (Arancione/Oro) - Calcolata con sfasamento di +90° per il 24 in basso
-            const hourDeg = (h / 24) * 360 + 90;
+            // Correzione dell'angolo delle lancette per allinearle con lo zero (24) in basso (+ 180 gradi)
+            const hourDeg = (h / 24) * 360 + 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            // Lancetta Secondi (Rossa)
-            const secDeg = (s / 60) * 360 + 90;
+            const secDeg = (s / 60) * 360 + 180;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Lancetta UTC (Verde)
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 + 90;
+            const utcDeg = (utcHours / 24) * 360 + 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
         }
 
