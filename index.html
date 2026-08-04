@@ -84,10 +84,9 @@
             position: absolute;
             font-weight: bold;
             text-align: center;
-            line-height: 20px;
             z-index: 10;
-            margin-left: -15px;
-            margin-top: -10px;
+            /* Usiamo transform per centrare perfettamente il blocco sulle coordinate esatte */
+            transform: translate(-50%, -50%);
             pointer-events: none;
         }
 
@@ -97,7 +96,6 @@
             width: 30px;
             height: 30px;
             line-height: 30px;
-            margin-top: -15px;
         }
 
         .min-num {
@@ -105,6 +103,7 @@
             color: #94a3b8;
             width: 30px;
             height: 20px;
+            line-height: 20px;
         }
 
         .hand {
@@ -154,8 +153,7 @@
             border-radius: 50%;
             top: 50%;
             left: 50%;
-            margin-left: -9px;
-            margin-top: -9px;
+            transform: translate(-50%, -50%);
             z-index: 25;
         }
 
@@ -430,7 +428,6 @@
             cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(now);
 
-            // Aggiorna l'icona della fase lunare in base alla percentuale di illuminazione
             updateMoonPhaseIcon(cachedMoonIllumination.phase);
 
             ctx.clearRect(0, 0, 500, 500);
@@ -567,7 +564,7 @@
             const hSunrise = timeToHours(times.sunrise);
             const hSunset = timeToHours(times.sunset);
 
-            const hRadius = radius * 0.65;
+            const hRadius = radius * 0.68;
             for (let i = 1; i <= 24; i++) {
                 const hourValue = i;
                 const angleRad = hoursToAngle(hourValue);
@@ -623,7 +620,6 @@
 
         function updateMoonPhaseIcon(phase) {
             const moonEl = document.getElementById('moon-icon');
-            // phase va da 0 a 1 (0 = novilunio, 0.25 = primo quarto, 0.5 = plenilunio, 0.75 = ultimo quarto)
             if (phase < 0.03 || phase > 0.97) moonEl.innerText = "🌑";
             else if (phase < 0.22) moonEl.innerText = "🌒";
             else if (phase < 0.28) moonEl.innerText = "🌓";
@@ -681,9 +677,8 @@
             const utcDeg = (utcHours / 24) * 360 - 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
-            // Posizione della lancetta della Luna in base all'orario di sortita/tramonto reale
             if (cachedMoonTimes) {
-                let moonHours = 18; // default di sicurezza se rise/set non sono disponibili
+                let moonHours = 18;
                 if (cachedMoonTimes.rise && !isNaN(cachedMoonTimes.rise)) {
                     moonHours = timeToHours(cachedMoonTimes.rise);
                 } else if (cachedMoonTimes.set && !isNaN(cachedMoonTimes.set)) {
@@ -693,7 +688,6 @@
                 const moonDeg = (moonHours / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-                // Posizione icona luna sulla punta della sua lancetta (42% del raggio)
                 const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
                 const moonTipDist = radius * 0.42;
                 const moonIconX = cx + moonTipDist * Math.cos(moonRad);
@@ -704,7 +698,6 @@
                 moonEl.style.display = 'block';
             }
 
-            // Posizione del Sole sulla punta della lancetta delle ore (38% del raggio)
             const hourRad = ((h / 24) * Math.PI * 2) - Math.PI / 2;
             const sunTipDist = radius * 0.38;
             const sunIconX = cx + sunTipDist * Math.cos(hourRad);
