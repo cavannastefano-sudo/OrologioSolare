@@ -48,11 +48,11 @@
 
         #digital-clock {
             flex: 1;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: bold;
             color: #38bdf8;
             background: #1e293b;
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-radius: 10px;
             border: 1px solid #475569;
             letter-spacing: 1px;
@@ -64,22 +64,22 @@
         }
 
         #moon-digital-panel {
-            flex: 1;
+            flex: 1.2;
             background: #1e293b;
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-radius: 10px;
             border: 1px solid #475569;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #cbd5e1;
             box-sizing: border-box;
         }
 
         #moon-digital-icon {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
         }
 
         #moon-digital-text {
@@ -181,7 +181,9 @@
         <div id="moon-digital-panel">
             <div id="moon-digital-icon">🌕</div>
             <div id="moon-digital-text">
-                Luna: <span id="moon-info-text">Caricamento...</span>
+                <span id="moon-phase-name">Caricamento...</span>
+                <span>Sorge: <span id="moon-rise">--:--</span></span>
+                <span>Tramonta: <span id="moon-set">--:--</span></span>
             </div>
         </div>
     </div>
@@ -570,7 +572,9 @@
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
             const iconEl = document.getElementById('moon-digital-icon');
-            const textEl = document.getElementById('moon-info-text');
+            const phaseNameEl = document.getElementById('moon-phase-name');
+            const riseEl = document.getElementById('moon-rise');
+            const setEl = document.getElementById('moon-set');
             const phase = illumination.phase;
 
             let phaseName = "";
@@ -586,8 +590,9 @@
             else { iconSymbol = "🌘"; phaseName = "Calante"; }
 
             iconEl.innerText = iconSymbol;
-            let riseStr = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-            textEl.innerHTML = `${phaseName}<br>Sorge: ${riseStr}`;
+            phaseNameEl.innerText = phaseName;
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
         function populateTable(times) {
