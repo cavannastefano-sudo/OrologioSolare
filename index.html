@@ -38,7 +38,6 @@
         }
         #btn-settings:hover { background: #334155; }
 
-        /* Stile per l'orologio digitale in alto */
         #digital-clock {
             font-size: 1.8rem;
             font-weight: bold;
@@ -141,7 +140,6 @@
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
 
-    <!-- Orologio digitale in alto -->
     <div id="digital-clock">00:00:00</div>
 
     <div id="clock-wrapper">
@@ -528,35 +526,39 @@
         function updateHands() {
             const now = new Date();
             
-            // Aggiorna l'orologio digitale in alto
+            // Orologio digitale in alto
             document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
 
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
+            // Lancetta ore (gialla)
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
+            // Lancetta minuti (verde)
             const minuteDeg = (m / 60) * 360;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
+            // Lancetta secondi (rossa)
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            if (cachedMoonTimes) {
-                let moonHours = 18;
-                if (cachedMoonTimes.rise && !isNaN(cachedMoonTimes.rise)) {
-                    moonHours = timeToHours(cachedMoonTimes.rise);
-                } else if (cachedMoonTimes.set && !isNaN(cachedMoonTimes.set)) {
-                    moonHours = timeToHours(cachedMoonTimes.set) - 12;
-                    if(moonHours < 0) moonHours += 24;
-                }
-                const moonDeg = (moonHours / 24) * 360 - 180;
+            // Lancetta e icona della Luna in tempo reale basate sul momento in cui sorge/tramonta o sull'orario corrente proporzionale
+            if (cachedMoonTimes && cachedMoonTimes.rise && cachedMoonTimes.set) {
+                const moonRiseH = timeToHours(cachedMoonTimes.rise);
+                const moonSetH = timeToHours(cachedMoonTimes.set);
+                
+                // Calcoliamo l'ora corrente della luna rapportata al movimento giornaliero sul quadrante 24h
+                let moonCurrentH = moonRiseH + ((h - moonRiseH + 24) % 24);
+                if (moonCurrentH >= 24) moonCurrentH -= 24;
+
+                const moonDeg = (moonCurrentH / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-                // Spostato sul bordo esterno (raggio * 0.85 anziché 0.42)
-                const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
+                // Icona della luna posizionata sul bordo esterno (raggio * 0.83)
+                const moonRad = ((moonCurrentH / 24) * Math.PI * 2) - Math.PI / 2;
                 const moonTipDist = radius * 0.83;
                 const moonIconX = cx + moonTipDist * Math.cos(moonRad);
                 const moonIconY = cy + moonTipDist * Math.sin(moonRad);
