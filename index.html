@@ -423,7 +423,7 @@
         }
 
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -524,9 +524,9 @@
             const hSunset = timeToHours(times.sunset);
 
             const hRadius = radius * 0.65;
-            for (let i = 0; i < 24; i++) {
-                const displayHour = i === 0 ? 24 : i;
-                const angleRad = hoursToAngle(i);
+            for (let i = 1; i <= 24; i++) {
+                const checkHour = i === 24 ? 0 : i;
+                const angleRad = hoursToAngle(checkHour);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
@@ -535,9 +535,9 @@
                 div.className = 'hour-num';
                 div.style.left = `${hx}px`;
                 div.style.top = `${hy}px`;
-                div.innerText = displayHour;
+                div.innerText = i;
 
-                if (i < hSunrise || i > hSunset) {
+                if (checkHour < hSunrise || checkHour > hSunset) {
                     div.style.color = '#ffffff';
                 } else {
                     div.style.color = '#0f172a';
@@ -610,7 +610,7 @@
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 90;
+            const hourDeg = ((h - 12) / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360 - 90;
@@ -620,7 +620,7 @@
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 - 90;
+            const utcDeg = ((utcHours - 12) / 24) * 360 - 90;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
