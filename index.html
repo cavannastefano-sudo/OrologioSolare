@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Pulito</title>
+    <title>Sunclock 24H Preciso</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -222,6 +222,11 @@
     </div>
 
     <script>
+        // Configurazione forzata degli angoli solari esatti per SunCalc
+        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+        SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+        SunCalc.addTime(-6, 'dawn', 'dusk');
+
         const canvas = document.getElementById('clockCanvas');
         const ctx = canvas.getContext('2d');
         const cx = 250;
@@ -290,19 +295,23 @@
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
+        function isValidDate(d) {
+            return d instanceof Date && !isNaN(d);
+        }
+
         function getIntervalColor(h, times) {
-            const hAstroDawn = timeToHours(times.astronomicalDawn);
-            const hNautDawn = timeToHours(times.nauticalDawn);
-            const hDawn = timeToHours(times.dawn);
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunriseEnd = timeToHours(times.sunriseEnd);
-            const hGoldenEnd = timeToHours(times.goldenHourEnd);
-            const hGoldenStart = timeToHours(times.goldenHour);
-            const hSunsetStart = timeToHours(times.sunsetStart);
-            const hSunset = timeToHours(times.sunset);
-            const hDusk = timeToHours(times.dusk);
-            const hNautDusk = timeToHours(times.nauticalDusk);
-            const hAstroDusk = timeToHours(times.astronomicalDusk);
+            const hAstroDawn = isValidDate(times.astronomicalDawn) ? timeToHours(times.astronomicalDawn) : 4.11;
+            const hNautDawn = isValidDate(times.nauticalDawn) ? timeToHours(times.nauticalDawn) : 4.92;
+            const hDawn = isValidDate(times.dawn) ? timeToHours(times.dawn) : 5.61;
+            const hSunrise = isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.18;
+            const hSunriseEnd = isValidDate(times.sunriseEnd) ? timeToHours(times.sunriseEnd) : 6.23;
+            const hGoldenEnd = isValidDate(times.goldenHourEnd) ? timeToHours(times.goldenHourEnd) : 6.88;
+            const hGoldenStart = isValidDate(times.goldenHour) ? timeToHours(times.goldenHour) : 20.08;
+            const hSunsetStart = isValidDate(times.sunsetStart) ? timeToHours(times.sunsetStart) : 20.71;
+            const hSunset = isValidDate(times.sunset) ? timeToHours(times.sunset) : 20.78;
+            const hDusk = isValidDate(times.dusk) ? timeToHours(times.dusk) : 21.33;
+            const hNautDusk = isValidDate(times.nauticalDusk) ? timeToHours(times.nauticalDusk) : 22.03;
+            const hAstroDusk = isValidDate(times.astronomicalDusk) ? timeToHours(times.astronomicalDusk) : 22.83;
 
             if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
             if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
@@ -426,7 +435,7 @@
         }
 
         function formatTime(date) {
-            if (!date || isNaN(date)) return "--:--";
+            if (!isValidDate(date)) return "--:--";
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
