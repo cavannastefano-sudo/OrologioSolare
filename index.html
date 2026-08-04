@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Completo</title>
+    <title>Sunclock 24H Perfetto</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -72,6 +72,7 @@
             margin-left: -11px;
             margin-top: -11px;
             display: none;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
         }
 
         .hand {
@@ -128,7 +129,6 @@
             font-weight: 600;
         }
 
-        /* Pulsante e Finestra Modale per la tabella "Tutti i tempi" */
         #btn-times {
             margin-top: 10px;
             background: #38bdf8;
@@ -196,7 +196,7 @@
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             <div id="hour-numbers-container"></div>
-            <div id="moon-icon">🌕</div>
+            <div id="moon-icon">🌙</div>
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
@@ -217,7 +217,6 @@
         <button id="btn-times" onclick="toggleModal(true)">Tutti i tempi</button>
     </div>
 
-    <!-- Finestra Modale Tabella Orari -->
     <div id="modal-times">
         <div class="modal-content">
             <div class="modal-header">
@@ -228,9 +227,7 @@
                 <thead>
                     <tr><th>Evento</th><th>Tempo</th></tr>
                 </thead>
-                <tbody id="times-table-body">
-                    <!-- Compilato via JS -->
-                </tbody>
+                <tbody id="times-table-body"></tbody>
             </table>
         </div>
     </div>
@@ -240,7 +237,7 @@
         const ctx = canvas.getContext('2d');
         const cx = 250;
         const cy = 250;
-        const radius = 245;
+        const radius = 248;
 
         const PALETTE = {
             night: '#000000',         
@@ -278,7 +275,7 @@
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlices(cachedTimes);
-            drawMinuteRing();
+            drawMinuteRing(cachedTimes);
             createHourNumbers(cachedTimes);
             updateMoon(moonPos);
             updatePageBackground(cachedTimes);
@@ -302,11 +299,37 @@
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
+        function getIntervalColor(h, times) {
+            const hAstroDawn = timeToHours(times.astronomicalDawn);
+            const hNautDawn = timeToHours(times.nauticalDawn);
+            const hDawn = timeToHours(times.dawn);
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunriseEnd = timeToHours(times.sunriseEnd);
+            const hGoldenEnd = timeToHours(times.goldenHourEnd);
+            const hGoldenStart = timeToHours(times.goldenHour);
+            const hSunsetStart = timeToHours(times.sunsetStart);
+            const hSunset = timeToHours(times.sunset);
+            const hDusk = timeToHours(times.dusk);
+            const hNautDusk = timeToHours(times.nauticalDusk);
+            const hAstroDusk = timeToHours(times.astronomicalDusk);
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            if (h >= hSunrise && h < hSunriseEnd) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEnd && h < hGoldenEnd) return PALETTE.golden;
+            if (h >= hGoldenEnd && h < hGoldenStart) return PALETTE.day;
+            if (h >= hGoldenStart && h < hSunsetStart) return PALETTE.golden;
+            if (h >= hSunsetStart && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
+            return PALETTE.night;
+        }
+
         function drawSunSlices(times) {
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
-
-            const rSlices = radius - 25;
 
             const intervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
@@ -324,7 +347,7 @@
 
             intervals.forEach(interval => {
                 if (interval.start < interval.end) {
-                    drawSector(interval.start, interval.end, interval.color, rSlices);
+                    drawSector(interval.start, interval.end, interval.color, radius);
                 }
             });
         }
@@ -338,11 +361,13 @@
             ctx.fill();
         }
 
-        function drawMinuteRing() {
+        function drawMinuteRing(times) {
             for (let i = 0; i < 60; i++) {
+                const hourEquivalent = (i / 60) * 24;
+                const sectorColor = getIntervalColor(hourEquivalent, times);
+
                 const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
-                const isMajor = i % 5 === 0;
-                const len = isMajor ? 12 : 6;
+                const len = (i % 5 === 0) ? 14 : 7;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
                 const y1 = cy + (radius - len) * Math.sin(angle);
@@ -352,15 +377,15 @@
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
-                ctx.strokeStyle = '#64748b';
-                ctx.lineWidth = isMajor ? 2 : 1;
+                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
                 ctx.stroke();
 
-                if (isMajor) {
+                if (i % 5 === 0) {
                     const tx = cx + (radius - 22) * Math.cos(angle);
                     const ty = cy + (radius - 22) * Math.sin(angle);
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = '10px sans-serif';
+                    ctx.fillStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#cbd5e1';
+                    ctx.font = '9px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(String(i).padStart(2, '0'), tx, ty);
@@ -416,29 +441,7 @@
             if (!times) return;
             const now = new Date();
             const h = timeToHours(now);
-            
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunset = timeToHours(times.sunset);
-            const hGoldenEnd = timeToHours(times.goldenHourEnd);
-            const hGoldenStart = timeToHours(times.goldenHour);
-            const hDawn = timeToHours(times.dawn);
-            const hDusk = timeToHours(times.dusk);
-            const hNautDawn = timeToHours(times.nauticalDawn);
-            const hNautDusk = timeToHours(times.nauticalDusk);
-            const hAstroDawn = timeToHours(times.astronomicalDawn);
-            const hAstroDusk = timeToHours(times.astronomicalDusk);
-
-            let bgColor = PALETTE.night;
-
-            if (h >= hSunrise && h <= hGoldenEnd) bgColor = PALETTE.golden;
-            else if (h > hGoldenEnd && h < hGoldenStart) bgColor = PALETTE.day;
-            else if (h >= hGoldenStart && h <= hSunset) bgColor = PALETTE.golden;
-            else if (h > hSunset && h <= hDusk) bgColor = PALETTE.civil;
-            else if (h > hDawn && h < hSunrise) bgColor = PALETTE.civil;
-            else if ((h >= hNautDawn && h <= hDawn) || (h >= hDusk && h <= hNautDusk)) bgColor = PALETTE.naut;
-            else if ((h >= hAstroDawn && h <= hNautDawn) || (h >= hNautDusk && h <= hAstroDusk)) bgColor = PALETTE.astro;
-
-            document.body.style.backgroundColor = bgColor;
+            document.body.style.backgroundColor = getIntervalColor(h, times);
         }
 
         function formatTime(date) {
