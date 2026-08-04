@@ -423,7 +423,7 @@
         }
 
         function hoursToAngle(h) {
-            return - (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -499,7 +499,7 @@
                 const hourEquivalent = (i / 60) * 24;
                 const sectorColor = getIntervalColor(hourEquivalent, times);
 
-                const angle = - (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = ((i - 15) / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 14 : 7;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -525,8 +525,8 @@
 
             const hRadius = radius * 0.65;
             for (let i = 1; i <= 24; i++) {
-                const hourValue = i;
-                const angleRad = hoursToAngle(hourValue);
+                const hourValue = i === 24 ? 24 : i;
+                const angleRad = hoursToAngle(hourValue === 24 ? 0 : hourValue);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
@@ -549,7 +549,7 @@
 
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = - (m / 60) * Math.PI * 2 - Math.PI / 2;
+                const angleRad = ((m - 15) / 60) * Math.PI * 2 - Math.PI / 2;
                 
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
@@ -611,18 +611,17 @@
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancette allineate con il verso del quadrante
-            const hourDeg = + (h / 24) * 360 - 90;
+            const hourDeg = ((h - 12) / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const minuteDeg = + (m / 60) * 360 - 90;
+            const minuteDeg = ((m - 15) / 60) * 360 - 90;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-            const secDeg = + (s / 60) * 360 - 90;
+            const secDeg = ((s - 15) / 60) * 360 - 90;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = + (utcHours / 24) * 360 - 90;
+            const utcDeg = ((utcHours - 12) / 24) * 360 - 90;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
