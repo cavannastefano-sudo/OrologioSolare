@@ -105,12 +105,30 @@
             position: relative; overflow: hidden;
         }
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* Stili corretti e ingranditi per centrare perfettamente i numeri senza sfasamenti */
         .hour-num, .min-num {
-            position: absolute; font-weight: bold; text-align: center;
-            z-index: 10; transform: translate(-50%, -50%); pointer-events: none;
+            position: absolute;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
-        .hour-num { font-size: 13px; color: #cbd5e1; width: 30px; height: 30px; line-height: 30px; }
-        .min-num { font-size: 9px; color: #94a3b8; width: 30px; height: 20px; line-height: 20px; }
+        .hour-num { 
+            font-size: 15px; 
+            width: 32px; 
+            height: 32px; 
+        }
+        .min-num { 
+            font-size: 11px; 
+            color: #94a3b8; 
+            width: 26px; 
+            height: 20px; 
+        }
         
         .hand {
             position: absolute; bottom: 50%; left: 50%;
