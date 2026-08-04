@@ -280,7 +280,7 @@
             drawSunSlices(cachedTimes);
             drawMinuteRing(cachedTimes);
             createHourNumbers(cachedTimes);
-            updateSunAndMoon(cachedTimes);
+            updateSunAndMoon(now, lat, lon);
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
@@ -331,13 +331,13 @@
         }
 
         function drawSunSlices(times) {
-            // 1. Sfondo interamente NERO (Notte Piena di fondo)
+            // 1. Sfondo interamente NERO (Notte Piena che copre tutto il cerchio)
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // 2. Disegna sopra solo le fasce dei crepuscoli e del giorno, lasciando nero tutto il resto
+            // 2. Disegna sopra le fasce diurne e crepuscolari ordinate
             const intervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
@@ -431,12 +431,14 @@
             }
         }
 
-        function updateSunAndMoon(times) {
-            const now = new Date();
-            const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+        function updateSunAndMoon(now, lat, lon) {
+            const sunPos = SunCalc.getPosition(now, lat, lon);
+            const moonPos = SunCalc.getMoonPosition(now, lat, lon);
 
-            // Posizione del Sole basata sull'orario corrente (coerente con le lancette)
-            const sunAngleRad = hoursToAngle(h);
+            // Conversione Azimut Sole in angolo sul quadrante 24h
+            let sunClockHour = ((-sunPos.azimuth * 180 / Math.PI + 180) / 360) * 24;
+            sunClockHour = (sunClockHour + 6) % 24; // Allineamento corretto
+            const sunAngleRad = hoursToAngle(sunClockHour);
             const sunDist = radius * 0.52;
             const sx = cx + sunDist * Math.cos(sunAngleRad);
             const sy = cy + sunDist * Math.sin(sunAngleRad);
@@ -444,9 +446,10 @@
             sunIcon.style.left = `${sx}px`;
             sunIcon.style.top = `${sy}px`;
 
-            // Posizione della Luna sfalsata di 12 ore rispetto al sole (oppure calcolata)
-            const moonHour = (h + 12) % 24;
-            const moonAngleRad = hoursToAngle(moonHour);
+            // Conversione Azimut Luna in angolo sul quadrante 24h
+            let moonClockHour = ((-moonPos.azimuth * 180 / Math.PI + 180) / 360) * 24;
+            moonClockHour = (moonClockHour + 6) % 24;
+            const moonAngleRad = hoursToAngle(moonClockHour);
             const moonDist = radius * 0.65;
             const mx = cx + moonDist * Math.cos(moonAngleRad);
             const my = cy + moonDist * Math.sin(moonAngleRad);
@@ -509,7 +512,7 @@
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
-                updateSunAndMoon(cachedTimes);
+                updateSunAndMoon(now, cachedLat, cachedLon);
                 updatePageBackground(cachedTimes);
             }
         }
