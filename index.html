@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Identico</title>
+    <title>Sunclock 24H Esatto</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
@@ -213,9 +213,9 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
-        // Funzione matematica per posizionare il 12 in alto e far scorrere le ore in senso antiorario (stile Sunclock)
+        // 12 in alto (-Math.PI/2), 24 in basso, scorrimento in senso ORARIO
         function hoursToAngle(h) {
-            return - (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function drawSunSlices(times) {
@@ -252,7 +252,7 @@
         function drawSector(startH, endH, color, r) {
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, hoursToAngle(endH), hoursToAngle(startH));
+            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
@@ -260,7 +260,7 @@
 
         function drawMinuteRing() {
             for (let i = 0; i < 60; i++) {
-                const angle = - (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const isMajor = i % 5 === 0;
                 const len = isMajor ? 10 : 5;
 
@@ -344,16 +344,17 @@
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancette sincronizzate perfettamente con il senso antiorario del quadrante
-            const hourDeg = - (h / 24) * 360 - 90;
-            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg + 90}deg)`;
+            // Correzione esatta per il senso orario con 12 in alto:
+            // 0 ore = -90° (in alto). (h / 24) * 360 sposta in senso orario.
+            const hourDeg = (h / 24) * 360 - 90;
+            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const secDeg = - (s / 60) * 360 - 90;
-            document.getElementById('hand-second').style.transform = `rotate(${secDeg + 90}deg)`;
+            const secDeg = (s / 60) * 360 - 90;
+            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = - (utcHours / 24) * 360 - 90;
-            document.getElementById('hand-utc').style.transform = `rotate(${utcDeg + 90}deg)`;
+            const utcDeg = (utcHours / 24) * 360 - 90;
+            document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
         }
 
         initClock();
