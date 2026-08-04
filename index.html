@@ -423,43 +423,9 @@
             }
         }
 
-        function getPreciseSunTimes(date, lat, lon) {
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const searchDate = new Date(date);
-            searchDate.setHours(0, 0, 0, 0);
-
-            function getEventTime(direction) {
-                try {
-                    const res = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, direction, searchDate, 1);
-                    return res ? res.date : null;
-                } catch(e) {
-                    return null;
-                }
-            }
-
-            const scTimes = SunCalc.getTimes(date, lat, lon);
-            
-            return {
-                solarNoon: Astronomy.SearchHourAngle(Astronomy.Body.Sun, observer, 0, searchDate).date || scTimes.solarNoon,
-                nadir: scTimes.nadir,
-                astronomicalDawn: scTimes.astronomicalDawn,
-                nauticalDawn: scTimes.nauticalDawn,
-                dawn: scTimes.dawn,
-                sunrise: getEventTime(+1) || scTimes.sunrise,
-                sunriseEnd: scTimes.sunriseEnd,
-                goldenHourEnd: scTimes.goldenHourEnd,
-                goldenHour: scTimes.goldenHour,
-                sunsetStart: scTimes.sunsetStart,
-                sunset: getEventTime(-1) || scTimes.sunset,
-                dusk: scTimes.dusk,
-                nauticalDusk: scTimes.nauticalDusk,
-                astronomicalDusk: scTimes.astronomicalDusk
-            };
-        }
-
         function updateSunClock(lat, lon) {
             const now = new Date();
-            cachedTimes = getPreciseSunTimes(now, lat, lon);
+            cachedTimes = SunCalc.getTimes(now, lat, lon);
             cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(now);
 
@@ -469,7 +435,7 @@
 
             drawSolarSectorsByElevation(now, lat, lon);
             drawSolarMeridianLines(cachedTimes);
-            drawMinuteRing(cachedTimes, now, lat, lon);
+            drawMinuteRing(now, lat, lon);
             drawClockNumbers(cachedTimes);
             updatePageBackground(now, lat, lon);
             populateTable(cachedTimes);
@@ -493,7 +459,6 @@
             return PALETTE.night;
         }
 
-        // Disegno continuo a 360° basato sull'elevazione solare per ogni minuto del giorno (risolve qualsiasi bug polare)
         function drawSolarSectorsByElevation(date, lat, lon) {
             const observer = new Astronomy.Observer(lat, lon, 0);
             const baseDate = new Date(date);
@@ -525,9 +490,6 @@
             baseDate.setHours(0, 0, 0, 0);
 
             for (let i = 0; i < 60; i++) {
-                let hEq = (i / 60) * 24 - 12;
-                if(hEq < 0) hEq += 24;
-                
                 const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
                 const astroTime = Astronomy.MakeTime(checkDate);
                 const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
