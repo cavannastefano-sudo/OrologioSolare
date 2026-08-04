@@ -221,7 +221,6 @@
         };
 
         let cachedTimes = null;
-        let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
         let cachedLat = 45.04;
         let cachedLon = 9.68;
@@ -276,8 +275,7 @@
         function updateSunClock(lat, lon) {
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-            cachedMoonIllumination = Suncalc.getMoonIllumination ? Suncalc.getMoonIllumination(now) : SunCalc.getMoonIllumination(now);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
 
             updateMoonPhaseIcon(cachedMoonIllumination.phase);
 
@@ -541,9 +539,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Calcolo della posizione reale della luna in base all'azimut nel cielo attuale
             const moonPos = SunCalc.getMoonPosition(now, cachedLat, cachedLon);
-            // Convertiamo l'azimut della luna in un'ora sul quadrante 24h (l'azimut 0/sud è mappato correttamente)
             let moonHours = (12 + (moonPos.azimuth * 12 / Math.PI)) % 24;
             if (moonHours < 0) moonHours += 24;
 
