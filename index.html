@@ -7,10 +7,8 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
-    <!-- Libreria calcoli solari -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     
-    <!-- Libreria e Stili per la Mappa Interattiva (Leaflet) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -180,7 +178,6 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        /* Stile per la mappa interattiva */
         #map-container {
             width: 100%;
             height: 250px;
@@ -456,7 +453,7 @@
         }
 
         function timeToHours(date) {
-            if (!date || isNaN(date)) return 0;
+            if (!date || isNaN(date)) return null;
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
@@ -502,7 +499,7 @@
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            const intervals = [
+            const rawIntervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
                 { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
@@ -516,8 +513,8 @@
                 { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
             ];
 
-            intervals.forEach(interval => {
-                if (interval.start < interval.end) {
+            rawIntervals.forEach(interval => {
+                if (interval.start !== null && interval.end !== null && interval.start < interval.end) {
                     drawSector(interval.start, interval.end, interval.color, radius);
                 }
             });
@@ -535,24 +532,28 @@
         function drawSolarMeridianLines(times) {
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
-                const noonAngle = hoursToAngle(noonHours);
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
+                if (noonHours !== null) {
+                    const noonAngle = hoursToAngle(noonHours);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
             }
 
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
-                const nadirAngle = hoursToAngle(nadirHours);
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-                ctx.strokeStyle = '#ef4444';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
+                if (nadirHours !== null) {
+                    const nadirAngle = hoursToAngle(nadirHours);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
             }
         }
 
@@ -583,8 +584,8 @@
             const container = document.getElementById('clock-elements-container');
             container.innerHTML = '';
             
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunset = timeToHours(times.sunset);
+            const hSunrise = isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.0;
+            const hSunset = isValidDate(times.sunset) ? timeToHours(times.sunset) : 18.0;
 
             ctx.font = 'bold 15px sans-serif';
             ctx.textBaseline = 'middle';
