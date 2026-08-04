@@ -85,7 +85,6 @@
             font-weight: bold;
             text-align: center;
             z-index: 10;
-            /* Usiamo transform per centrare perfettamente il blocco sulle coordinate esatte */
             transform: translate(-50%, -50%);
             pointer-events: none;
         }
@@ -433,7 +432,7 @@
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlices(cachedTimes);
-            drawSolarMeridianLine();
+            drawSolarMeridianLines(cachedTimes); // Linee reali di Mezzogiorno e Mezzanotte solare
             drawMinuteRing(cachedTimes);
             createClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
@@ -525,13 +524,29 @@
             ctx.fill();
         }
 
-        function drawSolarMeridianLine() {
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - radius);
-            ctx.lineTo(cx, cy + radius);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
+        // Disegna la linea bianca per il Mezzogiorno solare e quella rossa per la Mezzanotte solare
+        function drawSolarMeridianLines(times) {
+            if (isValidDate(times.solarNoon)) {
+                const noonHours = timeToHours(times.solarNoon);
+                const noonAngle = hoursToAngle(noonHours) - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+
+            if (isValidDate(times.nadir)) {
+                const nadirHours = timeToHours(times.nadir);
+                const nadirAngle = hoursToAngle(nadirHours) - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
         }
 
         function drawMinuteRing(times) {
