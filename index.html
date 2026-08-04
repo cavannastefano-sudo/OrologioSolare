@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Completo</title>
+    <title>Sunclock 24H Completo di Crepuscoli</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -166,9 +166,9 @@
 
         const PALETTE = {
             night: '#000000',         
-            astro: '#172554',         
-            naut: '#1e3a8a',          
-            civil: '#3b82f6',         
+            astro: '#172554',         // Crepuscolo Astronomico
+            naut: '#1e3a8a',          // Crepuscolo Nautico
+            civil: '#3b82f6',         // Crepuscolo Civile
             sunriseSunset: '#f97316', 
             golden: '#eab308',        
             day: '#bae6fd'            
@@ -224,15 +224,12 @@
         }
 
         function drawSunSlices(times) {
-            // Estrazione di tutti i parametri della tabella
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hNautDawn = timeToHours(times.nauticalDawn);
             const hDawn = timeToHours(times.dawn);
             const hSunrise = timeToHours(times.sunrise);
             const hSunriseEnd = timeToHours(times.sunriseEnd);
             const hGoldenEnd = timeToHours(times.goldenHourEnd);
-            
-            const hSolarNoon = timeToHours(times.solarNoon);
             
             const hGoldenStart = timeToHours(times.goldenHour);
             const hSunsetStart = timeToHours(times.sunsetStart);
@@ -246,18 +243,22 @@
 
             const rSlices = radius - 25;
 
-            // Disegno di tutte le fasce corrispondenti alla tabella
-            drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
-            drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
-            drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba -> Fine alba
-            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Fine ora d'oro mattino
-            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);           // Giorno (fino a inizio ora d'oro sera)
-            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Inizio ora d'oro sera -> Inizio tramonto
+            // Mattino (Crepuscoli, Alba e Ora d'oro)
+            drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices); // Crepuscolo astronomico mattino
+            drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);      // Crepuscolo nautico mattino
+            drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);       // Crepuscolo civile mattino (Alba Civile)
+            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba
+            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Ora d'oro
+
+            // Giorno centrale
+            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
+
+            // Sera (Ora d'oro, Tramonto e Crepuscoli)
+            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Ora d'oro sera
             drawSector(hSunsetStart, hSunset, PALETTE.sunriseSunset, rSlices);    // Tramonto
-            drawSector(hSunset, hDusk, PALETTE.civil, rSlices);                   // Crepuscolo civile
-            drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);                  // Crepuscolo nautico
-            drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);             // Crepuscolo astronomico
+            drawSector(hSunset, hDusk, PALETTE.civil, rSlices);                   // Crepuscolo civile sera
+            drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);                  // Crepuscolo nautico sera
+            drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);             // Crepuscolo astronomico sera
         }
 
         function drawSector(startH, endH, color, r) {
