@@ -422,9 +422,8 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
-        // CORRETTO: 12 in alto, 24 in basso, ore in senso orario (12 -> 13 -> 14 ... -> 24/00 -> 1 -> 2 ... -> 11)
         function hoursToAngle(h) {
-            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -524,11 +523,9 @@
             const hSunrise = timeToHours(times.sunrise);
             const hSunset = timeToHours(times.sunset);
 
-            // Sequenza esatta identica alla foto di suncalc.net (12 in alto, 13 a destra, 24 in basso, 11 a sinistra)
             const hRadius = radius * 0.65;
             for (let i = 1; i <= 24; i++) {
-                // Mappatura oraria: 12 = in alto, 24 = in basso
-                const hourValue = (i === 24) ? 24 : i;
+                const hourValue = i;
                 const angleRad = hoursToAngle(hourValue);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
@@ -550,7 +547,6 @@
                 container.appendChild(div);
             }
 
-            // Numeri dei minuti sul bordo esterno ogni 5 (00 in alto)
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
@@ -615,8 +611,7 @@
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Allineamento perfetto delle lancette con il quadrante 24h (12 in alto)
-            const hourDeg = ((h - 12) / 24) * 360 - 90;
+            const hourDeg = (h / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360 - 90;
@@ -626,7 +621,7 @@
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = ((utcHours - 12) / 24) * 360 - 90;
+            const utcDeg = (utcHours / 24) * 360 - 90;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
