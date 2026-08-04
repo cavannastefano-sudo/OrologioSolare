@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Avanzato</title>
+    <title>Sunclock 24H Dinamico</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
-            background-color: #0f172a;
+            /* Sfondo della pagina dinamico in base al momento della giornata */
+            background-color: #050811;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -17,6 +18,7 @@
             min-height: 100vh;
             margin: 0;
             color: #f8fafc;
+            transition: background-color 1s ease;
         }
 
         h1 {
@@ -86,9 +88,9 @@
             z-index: 20;
         }
 
-        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } /* 24h Locali (Arancione/Oro) */
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } /* Secondi (Rossa) */
-        #hand-utc { width: 4px; height: 42%; background: #22c55e; } /* UTC (Verde) */
+        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
+        #hand-utc { width: 4px; height: 42%; background: #22c55e; } 
 
         #center-dot {
             position: absolute;
@@ -137,21 +139,12 @@
 
     <div id="clock-wrapper">
         <div id="clock-face">
-            <!-- Canvas per i colori del sole e la corona dei minuti -->
             <canvas id="clockCanvas" width="500" height="500"></canvas>
-            
-            <!-- Contenitore per i numeri delle ore -->
             <div id="hour-numbers-container"></div>
-
-            <!-- La Luna -->
             <div id="moon-icon">🌕</div>
-
-            <!-- Lancette -->
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
-            
-            <!-- Centro -->
             <div id="center-dot"></div>
         </div>
     </div>
@@ -175,16 +168,18 @@
         const cy = 250;
         const radius = 245;
 
-        // Palette di colori richiesta
+        // Palette con notte rigorosamente nera (#000000)
         const PALETTE = {
-            night: '#050811',         // Notte (Nero profondo)
-            astro: '#172554',         // Crepuscolo Astronomico
-            naut: '#1e3a8a',          // Crepuscolo Nautico
-            civil: '#3b82f6',         // Crepuscolo Civile
-            golden: '#eab308',        // Ora d'oro (Giallo intenso)
-            sunriseSunset: '#f97316', // Alba / Tramonto (Arancione brillante)
-            day: '#bae6fd'            // Giorno (Azzurro chiaro)
+            night: '#000000',         
+            astro: '#172554',         
+            naut: '#1e3a8a',          
+            civil: '#3b82f6',         
+            golden: '#eab308',        
+            sunriseSunset: '#f97316', 
+            day: '#bae6fd'            
         };
+
+        let cachedTimes = null;
 
         function initClock() {
             if (navigator.geolocation) {
@@ -193,7 +188,7 @@
                         updateSunClock(position.coords.latitude, position.coords.longitude);
                     },
                     (error) => {
-                        updateSunClock(41.9028, 12.4964); // Fallback Roma
+                        updateSunClock(41.9028, 12.4964); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
                     }
                 );
@@ -204,31 +199,24 @@
 
         function updateSunClock(lat, lon) {
             const now = new Date();
-            const times = SunCalc.getTimes(now, lat, lon);
+            cachedTimes = SunCalc.getTimes(now, lat, lon);
             const moonPos = SunCalc.getMoonPosition(now, lat, lon);
 
             ctx.clearRect(0, 0, 500, 500);
 
-            // 1. Disegna le fasce solari sul canvas
-            drawSunSlices(times);
-
-            // 2. Disegna la tacca dei minuti esterna
+            drawSunSlices(cachedTimes);
             drawMinuteRing();
-
-            // 3. Posiziona i numeri delle ore (1-24, con 24 in basso)
-            createHourNumbers(times);
-
-            // 4. Posiziona la Luna
+            createHourNumbers(cachedTimes);
             updateMoon(moonPos);
+            updatePageBackground(cachedTimes);
 
-            // 5. Aggiorna i testi informativi nel pannello
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-            document.getElementById('txt-sunrise').innerText = formatTime(times.sunrise);
-            document.getElementById('txt-sunset').innerText = formatTime(times.sunset);
-            document.getElementById('txt-noon').innerText = formatTime(times.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(times.nightEnd); 
-            document.getElementById('txt-mgold').innerText = formatTime(times.goldenHourEnd);
-            document.getElementById('txt-egold').innerText = formatTime(times.goldenHour);
+            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
+            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nightEnd); 
+            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
+            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
         }
 
         function timeToHours(date) {
@@ -354,6 +342,36 @@
             moonIcon.style.display = 'block';
         }
 
+        // Aggiorna lo sfondo della pagina seguendo il colore della fascia oraria corrente
+        function updatePageBackground(times) {
+            if (!times) return;
+            const now = new Date();
+            const h = timeToHours(now);
+            
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+            const hGoldenEnd = timeToHours(times.goldenHourEnd);
+            const hGoldenStart = timeToHours(times.goldenHour);
+            const hDawn = timeToHours(times.dawn);
+            const hDusk = timeToHours(times.dusk);
+            const hNautDawn = timeToHours(times.nauticalDawn);
+            const hNautDusk = timeToHours(times.nauticalDusk);
+            const hAstroDawn = timeToHours(times.astronomicalDawn);
+            const hAstroDusk = timeToHours(times.astronomicalDusk);
+
+            let bgColor = PALETTE.night;
+
+            if (h >= hSunrise && h <= hGoldenEnd) bgColor = PALETTE.golden;
+            else if (h > hGoldenEnd && h < hGoldenStart) bgColor = PALETTE.day;
+            else if (h >= hGoldenStart && h <= hSunset) bgColor = PALETTE.golden;
+            else if (h > hSunset && h <= hDusk) bgColor = PALETTE.civil;
+            else if (h > hDawn && h < hSunrise) bgColor = PALETTE.civil;
+            else if ((h >= hNautDawn && h <= hDawn) || (h >= hDusk && h <= hNautDusk)) bgColor = PALETTE.naut;
+            else if ((h >= hAstroDawn && h <= hNautDawn) || (h >= hNautDusk && h <= hAstroDusk)) bgColor = PALETTE.astro;
+
+            document.body.style.backgroundColor = bgColor;
+        }
+
         function formatTime(date) {
             if (!date || isNaN(date)) return "--:--";
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -363,9 +381,7 @@
             const now = new Date();
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
-            const m = now.getMinutes() + now.getSeconds() / 60;
 
-            // Correzione dell'angolo delle lancette per allinearle con lo zero (24) in basso (+ 180 gradi)
             const hourDeg = (h / 24) * 360 + 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
@@ -375,9 +391,12 @@
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
             const utcDeg = (utcHours / 24) * 360 + 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
+
+            if (cachedTimes) {
+                updatePageBackground(cachedTimes);
+            }
         }
 
-        // Avvio
         initClock();
         setInterval(updateHands, 50);
     </script>
