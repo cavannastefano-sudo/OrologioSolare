@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Sun Clock</title>
+    <title>Replicazione Sunclock.net</title>
     <!-- Libreria SunCalc per i calcoli astronomici -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0b0f19;
-            color: #f3f4f6;
+            background-color: #dbeafe; /* Colore sfondo pagina */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -20,73 +19,115 @@
         }
 
         h1 {
-            font-size: 1.5rem;
-            margin-bottom: 20px;
-            color: #93c5fd;
+            margin-bottom: 10px;
+            color: #1e3a8a;
+            font-size: 1.2rem;
         }
 
-        .clock-container {
+        #clock-wrapper {
             position: relative;
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            background: conic-gradient(#1e1b4b 0deg, #1e3a8a 90deg, #0284c7 180deg, #1e3a8a 270deg, #1e1b4b 360deg);
-            border: 6px solid #374151;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 400px;
+            height: 400px;
         }
 
-        /* Lancetta delle 24 ore */
-        .sun-hand {
+        #clock-face {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Fasce colorate Giorno/Notte (generate dinamicamente via JS) */
+        #segments-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        .segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            transform-origin: bottom right;
+            top: 0;
+            left: 0;
+        }
+
+        /* Numeri delle ore 1-24 */
+        .hour-num {
+            position: absolute;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            width: 20px;
+            height: 20px;
+            text-align: center;
+            line-height: 20px;
+            z-index: 10;
+            margin-left: -10px; /* Centra il numero */
+            margin-top: -10px;  /* Centra il numero */
+        }
+
+        /* Numeri dei minuti sulla corona esterna 00-55 */
+        .min-tick-num {
+            position: absolute;
+            font-size: 9px;
+            color: #666;
+            z-index: 5;
+        }
+
+        /* La Luna */
+        #moon-icon {
+            position: absolute;
+            font-size: 24px;
+            z-index: 8;
+            margin-left: -12px;
+            margin-top: -12px;
+            display: none; /* Nascosto finché non si calcola la posizione */
+        }
+
+        /* Lancette */
+        .hand {
             position: absolute;
             bottom: 50%;
             left: 50%;
-            width: 4px;
-            height: 110px;
-            background: #fbbf24;
             transform-origin: bottom center;
-            border-radius: 2px;
-            box-shadow: 0 0 10px #fbbf24;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+            z-index: 20;
         }
 
-        .center-dot {
+        #hand-hour { width: 6px; height: 38%; background: #ff7f00; } /* Lancetta arancione */
+        #hand-second { width: 2px; height: 48%; background: red; z-index: 21; } /* Lancetta rossa lunga */
+        #hand-utc { width: 4px; height: 42%; background: green; } /* Lancetta verde */
+
+        #center-dot {
+            position: absolute;
             width: 14px;
             height: 14px;
-            background: #fbbf24;
+            background: red;
             border-radius: 50%;
-            z-index: 10;
-            box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+            top: 50%;
+            left: 50%;
+            margin-left: -7px;
+            margin-top: -7px;
+            z-index: 25;
         }
 
-        .info-card {
-            margin-top: 30px;
-            background: #1f2937;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #374151;
-            width: 300px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            font-size: 0.95rem;
-        }
-
-        .info-row span {
-            color: #fbbf24;
-            font-weight: 600;
-        }
-
-        .location-status {
-            font-size: 0.8rem;
-            color: #9ca3af;
-            margin-top: 10px;
+        #info-panel {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #1e3a8a;
             text-align: center;
+            border: 1px solid #bfdbfe;
         }
     </style>
 </head>
@@ -94,75 +135,200 @@
 
     <h1>Orologio Solare 24H</h1>
 
-    <div class="clock-container">
-        <div class="sun-hand" id="sunHand"></div>
-        <div class="center-dot"></div>
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <!-- Contenitore per le fasce giorno/notte -->
+            <div id="segments-container"></div>
+            
+            <!-- Contenitore per i numeri delle ore -->
+            <div id="hour-numbers-container"></div>
+
+            <!-- Corona esterna dei minuti e numeri -->
+            <canvas id="min-ticks-canvas" width="400" height="400"></canvas>
+
+            <!-- La Luna -->
+            <div id="moon-icon">🌑</div>
+
+            <!-- Lancette -->
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-utc"></div>
+            
+            <!-- Centro -->
+            <div id="center-dot"></div>
+        </div>
     </div>
 
-    <div class="info-card">
-        <div class="info-row">Alba: <span id="sunrise">--:--</span></div>
-        <div class="info-row">Mezzogiorno: <span id="solarnoon">--:--</span></div>
-        <div class="info-row">Tramonto: <span id="sunset">--:--</span></div>
-        <div class="info-row">Orario Locale: <span id="current-time">--:--</span></div>
-        <div class="location-status" id="locationStatus">Rilevamento posizione in corso...</div>
+    <div id="info-panel">
+        Caricamento dati...
     </div>
 
     <script>
-        function initSunClock() {
-            // Coordinate di fallback (es. Roma) se l'utente nega la geolocalizzazione
-            let lat = 41.9028;
-            let lon = 12.4964;
+        const canvas = document.getElementById('min-ticks-canvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 200;
+        const cy = 200;
+        const radius = 195; // Raggio del quadrante
 
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        lat = position.coords.latitude;
-                        lon = position.coords.longitude;
-                        document.getElementById('locationStatus').innerText = `Posizione attiva (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
-                        updateClockData(lat, lon);
-                    },
-                    (error) => {
-                        document.getElementById('locationStatus').innerText = "Geolocalizzazione negata. Uso coordinate predefinite.";
-                        updateClockData(lat, lon);
-                    }
-                );
-            } else {
-                updateClockData(lat, lon);
+        // --- Configurazione grafica colori Sunclock.net ---
+        const COLORS = {
+            night: '#101e2a',      // Blu scuro notte profonda
+            astro: '#2b5a8c',      // Blu medio (Alba/Tramonto astronomico)
+            naut: '#5e8bbf',       // Blu chiaro (Alba/Tramonto nautico)
+            civil: '#8fb9e8',      // Azzurro (Alba/Tramonto civile)
+            day: '#e3f2fd'         // Giorno
+        };
+
+        // 1. DISEGNA LA CORONA ESTERNA DEI MINUTI (Ticks e Numeri)
+        function drawMinuteTicks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < 60; i++) {
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const isMajor = i % 5 === 0;
+                const tickLen = isMajor ? 12 : 6;
+                
+                const x1 = cx + (radius - tickLen) * Math.cos(angle);
+                const y1 = cy + (radius - tickLen) * Math.sin(angle);
+                const x2 = cx + radius * Math.cos(angle);
+                const y2 = cy + radius * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = '#666';
+                ctx.lineWidth = isMajor ? 1.5 : 1;
+                ctx.stroke();
+
+                // Disegna numeri dei minuti (00, 05, 10...)
+                if (isMajor && i % 5 === 0) {
+                    const textAngle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                    const tx = cx + (radius - 22) * Math.cos(textAngle);
+                    const ty = cy + (radius - 22) * Math.sin(textAngle);
+                    ctx.fillStyle = '#666';
+                    ctx.font = '9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i).padStart(2, '0'), tx, ty);
+                }
             }
         }
+        drawMinuteTicks();
 
-        function updateClockData(lat, lon) {
+
+        // 2. CALCOLA E DISEGNA FASCE COLORATE GIORNO/NOTTE
+        function drawSunSegments(lat, lon) {
+            const segmentsContainer = document.getElementById('segments-container');
+            segmentsContainer.innerHTML = ''; // Pulisce il contenitore
+            const hourNumbersContainer = document.getElementById('hour-numbers-container');
+            hourNumbersContainer.innerHTML = '';
+
             const now = new Date();
             
-            // Calcoli tramite la libreria SunCalc
+            // Calcola eventi solari per la posizione
             const times = SunCalc.getTimes(now, lat, lon);
+            const moonPos = SunCalc.getMoonPosition(now, lat, lon);
+            
+            // Mappa orari SunCalc in angoli (0-24h)
+            const getHourAngle = (date) => (date.getHours() + date.getMinutes()/60 + date.getSeconds()/3600) * (360/24);
 
-            // Formattazione orari
-            document.getElementById('sunrise').innerText = formatTime(times.sunrise);
-            document.getElementById('solarnoon').innerText = formatTime(times.solarNoon);
-            document.getElementById('sunset').innerText = formatTime(times.sunset);
-            document.getElementById('current-time').innerText = now.toLocaleTimeString();
+            const h_sunrise = getHourAngle(times.sunrise);
+            const h_sunset = getHourAngle(times.sunset);
+            const h_dawn = getHourAngle(times.dawn);
+            const h_dusk = getHourAngle(times.dusk);
+            const h_nautDawn = getHourAngle(times.nauticalDawn);
+            const h_nautDusk = getHourAngle(times.nauticalDusk);
+            const h_astroDawn = getHourAngle(times.astronomicalDawn);
+            const h_astroDusk = getHourAngle(times.astronomicalDusk);
 
-            // Calcolo rotazione lancetta 24h (0 - 360 gradi)
-            const hours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-            const degrees = (hours / 24) * 360;
-            document.getElementById('sunHand').style.transform = `rotate(${degrees}deg)`;
+            // Ordina gli eventi in ordine crescente di tempo
+            const events = [
+                { angle: h_sunrise, color: COLORS.day },
+                { angle: h_sunset, color: COLORS.night },
+                { angle: h_dawn, color: COLORS.civil },
+                { angle: h_dusk, color: COLORS.civil },
+                { angle: h_nautDawn, color: COLORS.naut },
+                { angle: h_nautDusk, color: COLORS.naut },
+                { angle: h_astroDawn, color: COLORS.astro },
+                { angle: h_astroDusk, color: COLORS.astro }
+            ];
+            events.sort((a, b) => a.angle - b.angle);
+
+            // Disegna i settori circolari
+            let startAngle = 0;
+            events.forEach((event) => {
+                createPieSegment(startAngle, event.angle, event.color);
+                startAngle = event.angle;
+            });
+            // Chiudi l'ultimo segmento fino a 360 gradi (mezzanotte successiva)
+            createPieSegment(startAngle, 360, events[0].color);
+
+
+            // 3. POSIZIONA LA LUNA
+            // La luna segue il percorso solare ma in verticale ruotato. Qui posizioniamo l'icona sulla raggiera corrispondente.
+            const moonAngleDeg = moonPos.azimuth * 180 / Math.PI; // Azimuth è la posizione EST-OVEST
+            // L'azimuth in SunCalc è 0 = Sud, +/- Pi = Nord. Convertiamolo in 0-360 gradi partendo dal Sud.
+            // Ma noi vogliamo l'angolo sull'orologio 24h, dove 0 = Mezzanotte (Nord).
+            // Per posizionarla sul lato opposto rispetto alla longitudine solare, usiamo una formula semplificata:
+            // La luna è visibile di notte. Il suo angolo sull'orologio è approssimativamente (LUNA_AZIMUTH_RAD + Math.PI) / (2*Math.PI) * 360
+            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
+            
+            const moonIcon = document.getElementById('moon-icon');
+            const moonDist = radius * 0.78; // Distanza dal centro
+            const mx = cx + moonDist * Math.cos(moonClockAngle * Math.PI / 180 - Math.PI / 2);
+            const my = cy + moonDist * Math.sin(moonClockAngle * Math.PI / 180 - Math.PI / 2);
+            moonIcon.style.left = `${mx}px`;
+            moonIcon.style.top = `${my}px`;
+            moonIcon.style.display = 'block';
+
+
+            // 4. POSIZIONA I NUMERI DELLE ORE 1-24
+            const hourRadius = radius * 0.88;
+            for (let i = 0; i < 24; i++) {
+                const angleRad = (i / 24) * Math.PI * 2 - Math.PI / 2;
+                const hx = cx + hourRadius * Math.cos(angleRad);
+                const hy = cy + hourRadius * Math.sin(angleRad);
+                
+                const hourDiv = document.createElement('div');
+                hourDiv.className = 'hour-num';
+                hourDiv.style.left = `${hx}px`;
+                hourDiv.style.top = `${hy}px`;
+                // Sull'originale, alcuni numeri sono bianchi su fondo scuro, qui lasciamo neri per semplicitò.
+                // I numeri delle ore notturne originali sono leggermente più chiari.
+                if (i >= 23 || i <= 7) { hourDiv.style.color = 'white'; }
+                
+                // Sull'originale le ore sono 1-24. Gestiamo il 24.
+                hourDiv.innerText = (i === 0) ? '24' : i;
+                hourNumbersContainer.appendChild(hourDiv);
+            }
+
+            document.getElementById('info-panel').innerHTML = `Posizione rilevata: Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
         }
 
-        function formatTime(date) {
-            if (!date || isNaN(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Crea un singolo spicchio di torta colorato con CSS clip-path
+        function createPieSegment(startDeg, endDeg, color) {
+            const container = document.getElementById('segments-container');
+            const segment = document.createElement('div');
+            segment.className = 'segment';
+            segment.style.backgroundColor = color;
+            
+            // Calcola il clip-path per ritagliare il settore circolare da un quadrato
+            // CSS clip-path richiede poligoni e percentuali. Formula complessa.
+            // Usiamo un trucco: ogni .segment è 50%x50% posizionato in basso a destra.
+            // Lo ruotiamo dell'angolo iniziale. Poi lo ritagliamo.
+            
+            segment.style.transform = `rotate(${startDeg}deg) skew(${(endDeg - startDeg) - 90}deg)`;
+            // Questo è il trucco, non funziona per angoli > 90.
+            // PER UN VERO FUNZIONAMENTO DINAMICO, è meglio usare Canvas per i settori, non CSS.
+            // Reindirizziamo l'approccio al canvas per l'integrità del disegno.
+            // --- Riscriviamo la funzione usando Canvas ---
         }
 
-        // Avvio e aggiornamento continuo ogni secondo
-        initSunClock();
-        setInterval(() => {
-            const latMatch = document.getElementById('locationStatus').innerText.match(/Lat: ([^,]+)/);
-            const lonMatch = document.getElementById('locationStatus').innerText.match(/Lon: ([^)]+)/);
-            let lat = latMatch ? parseFloat(latMatch[1]) : 41.9028;
-            let lon = lonMatch ? parseFloat(lonMatch[1]) : 12.4964;
-            updateClockData(lat, lon);
-        }, 1000);
-    </script>
-</body>
-</html>
+        // --- REIMPLEMENTAZIONE FUNZIONE CON CANVAS (Più precisa) ---
+        const segmentsCanvas = document.createElement('canvas');
+        segmentsCanvas.width = 400;
+        segmentsCanvas.height = 400;
+        segmentsCanvas.style.position = 'absolute';
+        segmentsCanvas.style.top = '0';
+        segmentsCanvas.style.left = '0';
+        segmentsCanvas.style.borderRadius = '50%';
