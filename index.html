@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Completo di Crepuscoli</title>
+    <title>Sunclock 24H Completo</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -127,6 +127,65 @@
             color: #38bdf8;
             font-weight: 600;
         }
+
+        /* Pulsante e Finestra Modale per la tabella "Tutti i tempi" */
+        #btn-times {
+            margin-top: 10px;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #btn-times:hover { background: #0ea5e9; }
+
+        #modal-times {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            width: 380px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #475569;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #f8fafc;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        table.times-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        table.times-table th, table.times-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #334155;
+            text-align: left;
+        }
+        table.times-table th { color: #38bdf8; }
     </style>
 </head>
 <body>
@@ -155,6 +214,25 @@
             <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
             <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
         </div>
+        <button id="btn-times" onclick="toggleModal(true)">Tutti i tempi</button>
+    </div>
+
+    <!-- Finestra Modale Tabella Orari -->
+    <div id="modal-times">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Tutti i tempi</strong>
+                <button class="close-btn" onclick="toggleModal(false)">✕</button>
+            </div>
+            <table class="times-table">
+                <thead>
+                    <tr><th>Evento</th><th>Tempo</th></tr>
+                </thead>
+                <tbody id="times-table-body">
+                    <!-- Compilato via JS -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
@@ -166,9 +244,9 @@
 
         const PALETTE = {
             night: '#000000',         
-            astro: '#172554',         // Crepuscolo Astronomico
-            naut: '#1e3a8a',          // Crepuscolo Nautico
-            civil: '#3b82f6',         // Crepuscolo Civile
+            astro: '#172554',         
+            naut: '#1e3a8a',          
+            civil: '#3b82f6',         
             sunriseSunset: '#f97316', 
             golden: '#eab308',        
             day: '#bae6fd'            
@@ -204,6 +282,7 @@
             createHourNumbers(cachedTimes);
             updateMoon(moonPos);
             updatePageBackground(cachedTimes);
+            populateTable(cachedTimes);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
@@ -224,41 +303,30 @@
         }
 
         function drawSunSlices(times) {
-            const hAstroDawn = timeToHours(times.astronomicalDawn);
-            const hNautDawn = timeToHours(times.nauticalDawn);
-            const hDawn = timeToHours(times.dawn);
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunriseEnd = timeToHours(times.sunriseEnd);
-            const hGoldenEnd = timeToHours(times.goldenHourEnd);
-            
-            const hGoldenStart = timeToHours(times.goldenHour);
-            const hSunsetStart = timeToHours(times.sunsetStart);
-            const hSunset = timeToHours(times.sunset);
-            const hDusk = timeToHours(times.dusk);
-            const hNautDusk = timeToHours(times.nauticalDusk);
-            const hAstroDusk = timeToHours(times.astronomicalDusk);
-
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
             const rSlices = radius - 25;
 
-            // Mattino (Crepuscoli, Alba e Ora d'oro)
-            drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices); // Crepuscolo astronomico mattino
-            drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);      // Crepuscolo nautico mattino
-            drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);       // Crepuscolo civile mattino (Alba Civile)
-            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba
-            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Ora d'oro
+            const intervals = [
+                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
+                { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
+                { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
+                { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
+                { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
+                { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
+                { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
+                { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
+                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
+            ];
 
-            // Giorno centrale
-            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
-
-            // Sera (Ora d'oro, Tramonto e Crepuscoli)
-            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Ora d'oro sera
-            drawSector(hSunsetStart, hSunset, PALETTE.sunriseSunset, rSlices);    // Tramonto
-            drawSector(hSunset, hDusk, PALETTE.civil, rSlices);                   // Crepuscolo civile sera
-            drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);                  // Crepuscolo nautico sera
-            drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);             // Crepuscolo astronomico sera
+            intervals.forEach(interval => {
+                if (interval.start < interval.end) {
+                    drawSector(interval.start, interval.end, interval.color, rSlices);
+                }
+            });
         }
 
         function drawSector(startH, endH, color, r) {
@@ -375,7 +443,31 @@
 
         function formatTime(date) {
             if (!date || isNaN(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function populateTable(times) {
+            const tbody = document.getElementById('times-table-body');
+            tbody.innerHTML = `
+                <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
+                <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
+                <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
+                <tr><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
+                <tr><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
+                <tr><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
+                <tr><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
+                <tr><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
+                <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
+                <tr><td>Inizio del tramonto</td><td>${formatTime(times.sunsetStart)}</td></tr>
+                <tr><td>Tramonto</td><td>${formatTime(times.sunset)}</td></tr>
+                <tr><td>Crepuscolo civile</td><td>${formatTime(times.dusk)}</td></tr>
+                <tr><td>Crepuscolo nautico</td><td>${formatTime(times.nauticalDusk)}</td></tr>
+                <tr><td>Crepuscolo astronomico</td><td>${formatTime(times.astronomicalDusk)}</td></tr>
+            `;
+        }
+
+        function toggleModal(show) {
+            document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
         }
 
         function updateHands() {
