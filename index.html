@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Avanzato</title>
+    <title>Sunclock 24H Corretto</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -55,7 +55,6 @@
             position: absolute;
             font-size: 14px;
             font-weight: bold;
-            color: #cbd5e1;
             width: 30px;
             height: 30px;
             text-align: center;
@@ -84,11 +83,12 @@
             border-top-left-radius: 4px;
             border-top-right-radius: 4px;
             z-index: 20;
+            transform: rotate(0deg);
         }
 
-        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } /* 24h Locali (Arancione/Oro) */
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } /* Secondi (Rossa) */
-        #hand-utc { width: 4px; height: 42%; background: #22c55e; } /* UTC (Verde) */
+        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
+        #hand-utc { width: 4px; height: 42%; background: #22c55e; } 
 
         #center-dot {
             position: absolute;
@@ -137,21 +137,12 @@
 
     <div id="clock-wrapper">
         <div id="clock-face">
-            <!-- Canvas per i colori del sole e la corona dei minuti -->
             <canvas id="clockCanvas" width="500" height="500"></canvas>
-            
-            <!-- Contenitore per i numeri delle ore -->
             <div id="hour-numbers-container"></div>
-
-            <!-- La Luna -->
             <div id="moon-icon">🌕</div>
-
-            <!-- Lancette -->
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
-            
-            <!-- Centro -->
             <div id="center-dot"></div>
         </div>
     </div>
@@ -175,15 +166,14 @@
         const cy = 250;
         const radius = 245;
 
-        // Palette di colori richiesta
         const PALETTE = {
-            night: '#050811',         // Notte (Nero profondo)
-            astro: '#172554',         // Crepuscolo Astronomico
-            naut: '#1e3a8a',          // Crepuscolo Nautico
-            civil: '#3b82f6',         // Crepuscolo Civile
-            golden: '#eab308',        // Ora d'oro (Giallo intenso)
-            sunriseSunset: '#f97316', // Alba / Tramonto (Arancione brillante)
-            day: '#bae6fd'            // Giorno (Azzurro chiaro)
+            night: '#050811',         
+            astro: '#172554',         
+            naut: '#1e3a8a',          
+            civil: '#3b82f6',         
+            golden: '#eab308',        
+            sunriseSunset: '#f97316', 
+            day: '#bae6fd'            
         };
 
         function initClock() {
@@ -193,7 +183,7 @@
                         updateSunClock(position.coords.latitude, position.coords.longitude);
                     },
                     (error) => {
-                        updateSunClock(41.9028, 12.4964); // Fallback Roma
+                        updateSunClock(41.9028, 12.4964); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
                     }
                 );
@@ -209,24 +199,16 @@
 
             ctx.clearRect(0, 0, 500, 500);
 
-            // 1. Disegna le fasce solari sul canvas
             drawSunSlices(times);
-
-            // 2. Disegna la tacca dei minuti esterna
             drawMinuteRing();
-
-            // 3. Posiziona i numeri delle ore (1-24, con 24 in basso)
             createHourNumbers(times);
-
-            // 4. Posiziona la Luna
             updateMoon(moonPos);
 
-            // 5. Aggiorna i testi informativi nel pannello
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(times.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(times.sunset);
             document.getElementById('txt-noon').innerText = formatTime(times.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(times.nightEnd); // o nadir approssimativo
+            document.getElementById('txt-midnight').innerText = formatTime(times.nightEnd);
             document.getElementById('txt-mgold').innerText = formatTime(times.goldenHourEnd);
             document.getElementById('txt-egold').innerText = formatTime(times.goldenHour);
         }
@@ -236,14 +218,13 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // Con 24 in basso e 12 in alto: 
+        // 12 ore = 0 gradi (verso l'alto), 24 ore = 180 gradi (verso il basso)
         function hoursToAngle(h) {
-            // 24 ore = 360 gradi. 
-            // Visto che il 24 (00:00) è in basso, partiamo da +90 gradi (Math.PI / 2) in senso orario.
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            return ((h - 12) / 24) * Math.PI * 2;
         }
 
         function drawSunSlices(times) {
-            // Estrazione orari chiave
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hNautDawn = timeToHours(times.nauticalDawn);
             const hDawn = timeToHours(times.dawn);
@@ -255,35 +236,20 @@
             const hDusk = timeToHours(times.dusk);
             const hNautDusk = timeToHours(times.nauticalDusk);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
-            const hSolarNoon = timeToHours(times.solarNoon);
 
-            // Sfondo predefinito: Notte profonda (Nero)
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
-            // Disegno sequenziale delle fasce dal centro (raggio ridotto per lasciare spazio alla ghiera dei minuti)
             const rSlices = radius - 25;
 
-            // Mattino (Dawn / Crepuscoli / Alba / Ora d'oro)
             drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
             drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
             drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            
-            // Momento esatto dell'alba (finestra stretta di transizione arancione)
             drawSector(hSunrise - 0.1, hSunrise + 0.1, PALETTE.sunriseSunset, rSlices);
-            
-            // Ora d'oro mattino (Giallo)
             drawSector(hSunrise, hGoldenEnd, PALETTE.golden, rSlices);
-            
-            // Pieno Giorno
             drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
-
-            // Sera (Ora d'oro / Tramonto / Crepuscoli)
             drawSector(hGoldenStart, hSunset, PALETTE.golden, rSlices);
-            
-            // Momento esatto del tramonto (Arancione)
             drawSector(hSunset - 0.1, hSunset + 0.1, PALETTE.sunriseSunset, rSlices);
-            
             drawSector(hSunset, hDusk, PALETTE.civil, rSlices);
             drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);
             drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);
@@ -300,7 +266,7 @@
 
         function drawMinuteRing() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                const angle = ((i - 15) / 60) * Math.PI * 2;
                 const isMajor = i % 5 === 0;
                 const len = isMajor ? 12 : 6;
 
@@ -337,9 +303,7 @@
             const hSunset = timeToHours(times.sunset);
 
             for (let i = 1; i <= 24; i++) {
-                // Il 24 è in basso (angolo corrispondente a 24 / 0 ore)
-                const checkHour = i === 24 ? 0 : i;
-                const angleRad = hoursToAngle(checkHour);
+                const angleRad = hoursToAngle(i);
                 
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
@@ -350,8 +314,7 @@
                 div.style.top = `${hy}px`;
                 div.innerText = i;
 
-                // Testo chiaro sulle ore notturne o scure
-                if (checkHour < hSunrise || checkHour > hSunset) {
+                if (i < hSunrise || i > hSunset) {
                     div.style.color = '#ffffff';
                 } else {
                     div.style.color = '#0f172a';
@@ -363,9 +326,8 @@
 
         function updateMoon(moonPos) {
             const moonIcon = document.getElementById('moon-icon');
-            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
-            // Adattamento della rotazione al nuovo orientamento con 24 in basso (+90 gradi)
-            const angleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 24;
+            const angleRad = hoursToAngle(moonClockAngle);
             const dist = radius * 0.52;
             const mx = cx + dist * Math.cos(angleRad);
             const my = cy + dist * Math.sin(angleRad);
@@ -385,21 +347,18 @@
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancetta 24h (Arancione/Oro) - Calcolata con sfasamento di +90° per il 24 in basso
-            const hourDeg = (h / 24) * 360 + 90;
+            // Conversione corretta in gradi (360 gradi / 24 ore = 15 gradi per ora)
+            const hourDeg = (h / 24) * 360;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            // Lancetta Secondi (Rossa)
-            const secDeg = (s / 60) * 360 + 90;
+            const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Lancetta UTC (Verde)
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 + 90;
+            const utcDeg = (utcHours / 24) * 360;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
         }
 
-        // Avvio
         initClock();
         setInterval(updateHands, 50);
     </script>
