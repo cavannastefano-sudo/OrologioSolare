@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H App</title>
+    <title>Sunclock 24H Advanced App</title>
     <!-- Collegamento al Manifest per installare l'app su Chrome e dispositivi Mobile -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -30,11 +30,30 @@
             user-select: none;
         }
 
-        h1 {
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: min(90vw, 480px);
             margin-bottom: 5px;
-            color: #38bdf8;
-            font-size: 1.4rem;
         }
+
+        h1 {
+            margin: 0;
+            color: #38bdf8;
+            font-size: 1.3rem;
+        }
+
+        #btn-settings {
+            background: #1e293b;
+            color: #38bdf8;
+            border: 1px solid #475569;
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        #btn-settings:hover { background: #334155; }
 
         #clock-wrapper {
             position: relative;
@@ -118,9 +137,9 @@
         }
 
         #info-panel {
-            margin-top: 20px;
+            margin-top: 15px;
             background: #1e293b;
-            padding: 12px 20px;
+            padding: 10px 15px;
             border-radius: 10px;
             font-size: 0.85rem;
             color: #cbd5e1;
@@ -135,8 +154,8 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 6px;
-            margin-top: 8px;
-            font-size: 0.8rem;
+            margin-top: 6px;
+            font-size: 0.78rem;
         }
 
         .info-grid span {
@@ -144,19 +163,27 @@
             font-weight: 600;
         }
 
-        #btn-times {
-            margin-top: 10px;
+        .panel-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .action-btn {
             background: #38bdf8;
             color: #0f172a;
             border: none;
-            padding: 6px 14px;
+            padding: 5px 12px;
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
+            font-size: 0.8rem;
         }
-        #btn-times:hover { background: #0ea5e9; }
+        .action-btn:hover { background: #0ea5e9; }
 
-        #modal-times {
+        /* Modali */
+        .modal {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -183,7 +210,7 @@
             align-items: center;
             border-bottom: 1px solid #334155;
             padding-bottom: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .close-btn {
             background: none;
@@ -203,11 +230,34 @@
             text-align: left;
         }
         table.times-table th { color: #38bdf8; }
+
+        .form-group {
+            margin-bottom: 12px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 6px 8px;
+            background: #0f172a;
+            border: 1px solid #475569;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
     </style>
 </head>
 <body>
 
-    <h1>Orologio Solare 24H</h1>
+    <header>
+        <h1>Sunclock 24H</h1>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
+    </header>
 
     <div id="clock-wrapper">
         <div id="clock-face">
@@ -231,14 +281,17 @@
             <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
             <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
         </div>
-        <button id="btn-times" onclick="toggleModal(true)">Tutti i tempi</button>
+        <div class="panel-buttons">
+            <button class="action-btn" onclick="toggleTimesModal(true)">Tutti i tempi</button>
+        </div>
     </div>
 
-    <div id="modal-times">
+    <!-- Modale Tutti i Tempi -->
+    <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <strong>Tutti i tempi</strong>
-                <button class="close-btn" onclick="toggleModal(false)">✕</button>
+                <strong>Tutti i tempi solari</strong>
+                <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
             </div>
             <table class="times-table">
                 <thead>
@@ -246,6 +299,28 @@
                 </thead>
                 <tbody id="times-table-body"></tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modale Impostazioni Posizione -->
+    <div id="modal-settings" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Imposta Posizione</strong>
+                <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Latitudine:</label>
+                <input type="number" step="any" id="input-lat" value="45.04">
+            </div>
+            <div class="form-group">
+                <label>Longitudine:</label>
+                <input type="number" step="any" id="input-lon" value="9.68">
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
+                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
+            </div>
         </div>
     </div>
 
@@ -275,12 +350,30 @@
         let cachedLon = 9.68;
 
         function initClock() {
+            // Controlla se ci sono coordinate salvate in precedenza
+            const savedLat = localStorage.getItem('sunclock_lat');
+            const savedLon = localStorage.getItem('sunclock_lon');
+            if (savedLat && savedLon) {
+                cachedLat = parseFloat(savedLat);
+                cachedLon = parseFloat(savedLon);
+                document.getElementById('input-lat').value = cachedLat;
+                document.getElementById('input-lon').value = cachedLon;
+                updateSunClock(cachedLat, cachedLon);
+            } else {
+                useGPSLocation();
+            }
+        }
+
+        function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         cachedLat = position.coords.latitude;
                         cachedLon = position.coords.longitude;
+                        document.getElementById('input-lat').value = cachedLat;
+                        document.getElementById('input-lon').value = cachedLon;
                         updateSunClock(cachedLat, cachedLon);
+                        toggleSettingsModal(false);
                     },
                     (error) => {
                         updateSunClock(cachedLat, cachedLon); 
@@ -289,6 +382,19 @@
                 );
             } else {
                 updateSunClock(cachedLat, cachedLon);
+            }
+        }
+
+        function applyManualLocation() {
+            const lat = parseFloat(document.getElementById('input-lat').value);
+            const lon = parseFloat(document.getElementById('input-lon').value);
+            if (!isNaN(lat) && !isNaN(lon)) {
+                cachedLat = lat;
+                cachedLon = lon;
+                localStorage.setItem('sunclock_lat', lat);
+                localStorage.setItem('sunclock_lon', lon);
+                updateSunClock(cachedLat, cachedLon);
+                toggleSettingsModal(false);
             }
         }
 
@@ -494,8 +600,12 @@
             `;
         }
 
-        function toggleModal(show) {
+        function toggleTimesModal(show) {
             document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
+        }
+
+        function toggleSettingsModal(show) {
+            document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
         }
 
         function updateHands() {
