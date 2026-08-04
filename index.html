@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Corretto</title>
+    <title>Sunclock 24H Definitivo</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -250,8 +250,8 @@
         };
 
         let cachedTimes = null;
-        let cachedLat = 41.9028;
-        let cachedLon = 12.4964;
+        let cachedLat = 45.04;
+        let cachedLon = 9.68;
 
         function initClock() {
             if (navigator.geolocation) {
@@ -263,7 +263,7 @@
                     },
                     (error) => {
                         updateSunClock(cachedLat, cachedLon); 
-                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
+                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Piacenza).";
                     }
                 );
             } else {
@@ -337,12 +337,9 @@
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            const hAstroDawn = timeToHours(times.astronomicalDawn);
-            const hAstroDusk = timeToHours(times.astronomicalDusk);
-
-            // 2. Disegna sopra tutti i crepuscoli e le fasce diurne ordinate
+            // 2. Disegna sopra solo le fasce dei crepuscoli e del giorno, lasciando nero tutto il resto
             const intervals = [
-                { start: hAstroDawn, end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
+                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
                 { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
                 { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
@@ -352,7 +349,7 @@
                 { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
                 { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
                 { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
-                { start: timeToHours(times.nauticalDusk), end: hAstroDusk, color: PALETTE.astro }
+                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
             ];
 
             intervals.forEach(interval => {
@@ -436,14 +433,10 @@
 
         function updateSunAndMoon(times) {
             const now = new Date();
-            const h = timeToHours(now);
+            const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
 
-            // Posizione del Sole basata sull'orario corrente rispetto agli orari solari (Alba/Tramonto)
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunset = timeToHours(times.sunset);
-            let sunClockAngle = h; // di default segue le 24h
-
-            const sunAngleRad = hoursToAngle(sunClockAngle);
+            // Posizione del Sole basata sull'orario corrente (coerente con le lancette)
+            const sunAngleRad = hoursToAngle(h);
             const sunDist = radius * 0.52;
             const sx = cx + sunDist * Math.cos(sunAngleRad);
             const sy = cy + sunDist * Math.sin(sunAngleRad);
@@ -451,9 +444,9 @@
             sunIcon.style.left = `${sx}px`;
             sunIcon.style.top = `${sy}px`;
 
-            // Posizione della Luna (offset stimato sul ciclo lunare o orario)
-            const moonClockAngle = (h + 6) % 24; // offset di 6 ore indicativo per la luna
-            const moonAngleRad = hoursToAngle(moonClockAngle);
+            // Posizione della Luna sfalsata di 12 ore rispetto al sole (oppure calcolata)
+            const moonHour = (h + 12) % 24;
+            const moonAngleRad = hoursToAngle(moonHour);
             const moonDist = radius * 0.65;
             const mx = cx + moonDist * Math.cos(moonAngleRad);
             const my = cy + moonDist * Math.sin(moonAngleRad);
