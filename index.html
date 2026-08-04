@@ -7,7 +7,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
-    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -286,6 +285,10 @@
     </div>
 
     <script>
+        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+        SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+        SunCalc.addTime(-6, 'dawn', 'dusk');
+
         const canvas = document.getElementById('clockCanvas');
         const ctx = canvas.getContext('2d');
         const cx = 250;
@@ -433,11 +436,11 @@
 
             ctx.clearRect(0, 0, 500, 500);
 
-            drawSolarSectorsByElevation(now, lat, lon);
+            drawSunSlicesSafe(cachedTimes);
             drawSolarMeridianLines(cachedTimes);
-            drawMinuteRing(now, lat, lon);
+            drawMinuteRingSafe(cachedTimes);
             drawClockNumbers(cachedTimes);
-            updatePageBackground(now, lat, lon);
+            updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
@@ -447,79 +450,6 @@
             document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
             document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
             document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
-        }
-
-        function getSunElevationColor(altitudeDeg) {
-            if (altitudeDeg >= 6) return PALETTE.day;
-            if (altitudeDeg >= 0) return PALETTE.golden;
-            if (altitudeDeg >= -0.833) return PALETTE.sunriseSunset;
-            if (altitudeDeg >= -6) return PALETTE.civil;
-            if (altitudeDeg >= -12) return PALETTE.naut;
-            if (altitudeDeg >= -18) return PALETTE.astro;
-            return PALETTE.night;
-        }
-
-        function drawSolarSectorsByElevation(date, lat, lon) {
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const baseDate = new Date(date);
-            baseDate.setHours(0, 0, 0, 0);
-
-            for (let i = 0; i < 1440; i += 2) {
-                const fraction = i / 1440;
-                const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
-                const astroTime = Astronomy.MakeTime(checkDate);
-                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-
-                const color = getSunElevationColor(hor.altitude);
-                const startAngle = (fraction) * Math.PI * 2 - Math.PI / 2;
-                const endAngle = ((i + 2) / 1440) * Math.PI * 2 - Math.PI / 2;
-
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.arc(cx, cy, radius, startAngle, endAngle);
-                ctx.closePath();
-                ctx.fillStyle = color;
-                ctx.fill();
-            }
-        }
-
-        function drawMinuteRing(date, lat, lon) {
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const baseDate = new Date(date);
-            baseDate.setHours(0, 0, 0, 0);
-
-            for (let i = 0; i < 60; i++) {
-                const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
-                const astroTime = Astronomy.MakeTime(checkDate);
-                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-                const sectorColor = getSunElevationColor(hor.altitude);
-
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 14 : 7;
-
-                const x1 = cx + (radius - len) * Math.cos(angle);
-                const y1 = cy + (radius - len) * Math.sin(angle);
-                const x2 = cx + radius * Math.cos(angle);
-                const y2 = cy + radius * Math.sin(angle);
-
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
-                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
-                ctx.stroke();
-            }
-        }
-
-        function updatePageBackground(date, lat, lon) {
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const astroTime = Astronomy.MakeTime(date);
-            const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-            const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-            const currentColor = getSunElevationColor(hor.altitude);
-            document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
         }
 
         function timeToHours(date) {
@@ -533,6 +463,71 @@
 
         function isValidDate(d) {
             return d instanceof Date && !isNaN(d);
+        }
+
+        function getIntervalColorSafe(h, times) {
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? 4.0;
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? 5.0;
+            const hDawn = timeToHours(times.dawn) ?? 5.5;
+            const hSunrise = timeToHours(times.sunrise) ?? 6.0;
+            const hSunriseEnd = timeToHours(times.sunriseEnd) ?? 6.2;
+            const hGoldenEnd = timeToHours(times.goldenHourEnd) ?? 7.0;
+            const hGoldenStart = timeToHours(times.goldenHour) ?? 19.0;
+            const hSunsetStart = timeToHours(times.sunsetStart) ?? 20.0;
+            const hSunset = timeToHours(times.sunset) ?? 20.2;
+            const hDusk = timeToHours(times.dusk) ?? 21.0;
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? 22.0;
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? 23.0;
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            if (h >= hSunrise && h < hSunriseEnd) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEnd && h < hGoldenEnd) return PALETTE.golden;
+            if (h >= hGoldenEnd && h < hGoldenStart) return PALETTE.day;
+            if (h >= hGoldenStart && h < hSunsetStart) return PALETTE.golden;
+            if (h >= hSunsetStart && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
+            return PALETTE.night;
+        }
+
+        function drawSunSlicesSafe(times) {
+            ctx.fillStyle = PALETTE.night;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            let rawIntervals = [
+                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
+                { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
+                { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
+                { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
+                { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
+                { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
+                { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
+                { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
+                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
+            ];
+
+            let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null && i.start < i.end);
+            validIntervals.sort((a, b) => a.start - b.start);
+
+            validIntervals.forEach(interval => {
+                drawSector(interval.start, interval.end, interval.color, radius);
+            });
+        }
+
+        function drawSector(startH, endH, color, r) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
         }
 
         function drawSolarMeridianLines(times) {
@@ -563,12 +558,35 @@
             }
         }
 
+        function drawMinuteRingSafe(times) {
+            for (let i = 0; i < 60; i++) {
+                let hEq = (i / 60) * 24 - 12;
+                if(hEq < 0) hEq += 24;
+                const sectorColor = getIntervalColorSafe(hEq, times);
+
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const len = (i % 5 === 0) ? 14 : 7;
+
+                const x1 = cx + (radius - len) * Math.cos(angle);
+                const y1 = cy + (radius - len) * Math.sin(angle);
+                const x2 = cx + radius * Math.cos(angle);
+                const y2 = cy + radius * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+                ctx.stroke();
+            }
+        }
+
         function drawClockNumbers(times) {
             const container = document.getElementById('clock-elements-container');
             container.innerHTML = '';
             
-            const hSunrise = isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.0;
-            const hSunset = isValidDate(times.sunset) ? timeToHours(times.sunset) : 18.0;
+            const hSunrise = timeToHours(times.sunrise) ?? 6.0;
+            const hSunset = timeToHours(times.sunset) ?? 18.0;
 
             ctx.font = 'bold 15px sans-serif';
             ctx.textBaseline = 'middle';
@@ -598,6 +616,14 @@
                 div.innerText = String(m).padStart(2, '0');
                 container.appendChild(div);
             }
+        }
+
+        function updatePageBackground(times) {
+            if (!times) return;
+            const now = new Date();
+            const h = timeToHours(now);
+            const currentColor = getIntervalColorSafe(h, times);
+            document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
         }
 
         function formatTime(date) {
@@ -676,8 +702,8 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            if (cachedLat && cachedLon) {
-                updatePageBackground(now, cachedLat, cachedLon);
+            if (cachedTimes) {
+                updatePageBackground(cachedTimes);
             }
         }
 
