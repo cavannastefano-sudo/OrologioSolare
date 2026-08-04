@@ -37,6 +37,21 @@
             padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
         }
         #btn-settings:hover { background: #334155; }
+
+        /* Stile per l'orologio digitale in alto */
+        #digital-clock {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #38bdf8;
+            background: #1e293b;
+            padding: 6px 16px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            margin-bottom: 12px;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
         #clock-wrapper {
             position: relative;
             width: min(90vw, 480px);
@@ -63,13 +78,14 @@
             z-index: 20;
         }
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
-        #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } /* Verde = minuti */
+        #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
         #hand-moon { width: 2px; height: 42%; background: #94a3b8; z-index: 20; } 
 
         #moon-icon {
-            position: absolute; font-size: 14px; z-index: 25;
+            position: absolute; font-size: 15px; z-index: 25;
             pointer-events: none; transform: translate(-50%, -50%); display: none;
+            background: rgba(0, 0, 0, 0.6); border-radius: 50%; padding: 2px;
         }
         #center-dot {
             position: absolute; width: 14px; height: 14px;
@@ -124,6 +140,9 @@
         <h1>Sunclock 24H</h1>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
+
+    <!-- Orologio digitale in alto -->
+    <div id="digital-clock">00:00:00</div>
 
     <div id="clock-wrapper">
         <div id="clock-face">
@@ -360,7 +379,6 @@
         }
 
         function drawSolarMeridianLines(times) {
-            // Linea bianca per il Mezzogiorno solare
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
                 const noonAngle = hoursToAngle(noonHours);
@@ -372,7 +390,6 @@
                 ctx.stroke();
             }
 
-            // Linea rossa per la Mezzanotte solare (Nadir)
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
                 const nadirAngle = hoursToAngle(nadirHours);
@@ -510,6 +527,10 @@
 
         function updateHands() {
             const now = new Date();
+            
+            // Aggiorna l'orologio digitale in alto
+            document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
@@ -534,8 +555,9 @@
                 const moonDeg = (moonHours / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
+                // Spostato sul bordo esterno (raggio * 0.85 anziché 0.42)
                 const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
-                const moonTipDist = radius * 0.42;
+                const moonTipDist = radius * 0.83;
                 const moonIconX = cx + moonTipDist * Math.cos(moonRad);
                 const moonIconY = cy + moonTipDist * Math.sin(moonRad);
                 const moonEl = document.getElementById('moon-icon');
