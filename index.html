@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Dinamico</title>
+    <title>Sunclock 24H Dettagliato</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
-            /* Sfondo della pagina dinamico in base al momento della giornata */
-            background-color: #050811;
+            background-color: #000000;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
@@ -168,15 +167,15 @@
         const cy = 250;
         const radius = 245;
 
-        // Palette con notte rigorosamente nera (#000000)
+        // Palette con notte rigorosamente nera (#000000) e tonalità dettagliate
         const PALETTE = {
             night: '#000000',         
             astro: '#172554',         
             naut: '#1e3a8a',          
             civil: '#3b82f6',         
-            golden: '#eab308',        
-            sunriseSunset: '#f97316', 
-            day: '#bae6fd'            
+            sunriseSunset: '#f97316', // Arancione per alba e tramonto
+            golden: '#eab308',        // Giallo per l'ora d'oro
+            day: '#bae6fd'            // Azzurro per il giorno
         };
 
         let cachedTimes = null;
@@ -233,27 +232,31 @@
             const hNautDawn = timeToHours(times.nauticalDawn);
             const hDawn = timeToHours(times.dawn);
             const hSunrise = timeToHours(times.sunrise);
+            const hSunriseEnd = timeToHours(times.sunriseEnd);
             const hGoldenEnd = timeToHours(times.goldenHourEnd);
             
             const hGoldenStart = timeToHours(times.goldenHour);
+            const hSunsetStart = timeToHours(times.sunsetStart);
             const hSunset = timeToHours(times.sunset);
             const hDusk = timeToHours(times.dusk);
             const hNautDusk = timeToHours(times.nauticalDusk);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
 
+            // Sfondo predefinito: Notte nera
             ctx.fillStyle = PALETTE.night;
             ctx.fillRect(0, 0, 500, 500);
 
             const rSlices = radius - 25;
 
+            // Sequenza completa delle fasce basata sulla tabella degli eventi
             drawSector(hAstroDawn, hNautDawn, PALETTE.astro, rSlices);
             drawSector(hNautDawn, hDawn, PALETTE.naut, rSlices);
             drawSector(hDawn, hSunrise, PALETTE.civil, rSlices);
-            drawSector(hSunrise - 0.1, hSunrise + 0.1, PALETTE.sunriseSunset, rSlices);
-            drawSector(hSunrise, hGoldenEnd, PALETTE.golden, rSlices);
-            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);
-            drawSector(hGoldenStart, hSunset, PALETTE.golden, rSlices);
-            drawSector(hSunset - 0.1, hSunset + 0.1, PALETTE.sunriseSunset, rSlices);
+            drawSector(hSunrise, hSunriseEnd, PALETTE.sunriseSunset, rSlices); // Alba -> Fine dell'alba
+            drawSector(hSunriseEnd, hGoldenEnd, PALETTE.golden, rSlices);       // Ora d'oro mattino
+            drawSector(hGoldenEnd, hGoldenStart, PALETTE.day, rSlices);           // Giorno
+            drawSector(hGoldenStart, hSunsetStart, PALETTE.golden, rSlices);      // Ora d'oro sera
+            drawSector(hSunsetStart, hSunset, PALETTE.sunriseSunset, rSlices);    // Inizio tramonto -> Tramonto
             drawSector(hSunset, hDusk, PALETTE.civil, rSlices);
             drawSector(hDusk, hNautDusk, PALETTE.naut, rSlices);
             drawSector(hNautDusk, hAstroDusk, PALETTE.astro, rSlices);
@@ -342,7 +345,6 @@
             moonIcon.style.display = 'block';
         }
 
-        // Aggiorna lo sfondo della pagina seguendo il colore della fascia oraria corrente
         function updatePageBackground(times) {
             if (!times) return;
             const now = new Date();
