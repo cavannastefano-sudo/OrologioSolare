@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Sun Clock</title>
+    <!-- Libreria SunCalc per i calcoli astronomici -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #93c5fd;
+        }
+
+        .clock-container {
+            position: relative;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: conic-gradient(#1e1b4b 0deg, #1e3a8a 90deg, #0284c7 180deg, #1e3a8a 270deg, #1e1b4b 360deg);
+            border: 6px solid #374151;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Lancetta delle 24 ore */
+        .sun-hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            width: 4px;
+            height: 110px;
+            background: #fbbf24;
+            transform-origin: bottom center;
+            border-radius: 2px;
+            box-shadow: 0 0 10px #fbbf24;
+        }
+
+        .center-dot {
+            width: 14px;
+            height: 14px;
+            background: #fbbf24;
+            border-radius: 50%;
+            z-index: 10;
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.8);
+        }
+
+        .info-card {
+            margin-top: 30px;
+            background: #1f2937;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #374151;
+            width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            font-size: 0.95rem;
+        }
+
+        .info-row span {
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .location-status {
+            font-size: 0.8rem;
+            color: #9ca3af;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Orologio Solare 24H</h1>
+
+    <div class="clock-container">
+        <div class="sun-hand" id="sunHand"></div>
+        <div class="center-dot"></div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-row">Alba: <span id="sunrise">--:--</span></div>
+        <div class="info-row">Mezzogiorno: <span id="solarnoon">--:--</span></div>
+        <div class="info-row">Tramonto: <span id="sunset">--:--</span></div>
+        <div class="info-row">Orario Locale: <span id="current-time">--:--</span></div>
+        <div class="location-status" id="locationStatus">Rilevamento posizione in corso...</div>
+    </div>
+
+    <script>
+        function initSunClock() {
+            // Coordinate di fallback (es. Roma) se l'utente nega la geolocalizzazione
+            let lat = 41.9028;
+            let lon = 12.4964;
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        lat = position.coords.latitude;
+                        lon = position.coords.longitude;
+                        document.getElementById('locationStatus').innerText = `Posizione attiva (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
+                        updateClockData(lat, lon);
+                    },
+                    (error) => {
+                        document.getElementById('locationStatus').innerText = "Geolocalizzazione negata. Uso coordinate predefinite.";
+                        updateClockData(lat, lon);
+                    }
+                );
+            } else {
+                updateClockData(lat, lon);
+            }
+        }
+
+        function updateClockData(lat, lon) {
+            const now = new Date();
+            
+            // Calcoli tramite la libreria SunCalc
+            const times = SunCalc.getTimes(now, lat, lon);
+
+            // Formattazione orari
+            document.getElementById('sunrise').innerText = formatTime(times.sunrise);
+            document.getElementById('solarnoon').innerText = formatTime(times.solarNoon);
+            document.getElementById('sunset').innerText = formatTime(times.sunset);
+            document.getElementById('current-time').innerText = now.toLocaleTimeString();
+
+            // Calcolo rotazione lancetta 24h (0 - 360 gradi)
+            const hours = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+            const degrees = (hours / 24) * 360;
+            document.getElementById('sunHand').style.transform = `rotate(${degrees}deg)`;
+        }
+
+        function formatTime(date) {
+            if (!date || isNaN(date)) return "--:--";
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Avvio e aggiornamento continuo ogni secondo
+        initSunClock();
+        setInterval(() => {
+            const latMatch = document.getElementById('locationStatus').innerText.match(/Lat: ([^,]+)/);
+            const lonMatch = document.getElementById('locationStatus').innerText.match(/Lon: ([^)]+)/);
+            let lat = latMatch ? parseFloat(latMatch[1]) : 41.9028;
+            let lon = lonMatch ? parseFloat(lonMatch[1]) : 12.4964;
+            updateClockData(lat, lon);
+        }, 1000);
+    </script>
+</body>
+</html>
