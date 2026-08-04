@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Definitivo</title>
+    <title>Sunclock 24H Identico</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         body {
-            /* Ripristinato il colore di sfondo della pagina coerente con lo stile */
             background-color: #dbeafe;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
@@ -214,8 +213,9 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // Funzione matematica per posizionare il 12 in alto e far scorrere le ore in senso antiorario (stile Sunclock)
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return - (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function drawSunSlices(times) {
@@ -252,7 +252,7 @@
         function drawSector(startH, endH, color, r) {
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            ctx.arc(cx, cy, r, hoursToAngle(endH), hoursToAngle(startH));
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
@@ -260,7 +260,7 @@
 
         function drawMinuteRing() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = - (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const isMajor = i % 5 === 0;
                 const len = isMajor ? 10 : 5;
 
@@ -310,10 +310,10 @@
                 div.innerText = i;
 
                 if (hourVal >= hSunrise && hourVal < hSunset) {
-                    div.style.backgroundColor = 'rgba(255, 255, 255, 0.75)';
+                    div.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
                     div.style.color = '#0f172a';
                 } else {
-                    div.style.backgroundColor = 'rgba(15, 23, 42, 0.75)';
+                    div.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
                     div.style.color = '#ffffff';
                 }
 
@@ -344,14 +344,15 @@
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 90;
+            // Lancette sincronizzate perfettamente con il senso antiorario del quadrante
+            const hourDeg = - (h / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg + 90}deg)`;
 
-            const secDeg = (s / 60) * 360 - 90;
+            const secDeg = - (s / 60) * 360 - 90;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg + 90}deg)`;
 
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 - 90;
+            const utcDeg = - (utcHours / 24) * 360 - 90;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg + 90}deg)`;
         }
 
