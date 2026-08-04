@@ -277,7 +277,7 @@
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
             cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
+            cachedMoonIllumination = Suncalc.getMoonIllumination ? Suncalc.getMoonIllumination(now) : SunCalc.getMoonIllumination(now);
 
             updateMoonPhaseIcon(cachedMoonIllumination.phase);
 
@@ -526,47 +526,38 @@
         function updateHands() {
             const now = new Date();
             
-            // Orologio digitale in alto
             document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
 
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancetta ore (gialla)
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            // Lancetta minuti (verde)
             const minuteDeg = (m / 60) * 360;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-            // Lancetta secondi (rossa)
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Lancetta e icona della Luna in tempo reale basate sul momento in cui sorge/tramonta o sull'orario corrente proporzionale
-            if (cachedMoonTimes && cachedMoonTimes.rise && cachedMoonTimes.set) {
-                const moonRiseH = timeToHours(cachedMoonTimes.rise);
-                const moonSetH = timeToHours(cachedMoonTimes.set);
-                
-                // Calcoliamo l'ora corrente della luna rapportata al movimento giornaliero sul quadrante 24h
-                let moonCurrentH = moonRiseH + ((h - moonRiseH + 24) % 24);
-                if (moonCurrentH >= 24) moonCurrentH -= 24;
+            // Calcolo della posizione reale della luna in base all'azimut nel cielo attuale
+            const moonPos = SunCalc.getMoonPosition(now, cachedLat, cachedLon);
+            // Convertiamo l'azimut della luna in un'ora sul quadrante 24h (l'azimut 0/sud è mappato correttamente)
+            let moonHours = (12 + (moonPos.azimuth * 12 / Math.PI)) % 24;
+            if (moonHours < 0) moonHours += 24;
 
-                const moonDeg = (moonCurrentH / 24) * 360 - 180;
-                document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+            const moonDeg = (moonHours / 24) * 360 - 180;
+            document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-                // Icona della luna posizionata sul bordo esterno (raggio * 0.83)
-                const moonRad = ((moonCurrentH / 24) * Math.PI * 2) - Math.PI / 2;
-                const moonTipDist = radius * 0.83;
-                const moonIconX = cx + moonTipDist * Math.cos(moonRad);
-                const moonIconY = cy + moonTipDist * Math.sin(moonRad);
-                const moonEl = document.getElementById('moon-icon');
-                moonEl.style.left = `${moonIconX}px`;
-                moonEl.style.top = `${moonIconY}px`;
-                moonEl.style.display = 'block';
-            }
+            const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
+            const moonTipDist = radius * 0.83;
+            const moonIconX = cx + moonTipDist * Math.cos(moonRad);
+            const moonIconY = cy + moonTipDist * Math.sin(moonRad);
+            const moonEl = document.getElementById('moon-icon');
+            moonEl.style.left = `${moonIconX}px`;
+            moonEl.style.top = `${moonIconY}px`;
+            moonEl.style.display = 'block';
 
             if (cachedTimes) {
                 updatePageBackground(cachedTimes);
