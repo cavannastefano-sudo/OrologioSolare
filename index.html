@@ -7,7 +7,9 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
+    <!-- Librerie Astronomiche e di Mappa -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -426,9 +428,47 @@
             }
         }
 
+        function getPreciseSunTimes(date, lat, lon) {
+            // Usa Astronomy Engine per calcoli di precisione avanzata (evita bug alle alte latitudini)
+            const observer = new Astronomy.Observer(lat, lon, 0);
+            const jd = Astronomy.MakeTime(date);
+            
+            const searchDate = new Date(date);
+            searchDate.setHours(0, 0, 0, 0);
+
+            function getEventTime(astronomyBody, horizon, direction) {
+                try {
+                    const res = Astronomy.SearchRiseSet(astronomyBody, observer, direction, searchDate, 1);
+                    return res ? res.date : null;
+                } catch(e) {
+                    return null;
+                }
+            }
+
+            // Fallback su SunCalc per eventi che Astronomy Engine non mappa direttamente in un'unica chiamata
+            const scTimes = SunCalc.getTimes(date, lat, lon);
+            
+            return {
+                solarNoon: Astronomy.SearchHourAngle(Astronomy.Body.Sun, observer, 0, searchDate).date || scTimes.solarNoon,
+                nadir: scTimes.nadir,
+                astronomicalDawn: scTimes.astronomicalDawn,
+                nauticalDawn: scTimes.nauticalDawn,
+                dawn: scTimes.dawn,
+                sunrise: getEventTime(Astronomy.Body.Sun, 0, +1) || scTimes.sunrise,
+                sunriseEnd: scTimes.sunriseEnd,
+                goldenHourEnd: scTimes.goldenHourEnd,
+                goldenHour: scTimes.goldenHour,
+                sunsetStart: scTimes.sunsetStart,
+                sunset: getEventTime(Astronomy.Body.Sun, 0, -1) || scTimes.sunset,
+                dusk: scTimes.dusk,
+                nauticalDusk: scTimes.nauticalDusk,
+                astronomicalDusk: scTimes.astronomicalDusk
+            };
+        }
+
         function updateSunClock(lat, lon) {
             const now = new Date();
-            cachedTimes = SunCalc.getTimes(now, lat, lon);
+            cachedTimes = getPreciseSunTimes(now, lat, lon);
             cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(now);
 
