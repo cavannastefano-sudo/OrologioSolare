@@ -306,6 +306,7 @@
         }
 
         function hoursToAngle(h) {
+            // 12 in alto (-pi/2) e 24 in basso (+pi/2)
             return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
@@ -504,7 +505,6 @@
         initClock();
         setInterval(updateHands, 50);
 
-        // Registrazione Service Worker per Chrome e PWA
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.service.worker.js');
         }
