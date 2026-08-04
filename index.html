@@ -38,17 +38,60 @@
         }
         #btn-settings:hover { background: #334155; }
 
+        /* Contenitore per orologio digitale e informazioni sulla Luna affiancati */
+        #top-info-container {
+            display: flex;
+            gap: 10px;
+            width: min(90vw, 480px);
+            margin-bottom: 12px;
+            box-sizing: border-box;
+        }
+
         #digital-clock {
-            font-size: 1.8rem;
+            flex: 1;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #38bdf8;
             background: #1e293b;
-            padding: 6px 16px;
+            padding: 8px 12px;
             border-radius: 10px;
             border: 1px solid #475569;
-            margin-bottom: 12px;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        #moon-digital-panel {
+            flex: 1;
+            background: #1e293b;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+            box-sizing: border-box;
+        }
+
+        #moon-digital-icon {
+            font-size: 1.6rem;
+        }
+
+        #moon-digital-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+
+        #moon-digital-text span {
+            color: #38bdf8;
+            font-weight: 600;
         }
 
         #clock-wrapper {
@@ -79,13 +122,7 @@
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
-        #hand-moon { width: 2px; height: 42%; background: #94a3b8; z-index: 20; } 
 
-        #moon-icon {
-            position: absolute; font-size: 15px; z-index: 25;
-            pointer-events: none; transform: translate(-50%, -50%); display: none;
-            background: rgba(0, 0, 0, 0.6); border-radius: 50%; padding: 2px;
-        }
         #center-dot {
             position: absolute; width: 14px; height: 14px;
             background: #ef4444; border: 2px solid #fff; border-radius: 50%;
@@ -140,7 +177,16 @@
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
 
-    <div id="digital-clock">00:00:00</div>
+    <!-- Pannello superiore con Orologio Digitale e Informazioni Luna affiancati -->
+    <div id="top-info-container">
+        <div id="digital-clock">00:00:00</div>
+        <div id="moon-digital-panel">
+            <div id="moon-digital-icon">🌕</div>
+            <div id="moon-digital-text">
+                Luna: <span id="moon-info-text">Caricamento...</span>
+            </div>
+        </div>
+    </div>
 
     <div id="clock-wrapper">
         <div id="clock-face">
@@ -149,8 +195,6 @@
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
-            <div class="hand" id="hand-moon"></div>
-            <div id="moon-icon">🌕</div>
             <div id="center-dot"></div>
         </div>
     </div>
@@ -221,6 +265,7 @@
         };
 
         let cachedTimes = null;
+        let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
         let cachedLat = 45.04;
         let cachedLon = 9.68;
@@ -275,9 +320,10 @@
         function updateSunClock(lat, lon) {
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(now);
 
-            updateMoonPhaseIcon(cachedMoonIllumination.phase);
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
@@ -481,16 +527,26 @@
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        function updateMoonPhaseIcon(phase) {
-            const moonEl = document.getElementById('moon-icon');
-            if (phase < 0.03 || phase > 0.97) moonEl.innerText = "🌑";
-            else if (phase < 0.22) moonEl.innerText = "🌒";
-            else if (phase < 0.28) moonEl.innerText = "🌓";
-            else if (phase < 0.47) moonEl.innerText = "🌔";
-            else if (phase < 0.53) moonEl.innerText = "🌕";
-            else if (phase < 0.72) moonEl.innerText = "🌖";
-            else if (phase < 0.78) moonEl.innerText = "🌗";
-            else moonEl.innerText = "🌘";
+        function updateMoonDigitalPanel(illumination, moonTimes) {
+            const iconEl = document.getElementById('moon-digital-icon');
+            const textEl = document.getElementById('moon-info-text');
+            const phase = illumination.phase;
+
+            let phaseName = "";
+            let iconSymbol = "🌕";
+
+            if (phase < 0.03 || phase > 0.97) { iconSymbol = "🌑"; phaseName = "Luna Nuova"; }
+            else if (phase < 0.22) { iconSymbol = "🌒"; phaseName = "Crescente"; }
+            else if (phase < 0.28) { iconSymbol = "🌓"; phaseName = "Primo Quarto"; }
+            else if (phase < 0.47) { iconSymbol = "🌔"; phaseName = "Gibbosa Crescente"; }
+            else if (phase < 0.53) { iconSymbol = "🌕"; phaseName = "Luna Piena"; }
+            else if (phase < 0.72) { iconSymbol = "🌖"; phaseName = "Gibbosa Calante"; }
+            else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto"; }
+            else { iconSymbol = "🌘"; phaseName = "Calante"; }
+
+            iconEl.innerText = iconSymbol;
+            let riseStr = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            textEl.innerHTML = `${phaseName}<br>Sorge: ${riseStr}`;
         }
 
         function populateTable(times) {
@@ -538,22 +594,6 @@
 
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
-
-            const moonPos = SunCalc.getMoonPosition(now, cachedLat, cachedLon);
-            let moonHours = (12 + (moonPos.azimuth * 12 / Math.PI)) % 24;
-            if (moonHours < 0) moonHours += 24;
-
-            const moonDeg = (moonHours / 24) * 360 - 180;
-            document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
-
-            const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
-            const moonTipDist = radius * 0.83;
-            const moonIconX = cx + moonTipDist * Math.cos(moonRad);
-            const moonIconY = cy + moonTipDist * Math.sin(moonRad);
-            const moonEl = document.getElementById('moon-icon');
-            moonEl.style.left = `${moonIconX}px`;
-            moonEl.style.top = `${moonIconY}px`;
-            moonEl.style.display = 'block';
 
             if (cachedTimes) {
                 updatePageBackground(cachedTimes);
