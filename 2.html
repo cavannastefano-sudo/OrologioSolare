@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunclock 24H Perfetto</title>
+    <!-- Libreria SunCalc -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <style>
+        body {
+            background-color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #f8fafc;
+            transition: background-color 1s ease;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            color: #38bdf8;
+            font-size: 1.4rem;
+        }
+
+        #clock-wrapper {
+            position: relative;
+            width: 500px;
+            height: 500px;
+        }
+
+        #clock-face {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: #000;
+            border: 4px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hour-num {
+            position: absolute;
+            font-size: 14px;
+            font-weight: bold;
+            color: #cbd5e1;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            line-height: 30px;
+            z-index: 10;
+            margin-left: -15px;
+            margin-top: -15px;
+        }
+
+        #moon-icon {
+            position: absolute;
+            font-size: 22px;
+            z-index: 8;
+            margin-left: -11px;
+            margin-top: -11px;
+            display: none;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
+        }
+
+        .hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            z-index: 20;
+        }
+
+        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
+        #hand-utc { width: 4px; height: 42%; background: #22c55e; } 
+
+        #center-dot {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: #ef4444;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            margin-left: -9px;
+            margin-top: -9px;
+            z-index: 25;
+        }
+
+        #info-panel {
+            margin-top: 20px;
+            background: #1e293b;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            text-align: center;
+            border: 1px solid #475569;
+            width: 460px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 0.8rem;
+        }
+
+        .info-grid span {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        #btn-times {
+            margin-top: 10px;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #btn-times:hover { background: #0ea5e9; }
+
+        #modal-times {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            width: 380px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #475569;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            color: #f8fafc;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        table.times-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        table.times-table th, table.times-table td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #334155;
+            text-align: left;
+        }
+        table.times-table th { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+    <h1>Orologio Solare 24H</h1>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            <div id="hour-numbers-container"></div>
+            <div id="moon-icon">🌙</div>
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-utc"></div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <div id="info-panel">
+        <div id="location-text">Rilevamento posizione in corso...</div>
+        <div class="info-grid">
+            <div>Alba: <span id="txt-sunrise">--:--</span></div>
+            <div>Tramonto: <span id="txt-sunset">--:--</span></div>
+            <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
+            <div>Mezzanotte S.: <span id="txt-midnight">--:--</span></div>
+            <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
+            <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
+        </div>
+        <button id="btn-times" onclick="toggleModal(true)">Tutti i tempi</button>
+    </div>
+
+    <div id="modal-times">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Tutti i tempi</strong>
+                <button class="close-btn" onclick="toggleModal(false)">✕</button>
+            </div>
+            <table class="times-table">
+                <thead>
+                    <tr><th>Evento</th><th>Tempo</th></tr>
+                </thead>
+                <tbody id="times-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 250;
+        const cy = 250;
+        const radius = 248;
+
+        const PALETTE = {
+            night: '#000000',         
+            astro: '#172554',         
+            naut: '#1e3a8a',          
+            civil: '#3b82f6',         
+            sunriseSunset: '#f97316', 
+            golden: '#eab308',        
+            day: '#bae6fd'            
+        };
+
+        let cachedTimes = null;
+
+        function initClock() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        updateSunClock(position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        updateSunClock(41.9028, 12.4964); 
+                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
+                    }
+                );
+            } else {
+                updateSunClock(41.9028, 12.4964);
+            }
+        }
+
+        function updateSunClock(lat, lon) {
+            const now = new Date();
+            cachedTimes = SunCalc.getTimes(now, lat, lon);
+            const moonPos = SunCalc.getMoonPosition(now, lat, lon);
+
+            ctx.clearRect(0, 0, 500, 500);
+
+            drawSunSlices(cachedTimes);
+            drawMinuteRing(cachedTimes);
+            createHourNumbers(cachedTimes);
+            updateMoon(moonPos);
+            updatePageBackground(cachedTimes);
+            populateTable(cachedTimes);
+
+            document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
+            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
+            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
+            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+        }
+
+        function timeToHours(date) {
+            if (!date || isNaN(date)) return 0;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+        }
+
+        function hoursToAngle(h) {
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+        }
+
+        function getIntervalColor(h, times) {
+            const hAstroDawn = timeToHours(times.astronomicalDawn);
+            const hNautDawn = timeToHours(times.nauticalDawn);
+            const hDawn = timeToHours(times.dawn);
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunriseEnd = timeToHours(times.sunriseEnd);
+            const hGoldenEnd = timeToHours(times.goldenHourEnd);
+            const hGoldenStart = timeToHours(times.goldenHour);
+            const hSunsetStart = timeToHours(times.sunsetStart);
+            const hSunset = timeToHours(times.sunset);
+            const hDusk = timeToHours(times.dusk);
+            const hNautDusk = timeToHours(times.nauticalDusk);
+            const hAstroDusk = timeToHours(times.astronomicalDusk);
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            if (h >= hSunrise && h < hSunriseEnd) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEnd && h < hGoldenEnd) return PALETTE.golden;
+            if (h >= hGoldenEnd && h < hGoldenStart) return PALETTE.day;
+            if (h >= hGoldenStart && h < hSunsetStart) return PALETTE.golden;
+            if (h >= hSunsetStart && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
+            return PALETTE.night;
+        }
+
+        function drawSunSlices(times) {
+            ctx.fillStyle = PALETTE.night;
+            ctx.fillRect(0, 0, 500, 500);
+
+            const intervals = [
+                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
+                { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
+                { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
+                { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
+                { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
+                { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
+                { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
+                { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
+                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
+            ];
+
+            intervals.forEach(interval => {
+                if (interval.start < interval.end) {
+                    drawSector(interval.start, interval.end, interval.color, radius);
+                }
+            });
+        }
+
+        function drawSector(startH, endH, color, r) {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawMinuteRing(times) {
+            for (let i = 0; i < 60; i++) {
+                const hourEquivalent = (i / 60) * 24;
+                const sectorColor = getIntervalColor(hourEquivalent, times);
+
+                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                const len = (i % 5 === 0) ? 14 : 7;
+
+                const x1 = cx + (radius - len) * Math.cos(angle);
+                const y1 = cy + (radius - len) * Math.sin(angle);
+                const x2 = cx + radius * Math.cos(angle);
+                const y2 = cy + radius * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+                ctx.stroke();
+
+                if (i % 5 === 0) {
+                    const tx = cx + (radius - 22) * Math.cos(angle);
+                    const ty = cy + (radius - 22) * Math.sin(angle);
+                    ctx.fillStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#cbd5e1';
+                    ctx.font = '9px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(i).padStart(2, '0'), tx, ty);
+                }
+            }
+        }
+
+        function createHourNumbers(times) {
+            const container = document.getElementById('hour-numbers-container');
+            container.innerHTML = '';
+            const hRadius = radius * 0.72;
+
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+
+            for (let i = 1; i <= 24; i++) {
+                const checkHour = i === 24 ? 0 : i;
+                const angleRad = hoursToAngle(checkHour);
+                
+                const hx = cx + hRadius * Math.cos(angleRad);
+                const hy = cy + hRadius * Math.sin(angleRad);
+
+                const div = document.createElement('div');
+                div.className = 'hour-num';
+                div.style.left = `${hx}px`;
+                div.style.top = `${hy}px`;
+                div.innerText = i;
+
+                if (checkHour < hSunrise || checkHour > hSunset) {
+                    div.style.color = '#ffffff';
+                } else {
+                    div.style.color = '#0f172a';
+                }
+
+                container.appendChild(div);
+            }
+        }
+
+        function updateMoon(moonPos) {
+            const moonIcon = document.getElementById('moon-icon');
+            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
+            const angleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            const dist = radius * 0.52;
+            const mx = cx + dist * Math.cos(angleRad);
+            const my = cy + dist * Math.sin(angleRad);
+
+            moonIcon.style.left = `${mx}px`;
+            moonIcon.style.top = `${my}px`;
+            moonIcon.style.display = 'block';
+        }
+
+        function updatePageBackground(times) {
+            if (!times) return;
+            const now = new Date();
+            const h = timeToHours(now);
+            document.body.style.backgroundColor = getIntervalColor(h, times);
+        }
+
+        function formatTime(date) {
+            if (!date || isNaN(date)) return "--:--";
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function populateTable(times) {
+            const tbody = document.getElementById('times-table-body');
+            tbody.innerHTML = `
+                <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
+                <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
+                <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
+                <tr><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
+                <tr><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
+                <tr><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
+                <tr><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
+                <tr><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
+                <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
+                <tr><td>Inizio del tramonto</td><td>${formatTime(times.sunsetStart)}</td></tr>
+                <tr><td>Tramonto</td><td>${formatTime(times.sunset)}</td></tr>
+                <tr><td>Crepuscolo civile</td><td>${formatTime(times.dusk)}</td></tr>
+                <tr><td>Crepuscolo nautico</td><td>${formatTime(times.nauticalDusk)}</td></tr>
+                <tr><td>Crepuscolo astronomico</td><td>${formatTime(times.astronomicalDusk)}</td></tr>
+            `;
+        }
+
+        function toggleModal(show) {
+            document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
+        }
+
+        function updateHands() {
+            const now = new Date();
+            const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+            const s = now.getSeconds() + now.getMilliseconds() / 1000;
+
+            const hourDeg = (h / 24) * 360 + 180;
+            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+
+            const secDeg = (s / 60) * 360 + 180;
+            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+
+            const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+            const utcDeg = (utcHours / 24) * 360 + 180;
+            document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
+
+            if (cachedTimes) {
+                updatePageBackground(cachedTimes);
+            }
+        }
+
+        initClock();
+        setInterval(updateHands, 50);
+    </script>
+</body>
+</html>
