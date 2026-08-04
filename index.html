@@ -76,9 +76,8 @@
         }
 
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
-        #hand-minute { width: 4px; height: 42%; background: #38bdf8; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
-        #hand-utc { width: 4px; height: 40%; background: #22c55e; } 
+        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 21; } 
+        #hand-utc { width: 4px; height: 42%; background: #22c55e; } 
 
         #center-dot {
             position: absolute;
@@ -188,7 +187,6 @@
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             <div id="hour-numbers-container"></div>
             <div class="hand" id="hand-hour"></div>
-            <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
             <div id="center-dot"></div>
@@ -224,6 +222,7 @@
     </div>
 
     <script>
+        // Configurazione forzata degli angoli solari esatti per SunCalc
         SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -293,13 +292,7 @@
         }
 
         function hoursToAngle(h) {
-            // Rotazione standard: 0 ore a destra (-90 gradi offset). Vogliamo che 12 sia in alto.
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
-        }
-
-        function minutesToAngle(m) {
-            // 0 minuti in alto (-pi/2), 60 minuti un giro completo
-            return (m / 60) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -375,8 +368,7 @@
                 const hourEquivalent = (i / 60) * 24;
                 const sectorColor = getIntervalColor(hourEquivalent, times);
 
-                // 00 in alto (-pi/2)
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
                 const len = (i % 5 === 0) ? 14 : 7;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -474,24 +466,16 @@
         function updateHands() {
             const now = new Date();
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-            const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancetta delle ore (24 ore = 360 gradi, 0 ore in alto -> +90 deg offset)
-            const hourDeg = (h / 24) * 360 - 90;
+            const hourDeg = (h / 24) * 360 + 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            // Lancetta dei minuti (60 minuti = 360 gradi)
-            const minuteDeg = (m / 60) * 360 - 90;
-            document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
-
-            // Lancetta dei secondi (60 secondi = 360 gradi)
-            const secDeg = (s / 60) * 360 - 90;
+            const secDeg = (s / 60) * 360 + 180;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Lancetta UTC
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-            const utcDeg = (utcHours / 24) * 360 - 90;
+            const utcDeg = (utcHours / 24) * 360 + 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
