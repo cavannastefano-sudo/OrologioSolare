@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Notte Perfetta</title>
+    <title>Sunclock 24H Definitivo</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -65,13 +65,13 @@
             margin-top: -15px;
         }
 
-        #moon-icon {
+        /* Icone Sole e Luna sul quadrante */
+        #sun-icon, #moon-icon {
             position: absolute;
             font-size: 22px;
-            z-index: 8;
+            z-index: 9;
             margin-left: -11px;
             margin-top: -11px;
-            display: none;
             filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
         }
 
@@ -196,6 +196,7 @@
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             <div id="hour-numbers-container"></div>
+            <div id="sun-icon">☀️</div>
             <div id="moon-icon">🌙</div>
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-second"></div>
@@ -240,7 +241,7 @@
         const radius = 248;
 
         const PALETTE = {
-            night: '#000000',         // Notte profonda
+            night: '#000000',         // Notte rigorosamente nera
             astro: '#172554',         // Crepuscolo Astronomico
             naut: '#1e3a8a',          // Crepuscolo Nautico
             civil: '#3b82f6',         // Crepuscolo Civile
@@ -250,26 +251,31 @@
         };
 
         let cachedTimes = null;
+        let cachedLat = 41.9028;
+        let cachedLon = 12.4964;
 
         function initClock() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        updateSunClock(position.coords.latitude, position.coords.longitude);
+                        cachedLat = position.coords.latitude;
+                        cachedLon = position.coords.longitude;
+                        updateSunClock(cachedLat, cachedLon);
                     },
                     (error) => {
-                        updateSunClock(41.9028, 12.4964); 
+                        updateSunClock(cachedLat, cachedLon); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Roma).";
                     }
                 );
             } else {
-                updateSunClock(41.9028, 12.4964);
+                updateSunClock(cachedLat, cachedLon);
             }
         }
 
         function updateSunClock(lat, lon) {
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
+            const sunPos = SunCalc.getPosition(now, lat, lon);
             const moonPos = SunCalc.getMoonPosition(now, lat, lon);
 
             ctx.clearRect(0, 0, 500, 500);
@@ -277,7 +283,7 @@
             drawSunSlices(cachedTimes);
             drawMinuteRing(cachedTimes);
             createHourNumbers(cachedTimes);
-            updateMoon(moonPos);
+            updateSunAndMoon(sunPos, moonPos);
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
@@ -328,7 +334,6 @@
         }
 
         function drawSunSlices(times) {
-            // Sfondo interamente NERO notturno di base per evitare vuoti
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -337,7 +342,6 @@
             const hAstroDawn = timeToHours(times.astronomicalDawn);
             const hAstroDusk = timeToHours(times.astronomicalDusk);
 
-            // 1. Disegna la Notte Profonda in 2 tranche se a cavallo di mezzanotte
             if (hAstroDusk > hAstroDawn) {
                 drawSector(hAstroDusk, 24, PALETTE.night, radius);
                 drawSector(0, hAstroDawn, PALETTE.night, radius);
@@ -345,7 +349,6 @@
                 drawSector(hAstroDusk, hAstroDawn, PALETTE.night, radius);
             }
 
-            // 2. Disegna tutti gli altri intervalli crepuscolari e diurni sopra la notte
             const intervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
@@ -439,14 +442,25 @@
             }
         }
 
-        function updateMoon(moonPos) {
-            const moonIcon = document.getElementById('moon-icon');
-            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
-            const angleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
-            const dist = radius * 0.52;
-            const mx = cx + dist * Math.cos(angleRad);
-            const my = cy + dist * Math.sin(angleRad);
+        function updateSunAndMoon(sunPos, moonPos) {
+            const now = new Date();
+            // Posizione Sole
+            const sunClockAngle = (sunPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
+            const sunAngleRad = (sunClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            const sunDist = radius * 0.52;
+            const sx = cx + sunDist * Math.cos(sunAngleRad);
+            const sy = cy + sunDist * Math.sin(sunAngleRad);
+            const sunIcon = document.getElementById('sun-icon');
+            sunIcon.style.left = `${sx}px`;
+            sunIcon.style.top = `${sy}px`;
 
+            // Posizione Luna
+            const moonClockAngle = (moonPos.azimuth + Math.PI) / (2 * Math.PI) * 360;
+            const moonAngleRad = (moonClockAngle / 24) * Math.PI * 2 + Math.PI / 2;
+            const moonDist = radius * 0.65;
+            const mx = cx + moonDist * Math.cos(moonAngleRad);
+            const my = cy + moonDist * Math.sin(moonAngleRad);
+            const moonIcon = document.getElementById('moon-icon');
             moonIcon.style.left = `${mx}px`;
             moonIcon.style.top = `${my}px`;
             moonIcon.style.display = 'block';
@@ -456,7 +470,9 @@
             if (!times) return;
             const now = new Date();
             const h = timeToHours(now);
-            document.body.style.backgroundColor = getIntervalColor(h, times);
+            const currentColor = getIntervalColor(h, times);
+            // Se è notte nera, lo sfondo della pagina diventa nero (#000000)
+            document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
         }
 
         function formatTime(date) {
@@ -504,6 +520,9 @@
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
+                const sunPos = SunCalc.getPosition(now, cachedLat, cachedLon);
+                const moonPos = SunCalc.getMoonPosition(now, cachedLat, cachedLon);
+                updateSunAndMoon(sunPos, moonPos);
                 updatePageBackground(cachedTimes);
             }
         }
