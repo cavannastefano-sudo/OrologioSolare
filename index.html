@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H Definitivo</title>
+    <title>Sunclock 24H Pulito</title>
     <!-- Libreria SunCalc -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
@@ -63,15 +63,6 @@
             z-index: 10;
             margin-left: -15px;
             margin-top: -15px;
-        }
-
-        #sun-icon, #moon-icon {
-            position: absolute;
-            font-size: 22px;
-            z-index: 9;
-            margin-left: -11px;
-            margin-top: -11px;
-            filter: drop-shadow(0 0 4px rgba(255,255,255,0.6));
         }
 
         .hand {
@@ -195,8 +186,6 @@
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             <div id="hour-numbers-container"></div>
-            <div id="sun-icon">☀️</div>
-            <div id="moon-icon">🌙</div>
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
@@ -240,13 +229,13 @@
         const radius = 248;
 
         const PALETTE = {
-            night: '#000000',         // Notte rigorosamente nera
-            astro: '#172554',         // Crepuscolo Astronomico
-            naut: '#1e3a8a',          // Crepuscolo Nautico
-            civil: '#3b82f6',         // Crepuscolo Civile
-            sunriseSunset: '#f97316', // Alba / Tramonto
-            golden: '#eab308',        // Ora d'oro
-            day: '#bae6fd'            // Giorno
+            night: '#000000',         
+            astro: '#172554',         
+            naut: '#1e3a8a',          
+            civil: '#3b82f6',         
+            sunriseSunset: '#f97316', 
+            golden: '#eab308',        
+            day: '#bae6fd'            
         };
 
         let cachedTimes = null;
@@ -280,7 +269,6 @@
             drawSunSlices(cachedTimes);
             drawMinuteRing(cachedTimes);
             createHourNumbers(cachedTimes);
-            updateSunAndMoon(now, lat, lon);
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
@@ -331,13 +319,11 @@
         }
 
         function drawSunSlices(times) {
-            // 1. Sfondo interamente NERO (Notte Piena che copre tutto il cerchio)
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // 2. Disegna sopra le fasce diurne e crepuscolari ordinate
             const intervals = [
                 { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
                 { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
@@ -431,34 +417,6 @@
             }
         }
 
-        function updateSunAndMoon(now, lat, lon) {
-            const sunPos = SunCalc.getPosition(now, lat, lon);
-            const moonPos = SunCalc.getMoonPosition(now, lat, lon);
-
-            // Conversione Azimut Sole in angolo sul quadrante 24h
-            let sunClockHour = ((-sunPos.azimuth * 180 / Math.PI + 180) / 360) * 24;
-            sunClockHour = (sunClockHour + 6) % 24; // Allineamento corretto
-            const sunAngleRad = hoursToAngle(sunClockHour);
-            const sunDist = radius * 0.52;
-            const sx = cx + sunDist * Math.cos(sunAngleRad);
-            const sy = cy + sunDist * Math.sin(sunAngleRad);
-            const sunIcon = document.getElementById('sun-icon');
-            sunIcon.style.left = `${sx}px`;
-            sunIcon.style.top = `${sy}px`;
-
-            // Conversione Azimut Luna in angolo sul quadrante 24h
-            let moonClockHour = ((-moonPos.azimuth * 180 / Math.PI + 180) / 360) * 24;
-            moonClockHour = (moonClockHour + 6) % 24;
-            const moonAngleRad = hoursToAngle(moonClockHour);
-            const moonDist = radius * 0.65;
-            const mx = cx + moonDist * Math.cos(moonAngleRad);
-            const my = cy + moonDist * Math.sin(moonAngleRad);
-            const moonIcon = document.getElementById('moon-icon');
-            moonIcon.style.left = `${mx}px`;
-            moonIcon.style.top = `${my}px`;
-            moonIcon.style.display = 'block';
-        }
-
         function updatePageBackground(times) {
             if (!times) return;
             const now = new Date();
@@ -512,7 +470,6 @@
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
             if (cachedTimes) {
-                updateSunAndMoon(now, cachedLat, cachedLon);
                 updatePageBackground(cachedTimes);
             }
         }
