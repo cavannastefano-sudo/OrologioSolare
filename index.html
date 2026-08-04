@@ -117,11 +117,33 @@
             z-index: 20;
         }
 
-        /* Le lancette puntano verso l'ALTO di default in CSS (0 gradi = Top) */
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); } 
         #hand-minute { width: 4px; height: 42%; background: #38bdf8; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
         #hand-utc { width: 4px; height: 40%; background: #22c55e; } 
+        #hand-moon { width: 2px; height: 42%; background: #94a3b8; z-index: 21; } 
+
+        #sun-icon {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #fbbf24;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #fbbf24;
+            z-index: 25;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        #moon-icon {
+            position: absolute;
+            font-size: 14px;
+            z-index: 25;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
 
         #center-dot {
             position: absolute;
@@ -267,6 +289,9 @@
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-utc"></div>
+            <div class="hand" id="hand-moon"></div>
+            <div id="sun-icon">☀️</div>
+            <div id="moon-icon">🌕</div>
             <div id="center-dot"></div>
         </div>
     </div>
@@ -346,6 +371,8 @@
         };
 
         let cachedTimes = null;
+        let cachedMoonTimes = null;
+        let cachedMoonIllumination = null;
         let cachedLat = 45.04;
         let cachedLon = 9.68;
 
@@ -400,10 +427,16 @@
         function updateSunClock(lat, lon) {
             const now = new Date();
             cachedTimes = SunCalc.getTimes(now, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
+
+            // Aggiorna l'icona della fase lunare in base alla percentuale di illuminazione
+            updateMoonPhaseIcon(cachedMoonIllumination.phase);
 
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlices(cachedTimes);
+            drawSolarMeridianLine();
             drawMinuteRing(cachedTimes);
             createClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
@@ -423,8 +456,6 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
-        // LOGICA ESATTA VIRTUALGEOFF: 
-        // 0 o 24 = Basso (+ Pi/2), 12 = Alto (- Pi/2). Avanzamento Orario.
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
@@ -497,14 +528,21 @@
             ctx.fill();
         }
 
+        function drawSolarMeridianLine() {
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - radius);
+            ctx.lineTo(cx, cy + radius);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+
         function drawMinuteRing(times) {
             for (let i = 0; i < 60; i++) {
-                // Allineiamo il colore della tacca dei minuti all'ora esatta che ha accanto (es. tacca in alto prende il colore delle ore 12)
                 let hEq = (i / 60) * 24 - 12;
                 if(hEq < 0) hEq += 24;
                 const sectorColor = getIntervalColor(hEq, times);
 
-                // Minuti da 0 (Top, -Pi/2) in senso orario
                 const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 14 : 7;
 
@@ -529,7 +567,6 @@
             const hSunrise = timeToHours(times.sunrise);
             const hSunset = timeToHours(times.sunset);
 
-            // Costruiamo i numeri da 1 a 24
             const hRadius = radius * 0.65;
             for (let i = 1; i <= 24; i++) {
                 const hourValue = i;
@@ -554,7 +591,6 @@
                 container.appendChild(div);
             }
 
-            // Minuti ogni 5
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
@@ -583,6 +619,19 @@
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function updateMoonPhaseIcon(phase) {
+            const moonEl = document.getElementById('moon-icon');
+            // phase va da 0 a 1 (0 = novilunio, 0.25 = primo quarto, 0.5 = plenilunio, 0.75 = ultimo quarto)
+            if (phase < 0.03 || phase > 0.97) moonEl.innerText = "🌑";
+            else if (phase < 0.22) moonEl.innerText = "🌒";
+            else if (phase < 0.28) moonEl.innerText = "🌓";
+            else if (phase < 0.47) moonEl.innerText = "🌔";
+            else if (phase < 0.53) moonEl.innerText = "🌕";
+            else if (phase < 0.72) moonEl.innerText = "🌖";
+            else if (phase < 0.78) moonEl.innerText = "🌗";
+            else moonEl.innerText = "🌘";
         }
 
         function populateTable(times) {
@@ -619,11 +668,9 @@
             const m = now.getMinutes() + now.getSeconds() / 60;
             const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            // Lancette per l'orologio matematico esatto (12 in alto = 0 gradi in CSS, 24 in basso = 180 gradi)
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            // Lancette minuti/secondi (0 in alto = 0 gradi)
             const minuteDeg = (m / 60) * 360;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
@@ -633,6 +680,39 @@
             const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
             const utcDeg = (utcHours / 24) * 360 - 180;
             document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
+
+            // Posizione della lancetta della Luna in base all'orario di sortita/tramonto reale
+            if (cachedMoonTimes) {
+                let moonHours = 18; // default di sicurezza se rise/set non sono disponibili
+                if (cachedMoonTimes.rise && !isNaN(cachedMoonTimes.rise)) {
+                    moonHours = timeToHours(cachedMoonTimes.rise);
+                } else if (cachedMoonTimes.set && !isNaN(cachedMoonTimes.set)) {
+                    moonHours = timeToHours(cachedMoonTimes.set) - 12;
+                    if(moonHours < 0) moonHours += 24;
+                }
+                const moonDeg = (moonHours / 24) * 360 - 180;
+                document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+
+                // Posizione icona luna sulla punta della sua lancetta (42% del raggio)
+                const moonRad = ((moonHours / 24) * Math.PI * 2) - Math.PI / 2;
+                const moonTipDist = radius * 0.42;
+                const moonIconX = cx + moonTipDist * Math.cos(moonRad);
+                const moonIconY = cy + moonTipDist * Math.sin(moonRad);
+                const moonEl = document.getElementById('moon-icon');
+                moonEl.style.left = `${moonIconX}px`;
+                moonEl.style.top = `${moonIconY}px`;
+                moonEl.style.display = 'block';
+            }
+
+            // Posizione del Sole sulla punta della lancetta delle ore (38% del raggio)
+            const hourRad = ((h / 24) * Math.PI * 2) - Math.PI / 2;
+            const sunTipDist = radius * 0.38;
+            const sunIconX = cx + sunTipDist * Math.cos(hourRad);
+            const sunIconY = cy + sunTipDist * Math.sin(hourRad);
+            const sunEl = document.getElementById('sun-icon');
+            sunEl.style.left = `${sunIconX}px`;
+            sunEl.style.top = `${sunIconY}px`;
+            sunEl.style.display = 'block';
 
             if (cachedTimes) {
                 updatePageBackground(cachedTimes);
