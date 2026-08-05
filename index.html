@@ -8,7 +8,6 @@
     <meta name="theme-color" content="#000000">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -291,8 +290,13 @@
         const radius = 248;
 
         const PALETTE = {
-            night: '#000000', astro: '#172554', naut: '#1e3a8a',
-            civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
+            night: '#000000',
+            astro: '#172554',
+            naut: '#1e3a8a',
+            civil: '#3b82f6',
+            sunriseSunset: '#f97316',
+            golden: '#eab308',
+            day: '#bae6fd'
         };
 
         let cachedTimes = null;
@@ -328,11 +332,6 @@
             document.getElementById('location-header-name').innerText = currentCityName;
             
             updateSunClock(cachedLat, cachedLon);
-            
-            // Doppio check ritardato per assicurare il rendering completo dei colori solari
-            setTimeout(() => {
-                updateSunClock(cachedLat, cachedLon);
-            }, 400);
         }
 
         async function resolveCityName(lat, lon) {
@@ -463,11 +462,11 @@
                 }
 
                 ctx.clearRect(0, 0, 500, 500);
-                drawSunSlicesSafe(cachedTimes, now, lat, lon);
+                drawSunSlicesSunCalc(cachedTimes);
                 drawSolarMeridianLines(cachedTimes);
-                drawMinuteRingSafe(cachedTimes, now, lat, lon);
+                drawMinuteRingSunCalc(cachedTimes);
                 drawClockNumbers(cachedTimes);
-                updatePageBackground(cachedTimes, now, lat, lon);
+                updatePageBackground(cachedTimes);
 
                 document.getElementById('location-header-name').innerText = currentCityName;
                 document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
@@ -496,48 +495,57 @@
             return d instanceof Date && !isNaN(d);
         }
 
-        function getSunElevationColor(altitudeDeg) {
-            if (altitudeDeg >= 6) return PALETTE.day;
-            if (altitudeDeg >= 0) return PALETTE.golden;
-            if (altitudeDeg >= -0.833) return PALETTE.sunriseSunset;
-            if (altitudeDeg >= -6) return PALETTE.civil;
-            if (altitudeDeg >= -12) return PALETTE.naut;
-            if (altitudeDeg >= -18) return PALETTE.astro;
-            return PALETTE.night;
+        function getIntervalColor(t, times) {
+            if (!times) return PALETTE.night;
+            const h = t.getHours() + t.getMinutes() / 60;
+            
+            const hNadir = timeToHours(times.nadir) || 0;
+            const hAstro = timeToHours(times.astronomicalDawn) || 4;
+            const hNaut = timeToHours(times.nauticalDawn) || 5;
+            const hCivil = timeToHours(times.dawn) || 6;
+            const hRise = timeToHours(times.sunrise) || 6.5;
+            const hGoldEnd = timeToHours(times.goldenHourEnd) || 7.5;
+            const hGoldStart = timeToHours(times.goldenHour) || 17;
+            const hSet = timeToHours(times.sunset) || 18;
+            const hCivilDusk = timeToHours(times.dusk) || 19;
+            const hNautDusk = timeToHours(times.nauticalDusk) || 20;
+            const hAstroDusk = timeToHours(times.astronomicalDusk) || 21;
+
+            if (h >= hRise && h < hGoldEnd) return PALETTE.golden;
+            if (h >= hGoldEnd && h < hGoldStart) return PALETTE.day;
+            if (h >= hGoldStart && h < hSet) return PALETTE.golden;
+            if (h >= hSet && h < hCivilDusk) return PALETTE.sunriseSunset;
+            if (h >= hCivilDusk && h < hNautDusk) return PALETTE.civil;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.naut;
+            if (h >= hAstroDusk || h < hAstro) return PALETTE.night;
+            return PALETTE.astro;
         }
 
-        function drawSunSlicesSafe(times, date, lat, lon) {
+        function drawSunSlicesSunCalc(times) {
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            if (typeof Astronomy === 'undefined') return;
+            if (!times) return;
+            const baseDate = new Date();
+            baseDate.setHours(0, 0, 0, 0);
 
-            try {
-                const observer = new Astronomy.Observer(lat, lon, 0);
-                const baseDate = new Date(date);
-                baseDate.setHours(0, 0, 0, 0);
+            for (let i = 0; i < 1440; i += 5) {
+                const fraction = i / 1440;
+                const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
+                const color = getIntervalColor(checkDate, times);
 
-                for (let i = 0; i < 1440; i += 5) {
-                    const fraction = i / 1440;
-                    const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
-                    const astroTime = Astronomy.MakeTime(checkDate);
-                    const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                    const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
+                const startAngle = fraction * Math.PI * 2 - Math.PI / 2;
+                const endAngle = ((i + 5) / 1440) * Math.PI * 2 - Math.PI / 2;
 
-                    const color = getSunElevationColor(hor.altitude);
-                    const startAngle = (fraction) * Math.PI * 2 - Math.PI / 2;
-                    const endAngle = ((i + 5) / 1440) * Math.PI * 2 - Math.PI / 2;
-
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.arc(cx, cy, radius, startAngle, endAngle);
-                    ctx.closePath();
-                    ctx.fillStyle = color;
-                    ctx.fill();
-                }
-            } catch (e) {}
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, radius, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
         }
 
         function drawSolarMeridianLines(times) {
@@ -564,36 +572,29 @@
             }
         }
 
-        function drawMinuteRingSafe(times, date, lat, lon) {
-            if (typeof Astronomy === 'undefined') return;
-            try {
-                const observer = new Astronomy.Observer(lat, lon, 0);
-                const baseDate = new Date(date);
-                baseDate.setHours(0, 0, 0, 0);
+        function drawMinuteRingSunCalc(times) {
+            const baseDate = new Date();
+            baseDate.setHours(0, 0, 0, 0);
 
-                for (let i = 0; i < 60; i++) {
-                    const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
-                    const astroTime = Astronomy.MakeTime(checkDate);
-                    const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                    const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-                    const sectorColor = getSunElevationColor(hor.altitude);
+            for (let i = 0; i < 60; i++) {
+                const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
+                const sectorColor = getIntervalColor(checkDate, times);
 
-                    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                    const len = (i % 5 === 0) ? 14 : 7;
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const len = (i % 5 === 0) ? 14 : 7;
 
-                    const x1 = cx + (radius - len) * Math.cos(angle);
-                    const y1 = cy + (radius - len) * Math.sin(angle);
-                    const x2 = cx + radius * Math.cos(angle);
-                    const y2 = cy + radius * Math.sin(angle);
+                const x1 = cx + (radius - len) * Math.cos(angle);
+                const y1 = cy + (radius - len) * Math.sin(angle);
+                const x2 = cx + radius * Math.cos(angle);
+                const y2 = cy + radius * Math.sin(angle);
 
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y1);
-                    ctx.lineTo(x2, y2);
-                    ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
-                    ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
-                    ctx.stroke();
-                }
-            } catch (e) {}
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+                ctx.stroke();
+            }
         }
 
         function drawClockNumbers(times) {
@@ -632,16 +633,9 @@
             }
         }
 
-        function updatePageBackground(times, date, lat, lon) {
-            if (typeof Astronomy === 'undefined') return;
-            try {
-                const observer = new Astronomy.Observer(lat, lon, 0);
-                const astroTime = Astronomy.MakeTime(date);
-                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-                const currentColor = getSunElevationColor(hor.altitude);
-                document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
-            } catch (e) {}
+        function updatePageBackground(times) {
+            const currentColor = getIntervalColor(new Date(), times);
+            document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
         }
 
         function formatTime(date) {
