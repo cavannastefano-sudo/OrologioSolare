@@ -338,7 +338,7 @@
         let cachedTimes = null;
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
-        let cachedLat = 45.78; // Val Seriana / Bergamo default
+        let cachedLat = 45.78;
         let cachedLon = 9.83;
         let map = null;
         let marker = null;
@@ -559,8 +559,8 @@
             let duskH = timeToHours(times.dusk);
             let nautDawnH = timeToHours(times.nauticalDawn);
             let nautDuskH = timeToHours(times.nauticalDusk);
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH !== null ? nautDawnH - 0.8 : null);
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH !== null ? nautDuskH + 0.8 : null);
+            let astroDawnH = timeToHours(times.astronomicalDawn);
+            let astroDuskH = timeToHours(times.astronomicalDusk);
 
             let sunriseEndH = timeToHours(times.sunriseEnd);
             let goldenEndH = timeToHours(times.goldenHourEnd);
