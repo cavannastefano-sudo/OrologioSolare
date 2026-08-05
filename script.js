@@ -99,7 +99,6 @@ function updateSunClock(lat, lon) {
         slices.push({ fraction, altitude: hor.altitude });
     }
 
-    // Disegna spicchi
     slices.forEach(slice => {
         const color = getSunElevationColor(slice.altitude);
         const angleDeg = slice.fraction * 360;
