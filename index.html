@@ -34,18 +34,18 @@
             justify-content: space-between;
             align-items: center;
             width: min(90vw, 480px);
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         .header-title-container {
             display: flex;
-            flex-direction: column;
+            align-items: baseline;
+            gap: 8px;
         }
         h1 { margin: 0; color: #38bdf8; font-size: 1.3rem; }
         #location-header-name {
-            font-size: 0.8rem;
-            color: #94a3b8;
-            font-weight: 500;
-            margin-top: 2px;
+            font-size: 1rem;
+            color: #f8fafc;
+            font-weight: 600;
         }
         #btn-settings {
             background: #1e293b; color: #38bdf8; border: 1px solid #475569;
@@ -131,11 +131,11 @@
         }
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } /* Viola */
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
-            background: #ef4444; border: 2px solid #fff; border-radius: 50%;
+            background: #a855f7; border: 2px solid #fff; border-radius: 50%;
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 26;
         }
         #info-panel {
@@ -329,18 +329,35 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        async function resolveCityName(lat, lon) {
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await response.json();
+                if (data && data.address) {
+                    currentCityName = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || "Posizione GPS";
+                } else {
+                    currentCityName = "Posizione GPS";
+                }
+            } catch (e) {
+                currentCityName = "Posizione GPS";
+            }
+            localStorage.setItem('sunclock_name', currentCityName);
+            document.getElementById('location-header-name').innerText = currentCityName;
+            document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
+        }
+
         function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
+                    async (position) => {
                         cachedLat = position.coords.latitude;
                         cachedLon = position.coords.longitude;
-                        currentCityName = "Posizione GPS";
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
-                        localStorage.setItem('sunclock_name', currentCityName);
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
+                        
+                        await resolveCityName(cachedLat, cachedLon);
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
@@ -456,9 +473,7 @@
                     document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
                     document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
                 }
-            } catch (err) {
-                console.error("Errore aggiornamento sole:", err);
-            }
+            } catch (err) {}
         }
 
         function timeToHours(date) {
@@ -526,7 +541,7 @@
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke(); // Mezzogiorno rosso
                 }
             }
 
@@ -537,7 +552,7 @@
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke(); // Mezzanotte rossa
                 }
             }
         }
@@ -703,7 +718,6 @@
             } catch (e) {}
         }
 
-        // Avvio immediato sicuro
         initClock();
         setInterval(updateHands, 50);
     </script>
