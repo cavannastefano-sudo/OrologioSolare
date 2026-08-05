@@ -506,7 +506,7 @@
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
                 let testDate = new Date();
-                testDate.setHours(h, 0, 0, 0);
+                testDate.setHours(Math.floor(h), (h % 1) * 60, 0, 0);
                 let alt = SunCalc.getPosition(testDate, cachedLat, cachedLon).altitude * (180 / Math.PI);
                 if (alt > 0) return PALETTE.day;
                 if (alt > -6) return PALETTE.civil;
@@ -556,7 +556,6 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                // Gestione latitudini estreme (Polari / Sole di mezzanotte / Notte polare) campionando l'altezza ora per ora
                 for (let i = 0; i < 24; i += 0.25) {
                     let sampleDate = new Date();
                     sampleDate.setHours(Math.floor(i), (i % 1) * 60, 0, 0);
@@ -577,6 +576,7 @@
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
+            // Sfondo base del quadrante ora coerente con la notte effettiva (es. blu astro se non è notte fonda)
             ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
