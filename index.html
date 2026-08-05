@@ -126,14 +126,47 @@
             border-top-left-radius: 4px; border-top-right-radius: 4px;
             z-index: 20;
         }
-        #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
+        
+        /* Lancetta Sole: Arancione Fluorescente */
+        #hand-hour { 
+            width: 6px; height: 38%; 
+            background: #ff5500; 
+            box-shadow: 0 0 12px #ff7722, 0 0 4px #ff3300; 
+            z-index: 24; 
+        } 
+        #hand-hour::after {
+            content: "☀️";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+        }
+
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } 
+        
+        /* Lancetta Luna: Bianca Fluorescente */
+        #hand-moon { 
+            width: 4px; height: 40%; 
+            background: #ffffff; 
+            box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
+            z-index: 25; 
+        }
+        #hand-moon::after {
+            content: "🌙";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+        }
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
-            background: #a855f7; border: 2px solid #fff; border-radius: 50%;
+            background: #ff5500; border: 2px solid #fff; border-radius: 50%;
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 26;
+            box-shadow: 0 0 8px #ff5500;
         }
         #info-panel {
             margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px 15px;
@@ -217,6 +250,7 @@
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-moon"></div>
             <div id="center-dot"></div>
         </div>
     </div>
@@ -571,7 +605,6 @@
                 const x2 = cx + radius * Math.cos(angle);
                 const y2 = cy + radius * Math.sin(angle);
 
-                // Bordo giallo evidenziatore per le tacche
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
@@ -579,7 +612,6 @@
                 ctx.lineWidth = (i % 5 === 0) ? 3.5 : 2.5;
                 ctx.stroke();
 
-                // Interno nero per le tacche
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
@@ -600,12 +632,10 @@
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
-                // Bordo nero
                 ctx.lineWidth = 3.5;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(i, hx, hy);
 
-                // Interno giallo
                 ctx.fillStyle = '#facc15';
                 ctx.fillText(i, hx, hy);
             }
@@ -619,12 +649,10 @@
 
                 const minText = String(m).padStart(2, '0');
 
-                // Bordo nero
                 ctx.lineWidth = 2.5;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(minText, mx, my);
 
-                // Interno giallo
                 ctx.fillStyle = '#facc15';
                 ctx.fillText(minText, mx, my);
             }
@@ -714,6 +742,22 @@
 
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+
+            if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
+                const moonRiseH = timeToHours(cachedMoonTimes.rise);
+                const moonSetH = timeToHours(cachedMoonTimes.set);
+                
+                let moonCurrentH = (h >= moonRiseH && h <= moonSetH) ? 
+                    ((h - moonRiseH) / (moonSetH - moonRiseH)) * 12 + 6 : 
+                    (((h + 24 - moonSetH) % 24) / (24 - (moonSetH - moonRiseH))) * 12 + 18;
+                
+                moonCurrentH = moonCurrentH % 24;
+                const moonDeg = (moonCurrentH / 24) * 360 - 180;
+                document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+            } else {
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
+                document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
+            }
 
             if (cachedTimes) {
                 updatePageBackground(cachedTimes);
