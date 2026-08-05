@@ -552,11 +552,13 @@
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
+            // 1. Sfondo base: Notte profonda (o blu astronomico se notte chiara)
             ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
+            // Estrazione sicura dei tempi con fallback proporzionali
             let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
             let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
@@ -569,56 +571,38 @@
             let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
             let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
 
-            let rawIntervals = [
-                { start: astroDawnH, color: PALETTE.astro },
-                { start: nautDawnH, color: PALETTE.naut },
-                { start: dawnH, color: PALETTE.civil },
-                { start: hSunrise, color: PALETTE.sunriseSunset },
-                { start: sunriseEndH, color: PALETTE.golden },
-                { start: goldenEndH, color: PALETTE.day },
-                { start: goldenStartH, color: PALETTE.golden },
-                { start: sunsetStartH, color: PALETTE.sunriseSunset },
-                { start: hSunset, color: PALETTE.civil },
-                { start: duskH, color: PALETTE.naut },
-                { start: nautDuskH, color: PALETTE.astro },
-                { start: astroDuskH, color: effectiveNightColor }
-            ];
-
-            let valid = rawIntervals.filter(i => i.start !== null && !isNaN(i.start));
-            valid.sort((a, b) => a.start - b.start);
-
-            if (valid.length >= 2) {
-                let fullCycle = [];
-                for (let i = 0; i < valid.length; i++) {
-                    let current = valid[i];
-                    let nextStart = (i + 1 < valid.length) ? valid[i + 1].start : 24.0;
-                    
-                    if (nextStart > current.start) {
-                        fullCycle.push({ start: current.start, end: nextStart, color: current.color });
-                    }
-                }
-
-                let lastEnd = fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].end : 0;
-                if (lastEnd < 24.0) {
-                    fullCycle.push({ start: lastEnd, end: 24.0, color: fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].color : effectiveNightColor });
-                }
-                let firstStart = fullCycle.length > 0 ? fullCycle[0].start : 0;
-                if (firstStart > 0.0) {
-                    fullCycle.unshift({ start: 0.0, end: firstStart, color: fullCycle.length > 0 ? fullCycle[0].color : effectiveNightColor });
-                }
-
-                for (let slice of fullCycle) {
-                    drawSector(slice.start, slice.end, slice.color, radius);
-                }
-            } else {
-                drawSector(0.0, 24.0, effectiveNightColor, radius);
-            }
+            // 2. Disegno in sequenza cronologica fissa per evitare qualsiasi errore di ordinamento array
+            // Fasce della mattina (dalla notte verso il giorno)
+            drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
+            drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
+            drawSector(dawnH, hSunrise, PALETTE.civil, radius);
+            drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
+            drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
+            drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
+            
+            // Fasce della sera (dal giorno verso la notte)
+            drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
+            drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
+            drawSector(hSunset, duskH, PALETTE.civil, radius);
+            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
+            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
         }
 
         function drawSector(startH, endH, color, r) {
+            if (startH === null || endH === null || isNaN(startH) || isNaN(endH)) return;
+            // Normalizzazione ore nel ciclo 0-24
+            startH = (startH + 24) % 24;
+            endH = (endH + 24) % 24;
+
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            if (endH < startH) {
+                // Gestione cavalcata di mezzanotte
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
+                ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
+            } else {
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            }
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
