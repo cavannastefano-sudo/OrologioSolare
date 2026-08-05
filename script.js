@@ -5,13 +5,13 @@ const cy = 250;
 const radius = 248;
 
 const PALETTE = {
-    night: '#050505',
+    night: '#000000',
     astro: '#0f172a',
     naut: '#1e3a8a',
     civil: '#2563eb',
     sunriseSunset: '#ea580c',
     golden: '#ca8a04',
-    day: '#38bdf8'
+    day: '#bae6fd'
 };
 
 let cachedTimes = null;
@@ -177,10 +177,10 @@ function updateSunClock(lat, lon) {
         }
 
         ctx.clearRect(0, 0, 500, 500);
-        drawSunSlicesClean(cachedTimes);
+        drawSunSlicesAccurate(cachedTimes, lat, lon);
         drawSolarMeridianLines(cachedTimes);
         drawClockFaceCanvas(cachedTimes);
-        updatePageBackground(cachedTimes);
+        updatePageBackground(cachedTimes, now);
 
         document.getElementById('location-header-name').innerText = currentCityName;
         document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
@@ -202,7 +202,7 @@ function timeToHours(date) {
 }
 
 function hoursToAngle(h) {
-    // 12 in alto (-PI/2), 24 in basso (+PI/2), senso orario pulito
+    // 12 in alto (-PI/2), 24 in basso (+PI/2), senso orario
     return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
 }
 
@@ -210,32 +210,40 @@ function isValidDate(d) {
     return d instanceof Date && !isNaN(d);
 }
 
-function getIntervalColor(t, times) {
+function getSunColorByTimes(checkDate, times) {
     if (!times) return PALETTE.night;
-    const h = t.getHours() + t.getMinutes() / 60 + t.getSeconds() / 3600;
-    
-    const hAstro = timeToHours(times.astronomicalDawn) ?? 4;
-    const hNaut = timeToHours(times.nauticalDawn) ?? 5;
-    const hCivil = timeToHours(times.dawn) ?? 6;
-    const hRise = timeToHours(times.sunrise) ?? 6.5;
-    const hGoldEnd = timeToHours(times.goldenHourEnd) ?? 7.5;
-    const hGoldStart = timeToHours(times.goldenHour) ?? 17;
-    const hSet = timeToHours(times.sunset) ?? 18;
-    const hCivilDusk = timeToHours(times.dusk) ?? 19;
-    const hNautDusk = timeToHours(times.nauticalDusk) ?? 20;
-    const hAstroDusk = timeToHours(times.astronomicalDusk) ?? 21;
+    const t = checkDate.getTime();
 
-    if (h >= hRise && h < hGoldEnd) return PALETTE.golden;
-    if (h >= hGoldEnd && h < hGoldStart) return PALETTE.day;
-    if (h >= hGoldStart && h < hSet) return PALETTE.golden;
-    if (h >= hSet && h < hCivilDusk) return PALETTE.sunriseSunset;
-    if (h >= hCivilDusk && h < hNautDusk) return PALETTE.civil;
-    if (h >= hNautDusk && h < hAstroDusk) return PALETTE.naut;
-    if (h >= hAstroDusk || h < hAstro) return PALETTE.night;
-    return PALETTE.astro;
+    const nadir = times.nadir?.getTime() ?? 0;
+    const astStart = times.astronomicalDawn?.getTime() ?? nadir;
+    const nauStart = times.nauticalDawn?.getTime() ?? astStart;
+    const civStart = times.dawn?.getTime() ?? nauStart;
+    const rise = times.sunrise?.getTime() ?? civStart;
+    const riseEnd = times.sunriseEnd?.getTime() ?? rise;
+    const goldEnd = times.goldenHourEnd?.getTime() ?? riseEnd;
+    const goldStart = times.goldenHour?.getTime() ?? (riseEnd + 3600000 * 10);
+    const sunsetStart = times.sunsetStart?.getTime() ?? goldStart;
+    const sunset = times.sunset?.getTime() ?? sunsetStart;
+    const civDusk = times.dusk?.getTime() ?? sunset;
+    const nauDusk = times.nauticalDusk?.getTime() ?? civDusk;
+    const astDusk = times.astronomicalDusk?.getTime() ?? nauDusk;
+
+    if (t >= riseEnd && t < goldEnd) return PALETTE.golden;
+    if (t >= goldEnd && t < goldStart) return PALETTE.day;
+    if (t >= goldStart && t < sunsetStart) return PALETTE.golden;
+    if (t >= sunsetStart && t <= sunset) return PALETTE.sunriseSunset;
+    if (t > sunset && t <= civDusk) return PALETTE.civil;
+    if (t > civDusk && t <= nauDusk) return PALETTE.naut;
+    if (t > nauDusk && t <= astDusk) return PALETTE.astro;
+    if (t >= astStart && t < rise) {
+        if (t < nauStart) return PALETTE.astro;
+        if (t < civStart) return PALETTE.naut;
+        if (t < rise) return PALETTE.civil;
+    }
+    return PALETTE.night;
 }
 
-function drawSunSlicesClean(times) {
+function drawSunSlicesAccurate(times, lat, lon) {
     ctx.fillStyle = PALETTE.night;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -245,14 +253,14 @@ function drawSunSlicesClean(times) {
     const baseDate = new Date();
     baseDate.setHours(0, 0, 0, 0);
 
-    for (let angleDeg = 0; angleDeg < 360; angleDeg += 1) {
+    for (let angleDeg = 0; angleDeg < 360; angleDeg += 0.5) {
         const startAngle = (angleDeg * Math.PI) / 180 - Math.PI / 2;
-        const endAngle = ((angleDeg + 1.2) * Math.PI) / 180 - Math.PI / 2;
+        const endAngle = ((angleDeg + 0.7) * Math.PI) / 180 - Math.PI / 2;
         
         const hourVal = ((angleDeg / 360) * 24 + 12) % 24;
         const checkDate = new Date(baseDate.getTime() + hourVal * 3600000);
         
-        const color = getIntervalColor(checkDate, times);
+        const color = getSunColorByTimes(checkDate, times);
 
         ctx.beginPath();
         ctx.moveTo(cx, cy);
@@ -322,8 +330,8 @@ function drawClockFaceCanvas(times) {
     }
 }
 
-function updatePageBackground(times) {
-    const currentColor = getIntervalColor(new Date(), times);
+function updatePageBackground(times, now) {
+    const currentColor = getSunColorByTimes(now, times);
     document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
 }
 
@@ -405,6 +413,10 @@ function updateHands() {
 
         const secDeg = (s / 60) * 360;
         document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+
+        if (cachedTimes) {
+            updatePageBackground(cachedTimes, now);
+        }
     } catch (e) {}
 }
 
