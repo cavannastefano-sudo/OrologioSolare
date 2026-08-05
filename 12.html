@@ -555,31 +555,31 @@
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
-            let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            let nautDawnH = timeToHours(times.nauticalDawn) ?? dawnH;
-            let nautDuskH = timeToHours(times.nauticalDusk) ?? duskH;
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? nautDawnH;
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? nautDuskH;
+            let dawnH = timeToHours(times.dawn);
+            let duskH = timeToHours(times.dusk);
+            let nautDawnH = timeToHours(times.nauticalDawn);
+            let nautDuskH = timeToHours(times.nauticalDusk);
+            let astroDawnH = timeToHours(times.astronomicalDawn);
+            let astroDuskH = timeToHours(times.astronomicalDusk);
 
-            let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
-            let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
-            let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
-            let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+            let sunriseEndH = timeToHours(times.sunriseEnd);
+            let goldenEndH = timeToHours(times.goldenHourEnd);
+            let goldenStartH = timeToHours(times.goldenHour);
+            let sunsetStartH = timeToHours(times.sunsetStart);
 
             let rawIntervals = [
-                { start: astroDawnH, color: effectiveNightColor },
-                { start: nautDawnH, color: PALETTE.astro },
-                { start: dawnH, color: PALETTE.naut },
-                { start: hSunrise, color: PALETTE.civil },
-                { start: sunriseEndH, color: PALETTE.sunriseSunset },
-                { start: goldenEndH, color: PALETTE.golden },
-                { start: goldenStartH, color: PALETTE.day },
-                { start: sunsetStartH, color: PALETTE.golden },
-                { start: hSunset, color: PALETTE.sunriseSunset },
-                { start: duskH, color: PALETTE.civil },
-                { start: nautDuskH, color: PALETTE.naut },
-                { start: astroDuskH, color: PALETTE.astro }
+                { start: astroDawnH, color: PALETTE.astro },
+                { start: nautDawnH, color: PALETTE.naut },
+                { start: dawnH, color: PALETTE.civil },
+                { start: hSunrise, color: PALETTE.sunriseSunset },
+                { start: sunriseEndH, color: PALETTE.golden },
+                { start: goldenEndH, color: PALETTE.day },
+                { start: goldenStartH, color: PALETTE.golden },
+                { start: sunsetStartH, color: PALETTE.sunriseSunset },
+                { start: hSunset, color: PALETTE.civil },
+                { start: duskH, color: PALETTE.naut },
+                { start: nautDuskH, color: PALETTE.astro },
+                { start: astroDuskH, color: effectiveNightColor }
             ];
 
             let valid = rawIntervals.filter(i => i.start !== null && !isNaN(i.start));
