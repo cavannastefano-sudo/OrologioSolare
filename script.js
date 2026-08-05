@@ -17,78 +17,38 @@ const PALETTE = {
 let cachedLat = 45.04;
 let cachedLon = 9.68;
 
-function initClock() {
+function init() {
     const savedLat = localStorage.getItem('sunclock_lat');
     const savedLon = localStorage.getItem('sunclock_lon');
     if (savedLat && savedLon) {
         cachedLat = parseFloat(savedLat);
         cachedLon = parseFloat(savedLon);
-        const latInput = document.getElementById('input-lat');
-        const lonInput = document.getElementById('input-lon');
-        if (latInput) latInput.value = cachedLat;
-        if (lonInput) lonInput.value = cachedLon;
+        document.getElementById('input-lat').value = cachedLat;
+        document.getElementById('input-lon').value = cachedLon;
     }
-
-    updateSunClock(cachedLat, cachedLon);
-    useGPSLocation(true);
+    renderClock();
+    createNumbers();
 }
 
-function useGPSLocation(silent = false) {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                cachedLat = position.coords.latitude;
-                cachedLon = position.coords.longitude;
-                const latInput = document.getElementById('input-lat');
-                const lonInput = document.getElementById('input-lon');
-                if (latInput) latInput.value = cachedLat;
-                if (lonInput) lonInput.value = cachedLon;
-                updateSunClock(cachedLat, cachedLon);
-                toggleSettingsModal(false);
-            },
-            (error) => {
-                if (!silent) alert("GPS disattivato o non disponibile.");
-            }
-        );
-    }
-}
-
-function applyManualLocation() {
-    const latInput = document.getElementById('input-lat');
-    const lonInput = document.getElementById('input-lon');
-    if (!latInput || !lonInput) return;
-    const lat = parseFloat(latInput.value);
-    const lon = parseFloat(lonInput.value);
-    if (!isNaN(lat) && !isNaN(lon)) {
-        cachedLat = lat;
-        cachedLon = lon;
-        localStorage.setItem('sunclock_lat', lat);
-        localStorage.setItem('sunclock_lon', lon);
-        updateSunClock(cachedLat, cachedLon);
-        toggleSettingsModal(false);
-    }
-}
-
-function getSunElevationColor(altitudeDeg) {
-    if (altitudeDeg >= 6) return PALETTE.day;
-    if (altitudeDeg >= 0) return PALETTE.golden;
-    if (altitudeDeg >= -0.833) return PALETTE.sunriseSunset;
-    if (altitudeDeg >= -6) return PALETTE.civil;
-    if (altitudeDeg >= -12) return PALETTE.naut;
-    if (altitudeDeg >= -18) return PALETTE.astro;
+function getSunColor(alt) {
+    if (alt >= 6) return PALETTE.day;
+    if (alt >= 0) return PALETTE.golden;
+    if (alt >= -0.833) return PALETTE.sunriseSunset;
+    if (alt >= -6) return PALETTE.civil;
+    if (alt >= -12) return PALETTE.naut;
+    if (alt >= -18) return PALETTE.astro;
     return PALETTE.night;
 }
 
-function updateSunClock(lat, lon) {
+function renderClock() {
     if (!ctx || typeof Astronomy === 'undefined') return;
-
     ctx.clearRect(0, 0, 500, 500);
 
-    const observer = new Astronomy.Observer(lat, lon, 0);
+    const observer = new Astronomy.Observer(cachedLat, cachedLon, 0);
     const baseDate = new Date();
     baseDate.setHours(0, 0, 0, 0);
 
-    let slices = [];
+    // Disegno ciclico a 360 gradi basato su Astronomy Engine (come nel progetto originale)
     for (let i = 0; i < 1440; i += 2) {
         const fraction = i / 1440;
         const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
@@ -96,12 +56,8 @@ function updateSunClock(lat, lon) {
         const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
         const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
 
-        slices.push({ fraction, altitude: hor.altitude });
-    }
-
-    slices.forEach(slice => {
-        const color = getSunElevationColor(slice.altitude);
-        const angleDeg = slice.fraction * 360;
+        const color = getSunColor(hor.altitude);
+        const angleDeg = fraction * 360;
         const startAngle = (angleDeg * Math.PI) / 180 - Math.PI / 2;
         const endAngle = ((angleDeg + 1.2) * Math.PI) / 180 - Math.PI / 2;
 
@@ -111,19 +67,12 @@ function updateSunClock(lat, lon) {
         ctx.closePath();
         ctx.fillStyle = color;
         ctx.fill();
-    });
+    }
 
-    drawMinuteRing();
-    createClockNumbers();
-    updateBackgroundAndClock(slices, lat, lon);
-}
-
-function drawMinuteRing() {
-    for (let i = 0; i < 60; i++) {
-        const fraction = i / 60;
-        const angle = (fraction * Math.PI * 2) - Math.PI / 2;
-        const len = (i % 5 === 0) ? 14 : 7;
-
+    // Tacche dei minuti
+    for (let m = 0; m < 60; m++) {
+        const angle = ((m / 60) * Math.PI * 2) - Math.PI / 2;
+        const len = (m % 5 === 0) ? 14 : 7;
         const x1 = cx + (radius - len) * Math.cos(angle);
         const y1 = cy + (radius - len) * Math.sin(angle);
         const x2 = cx + radius * Math.cos(angle);
@@ -133,16 +82,23 @@ function drawMinuteRing() {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+        ctx.lineWidth = (m % 5 === 0) ? 2 : 1;
         ctx.stroke();
+    }
+
+    // Info SunCalc per alba/tramonto testuali
+    if (typeof SunCalc !== 'undefined') {
+        const times = SunCalc.getTimes(new Date(), cachedLat, cachedLon);
+        if(times.sunrise && !isNaN(times.sunrise)) document.getElementById('txt-sunrise').innerText = times.sunrise.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        if(times.sunset && !isNaN(times.sunset)) document.getElementById('txt-sunset').innerText = times.sunset.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        if(times.solarNoon && !isNaN(times.solarNoon)) document.getElementById('txt-noon').innerText = times.solarNoon.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
 }
 
-function createClockNumbers() {
+function createNumbers() {
     const container = document.getElementById('clock-elements-container');
     if (!container) return;
     container.innerHTML = '';
-
     const hRadius = radius * 0.65;
     for (let i = 1; i <= 24; i++) {
         const angleRad = ((i - 12) / 24) * Math.PI * 2 - Math.PI / 2;
@@ -156,29 +112,6 @@ function createClockNumbers() {
         div.innerText = i;
         container.appendChild(div);
     }
-}
-
-function updateBackgroundAndClock(slices, lat, lon) {
-    const now = new Date();
-    const dayFraction = (now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()) / 86400;
-    
-    let closest = slices.reduce((prev, curr) => Math.abs(curr.fraction - dayFraction) < Math.abs(prev.fraction - dayFraction) ? curr : prev, slices[0]);
-    if (closest) {
-        document.body.style.backgroundColor = getSunElevationColor(closest.altitude);
-    }
-
-    const locText = document.getElementById('location-text');
-    if (locText) locText.innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-}
-
-function toggleTimesModal(show) {
-    const modal = document.getElementById('modal-times');
-    if (modal) modal.style.display = show ? 'flex' : 'none';
-}
-
-function toggleSettingsModal(show) {
-    const modal = document.getElementById('modal-settings');
-    if (modal) modal.style.display = show ? 'flex' : 'none';
 }
 
 function updateHands() {
@@ -204,5 +137,22 @@ function updateHands() {
     if (uEl) uEl.style.transform = `rotate(${utcDeg}deg)`;
 }
 
-initClock();
+function toggleSettingsModal(show) {
+    document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
+}
+
+function applyManualLocation() {
+    const lat = parseFloat(document.getElementById('input-lat').value);
+    const lon = parseFloat(document.getElementById('input-lon').value);
+    if (!isNaN(lat) && !isNaN(lon)) {
+        cachedLat = lat;
+        cachedLon = lon;
+        localStorage.setItem('sunclock_lat', lat);
+        localStorage.setItem('sunclock_lon', lon);
+        renderClock();
+        toggleSettingsModal(false);
+    }
+}
+
+init();
 setInterval(updateHands, 50);
