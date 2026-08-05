@@ -131,7 +131,7 @@
         }
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } /* Viola */
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } 
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
@@ -325,6 +325,7 @@
             
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
+            document.getElementById('location-header-name').innerText = currentCityName;
             
             updateSunClock(cachedLat, cachedLon);
         }
@@ -439,6 +440,7 @@
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
                 localStorage.setItem('sunclock_name', currentCityName);
+                document.getElementById('location-header-name').innerText = currentCityName;
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             }
@@ -512,7 +514,7 @@
                 const baseDate = new Date(date);
                 baseDate.setHours(0, 0, 0, 0);
 
-                for (let i = 0; i < 1440; i += 10) {
+                for (let i = 0; i < 1440; i += 5) {
                     const fraction = i / 1440;
                     const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
                     const astroTime = Astronomy.MakeTime(checkDate);
@@ -521,7 +523,7 @@
 
                     const color = getSunElevationColor(hor.altitude);
                     const startAngle = (fraction) * Math.PI * 2 - Math.PI / 2;
-                    const endAngle = ((i + 10) / 1440) * Math.PI * 2 - Math.PI / 2;
+                    const endAngle = ((i + 5) / 1440) * Math.PI * 2 - Math.PI / 2;
 
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
@@ -541,7 +543,7 @@
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke(); // Mezzogiorno rosso
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
                 }
             }
 
@@ -552,7 +554,7 @@
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke(); // Mezzanotte rossa
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
                 }
             }
         }
