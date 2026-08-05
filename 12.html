@@ -505,10 +505,10 @@
             const hSunset = timeToHours(times.sunset) ?? 20.0;
             const hCivilDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             const hCivilDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            const hNautDawn = timeToHours(times.nauticalDawn) ?? hCivilDawn;
-            const hNautDusk = timeToHours(times.nauticalDusk) ?? hCivilDusk;
-            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? hNautDawn;
-            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? hNautDusk;
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hCivilDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hCivilDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
 
             const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
@@ -550,6 +550,7 @@
 
             let nadirTime = times.nadir;
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
+            // Se siamo alle alte latitudini estive (notti bianche, es. 70°), usiamo PALETTE.astro come base per evitare il nero assoluto/buco
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
             ctx.fillStyle = effectiveNightColor;
@@ -557,12 +558,13 @@
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
+            // Calcoliamo i fallback stimati se i dati astronomici o nautici mancano (es. latitudini intermedie / alte)
             let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            let nautDawnH = timeToHours(times.nauticalDawn) ?? dawnH;
-            let nautDuskH = timeToHours(times.nauticalDusk) ?? duskH;
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? nautDawnH;
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? nautDuskH;
+            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
+            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
+            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
+            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
 
             let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
