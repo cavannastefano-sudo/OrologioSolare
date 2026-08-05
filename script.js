@@ -5,149 +5,51 @@ const cy = 250;
 const radius = 248;
 
 const PALETTE = {
-    night: '#000000',
-    astro: '#0f172a',
-    naut: '#1e3a8a',
-    civil: '#2563eb',
-    sunriseSunset: '#ea580c',
-    golden: '#ca8a04',
-    day: '#bae6fd'
+    night: '#000000',         
+    astro: '#172554',         
+    naut: '#1e3a8a',          
+    civil: '#3b82f6',         
+    sunriseSunset: '#f97316', 
+    golden: '#eab308',        
+    day: '#bae6fd'            
 };
 
 let cachedTimes = null;
-let cachedMoonTimes = null;
-let cachedMoonIllumination = null;
 let cachedLat = 45.04;
 let cachedLon = 9.68;
-let currentCityName = "Piacenza";
-let map = null;
-let marker = null;
-
-if (typeof SunCalc !== 'undefined') {
-    try {
-        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
-        SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
-        SunCalc.addTime(-6, 'dawn', 'dusk');
-    } catch (e) {}
-}
 
 function initClock() {
     const savedLat = localStorage.getItem('sunclock_lat');
     const savedLon = localStorage.getItem('sunclock_lon');
-    const savedName = localStorage.getItem('sunclock_name');
-    
     if (savedLat && savedLon) {
         cachedLat = parseFloat(savedLat);
         cachedLon = parseFloat(savedLon);
-        if (savedName) currentCityName = savedName;
+        document.getElementById('input-lat').value = cachedLat;
+        document.getElementById('input-lon').value = cachedLon;
+        updateSunClock(cachedLat, cachedLon);
+    } else {
+        useGPSLocation();
     }
-    
-    document.getElementById('input-lat').value = cachedLat;
-    document.getElementById('input-lon').value = cachedLon;
-    document.getElementById('location-header-name').innerText = currentCityName;
-    
-    updateSunClock(cachedLat, cachedLon);
-}
-
-async function resolveCityName(lat, lon) {
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-        const data = await response.json();
-        if (data && data.address) {
-            currentCityName = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.county || "Posizione GPS";
-        } else {
-            currentCityName = "Posizione GPS";
-        }
-    } catch (e) {
-        currentCityName = "Posizione GPS";
-    }
-    localStorage.setItem('sunclock_name', currentCityName);
-    document.getElementById('location-header-name').innerText = currentCityName;
-    document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
 }
 
 function useGPSLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
-            async (position) => {
+            (position) => {
                 cachedLat = position.coords.latitude;
                 cachedLon = position.coords.longitude;
-                localStorage.setItem('sunclock_lat', cachedLat);
-                localStorage.setItem('sunclock_lon', cachedLon);
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
-                
-                await resolveCityName(cachedLat, cachedLon);
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             },
-            (error) => { alert("Impossibile rilevare la posizione GPS."); },
-            { timeout: 10000, maximumAge: 60000 }
+            (error) => {
+                updateSunClock(cachedLat, cachedLon); 
+                document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Piacenza).";
+            }
         );
     } else {
-        alert("Geolocalizzazione non supportata.");
-    }
-}
-
-async function searchCity() {
-    const query = document.getElementById('input-city').value.trim();
-    const statusEl = document.getElementById('search-status');
-    if (!query) {
-        statusEl.innerText = "Inserisci il nome di una città.";
-        return;
-    }
-    statusEl.innerText = "Ricerca in corso...";
-    try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
-        const data = await response.json();
-        if (data && data.length > 0) {
-            cachedLat = parseFloat(data[0].lat);
-            cachedLon = parseFloat(data[0].lon);
-            currentCityName = data[0].display_name.split(',')[0];
-            localStorage.setItem('sunclock_name', currentCityName);
-            document.getElementById('input-lat').value = cachedLat;
-            document.getElementById('input-lon').value = cachedLon;
-            statusEl.innerHTML = `<b>${currentCityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
-            if (map && marker) {
-                map.setView([cachedLat, cachedLon], 10);
-                marker.setLatLng([cachedLat, cachedLon]);
-            }
-            setTimeout(() => { applyManualLocation(); }, 800);
-        } else {
-            statusEl.innerText = "Località non trovata.";
-        }
-    } catch (e) {
-        statusEl.innerText = "Errore di connessione.";
-    }
-}
-
-function toggleMap() {
-    const mapContainer = document.getElementById('map-container');
-    if (mapContainer.style.display === 'block') {
-        mapContainer.style.display = 'none';
-    } else {
-        mapContainer.style.display = 'block';
-        if (!map) {
-            const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
-            const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
-            map = L.map('map-container').setView([currentLat, currentLon], 6);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19, attribution: '© OpenStreetMap'
-            }).addTo(map);
-            marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
-            marker.on('dragend', function(e) {
-                const pos = marker.getLatLng();
-                document.getElementById('input-lat').value = pos.lat.toFixed(4);
-                document.getElementById('input-lon').value = pos.lng.toFixed(4);
-            });
-            map.on('click', function(e) {
-                marker.setLatLng(e.latlng);
-                document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
-                document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
-            });
-        } else {
-            map.invalidateSize();
-        }
+        updateSunClock(cachedLat, cachedLon);
     }
 }
 
@@ -155,54 +57,42 @@ function applyManualLocation() {
     const lat = parseFloat(document.getElementById('input-lat').value);
     const lon = parseFloat(document.getElementById('input-lon').value);
     if (!isNaN(lat) && !isNaN(lon)) {
-        cachedLat = lat; cachedLon = lon;
+        cachedLat = lat;
+        cachedLon = lon;
         localStorage.setItem('sunclock_lat', lat);
         localStorage.setItem('sunclock_lon', lon);
-        localStorage.setItem('sunclock_name', currentCityName);
-        document.getElementById('location-header-name').innerText = currentCityName;
         updateSunClock(cachedLat, cachedLon);
         toggleSettingsModal(false);
     }
 }
 
 function updateSunClock(lat, lon) {
-    try {
-        const now = new Date();
-        if (typeof SunCalc !== 'undefined') {
-            cachedTimes = SunCalc.getTimes(now, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
-            populateTable(cachedTimes);
-        }
+    const now = new Date();
+    cachedTimes = SunCalc.getTimes(now, lat, lon);
 
-        ctx.clearRect(0, 0, 500, 500);
-        drawSunSlicesAccurate(cachedTimes, lat, lon);
-        drawSolarMeridianLines(cachedTimes);
-        drawClockFaceCanvas(cachedTimes);
-        updatePageBackground(cachedTimes, now);
+    ctx.clearRect(0, 0, 500, 500);
 
-        document.getElementById('location-header-name').innerText = currentCityName;
-        document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
-        
-        if (cachedTimes) {
-            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
-            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
-        }
-    } catch (err) {}
+    drawSunSlices(cachedTimes);
+    drawMinuteRing(cachedTimes);
+    createClockNumbers(cachedTimes);
+    updatePageBackground(cachedTimes);
+    populateTable(cachedTimes);
+
+    document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+    document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+    document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+    document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
+    document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
+    document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
+    document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
 }
 
 function timeToHours(date) {
-    if (!date || isNaN(date)) return null;
+    if (!date || isNaN(date)) return 0;
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 }
 
 function hoursToAngle(h) {
-    // 12 in alto (-PI/2), 24 in basso (+PI/2), senso orario
     return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
 }
 
@@ -210,128 +100,145 @@ function isValidDate(d) {
     return d instanceof Date && !isNaN(d);
 }
 
-function getSunColorByTimes(checkDate, times) {
-    if (!times) return PALETTE.night;
-    const t = checkDate.getTime();
+function getIntervalColor(h, times) {
+    const hAstroDawn = isValidDate(times.astronomicalDawn) ? timeToHours(times.astronomicalDawn) : 4.11;
+    const hNautDawn = isValidDate(times.nauticalDawn) ? timeToHours(times.nauticalDawn) : 4.92;
+    const hDawn = isValidDate(times.dawn) ? timeToHours(times.dawn) : 5.61;
+    const hSunrise = isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.18;
+    const hSunriseEnd = isValidDate(times.sunriseEnd) ? timeToHours(times.sunriseEnd) : 6.23;
+    const hGoldenEnd = isValidDate(times.goldenHourEnd) ? timeToHours(times.goldenHourEnd) : 6.88;
+    const hGoldenStart = isValidDate(times.goldenHour) ? timeToHours(times.goldenHour) : 20.08;
+    const hSunsetStart = isValidDate(times.sunsetStart) ? timeToHours(times.sunsetStart) : 20.71;
+    const hSunset = isValidDate(times.sunset) ? timeToHours(times.sunset) : 20.78;
+    const hDusk = isValidDate(times.dusk) ? timeToHours(times.dusk) : 21.33;
+    const hNautDusk = isValidDate(times.nauticalDusk) ? timeToHours(times.nauticalDusk) : 22.03;
+    const hAstroDusk = isValidDate(times.astronomicalDusk) ? timeToHours(times.astronomicalDusk) : 22.83;
 
-    const nadir = times.nadir?.getTime() ?? 0;
-    const astStart = times.astronomicalDawn?.getTime() ?? nadir;
-    const nauStart = times.nauticalDawn?.getTime() ?? astStart;
-    const civStart = times.dawn?.getTime() ?? nauStart;
-    const rise = times.sunrise?.getTime() ?? civStart;
-    const riseEnd = times.sunriseEnd?.getTime() ?? rise;
-    const goldEnd = times.goldenHourEnd?.getTime() ?? riseEnd;
-    const goldStart = times.goldenHour?.getTime() ?? (riseEnd + 3600000 * 10);
-    const sunsetStart = times.sunsetStart?.getTime() ?? goldStart;
-    const sunset = times.sunset?.getTime() ?? sunsetStart;
-    const civDusk = times.dusk?.getTime() ?? sunset;
-    const nauDusk = times.nauticalDusk?.getTime() ?? civDusk;
-    const astDusk = times.astronomicalDusk?.getTime() ?? nauDusk;
-
-    if (t >= riseEnd && t < goldEnd) return PALETTE.golden;
-    if (t >= goldEnd && t < goldStart) return PALETTE.day;
-    if (t >= goldStart && t < sunsetStart) return PALETTE.golden;
-    if (t >= sunsetStart && t <= sunset) return PALETTE.sunriseSunset;
-    if (t > sunset && t <= civDusk) return PALETTE.civil;
-    if (t > civDusk && t <= nauDusk) return PALETTE.naut;
-    if (t > nauDusk && t <= astDusk) return PALETTE.astro;
-    if (t >= astStart && t < rise) {
-        if (t < nauStart) return PALETTE.astro;
-        if (t < civStart) return PALETTE.naut;
-        if (t < rise) return PALETTE.civil;
-    }
+    if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+    if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+    if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+    if (h >= hSunrise && h < hSunriseEnd) return PALETTE.sunriseSunset;
+    if (h >= hSunriseEnd && h < hGoldenEnd) return PALETTE.golden;
+    if (h >= hGoldenEnd && h < hGoldenStart) return PALETTE.day;
+    if (h >= hGoldenStart && h < hSunsetStart) return PALETTE.golden;
+    if (h >= hSunsetStart && h < hSunset) return PALETTE.sunriseSunset;
+    if (h >= hSunset && h < hDusk) return PALETTE.civil;
+    if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+    if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
     return PALETTE.night;
 }
 
-function drawSunSlicesAccurate(times, lat, lon) {
+function drawSunSlices(times) {
     ctx.fillStyle = PALETTE.night;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     ctx.fill();
 
-    if (!times) return;
-    const baseDate = new Date();
-    baseDate.setHours(0, 0, 0, 0);
+    const intervals = [
+        { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
+        { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
+        { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
+        { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
+        { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
+        { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
+        { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
+        { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
+        { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
+        { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
+        { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
+    ];
 
-    for (let angleDeg = 0; angleDeg < 360; angleDeg += 0.5) {
-        const startAngle = (angleDeg * Math.PI) / 180 - Math.PI / 2;
-        const endAngle = ((angleDeg + 0.7) * Math.PI) / 180 - Math.PI / 2;
-        
-        const hourVal = ((angleDeg / 360) * 24 + 12) % 24;
-        const checkDate = new Date(baseDate.getTime() + hourVal * 3600000);
-        
-        const color = getSunColorByTimes(checkDate, times);
-
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, radius, startAngle, endAngle);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-    }
+    intervals.forEach(interval => {
+        if (interval.start < interval.end) {
+            drawSector(interval.start, interval.end, interval.color, radius);
+        }
+    });
 }
 
-function drawSolarMeridianLines(times) {
-    if (times && isValidDate(times.solarNoon)) {
-        const noonHours = timeToHours(times.solarNoon);
-        if (noonHours !== null) {
-            const noonAngle = hoursToAngle(noonHours);
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
-        }
-    }
-
-    if (times && isValidDate(times.nadir)) {
-        const nadirHours = timeToHours(times.nadir);
-        if (nadirHours !== null) {
-            const nadirAngle = hoursToAngle(nadirHours);
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-            ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
-        }
-    }
+function drawSector(startH, endH, color, r) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
 }
 
-function drawClockFaceCanvas(times) {
-    const hSunrise = times && isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.0;
-    const hSunset = times && isValidDate(times.sunset) ? timeToHours(times.sunset) : 18.0;
+function drawMinuteRing(times) {
+    for (let i = 0; i < 60; i++) {
+        let hEq = (i / 60) * 24;
+        const sectorColor = getIntervalColor(hEq, times);
 
-    for (let m = 0; m < 60; m += 5) {
-        const angleRad = ((m / 60 * 24 - 12) / 24) * Math.PI * 2 - Math.PI / 2;
-        const len = (m === 0 || m === 15 || m === 30 || m === 45) ? 10 : 5;
-        const x1 = cx + (radius - len) * Math.cos(angleRad);
-        const y1 = cy + (radius - len) * Math.sin(angleRad);
-        const x2 = cx + radius * Math.cos(angleRad);
-        const y2 = cy + radius * Math.sin(angleRad);
+        const angle = ((i / 60) * 24 - 12) / 24 * Math.PI * 2 - Math.PI / 2;
+        const len = (i % 5 === 0) ? 14 : 7;
+
+        const x1 = cx + (radius - len) * Math.cos(angle);
+        const y1 = cy + (radius - len) * Math.sin(angle);
+        const x2 = cx + radius * Math.cos(angle);
+        const y2 = cy + radius * Math.sin(angle);
 
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        ctx.strokeStyle = '#64748b';
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+        ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
         ctx.stroke();
-    }
-
-    ctx.font = 'bold 14px sans-serif';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-
-    const hRadius = radius * 0.72;
-    for (let i = 1; i <= 24; i++) {
-        const angleRad = hoursToAngle(i);
-        const hx = cx + hRadius * Math.cos(angleRad);
-        const hy = cy + hRadius * Math.sin(angleRad);
-        const checkHour = i === 24 ? 0 : i;
-        ctx.fillStyle = (checkHour < hSunrise || checkHour > hSunset) ? '#ffffff' : '#0f172a';
-        ctx.fillText(i, hx, hy);
     }
 }
 
-function updatePageBackground(times, now) {
-    const currentColor = getSunColorByTimes(now, times);
+function createClockNumbers(times) {
+    const container = document.getElementById('clock-elements-container');
+    container.innerHTML = '';
+    
+    const hSunrise = timeToHours(times.sunrise);
+    const hSunset = timeToHours(times.sunset);
+
+    const hRadius = radius * 0.65;
+    for (let i = 1; i <= 24; i++) {
+        const hourValue = i;
+        const angleRad = hoursToAngle(hourValue);
+        
+        const hx = cx + hRadius * Math.cos(angleRad);
+        const hy = cy + hRadius * Math.sin(angleRad);
+
+        const div = document.createElement('div');
+        div.className = 'hour-num';
+        div.style.left = `${hx}px`;
+        div.style.top = `${hy}px`;
+        div.innerText = hourValue;
+
+        const checkHour = hourValue === 24 ? 0 : hourValue;
+        if (checkHour < hSunrise || checkHour > hSunset) {
+            div.style.color = '#ffffff';
+        } else {
+            div.style.color = '#0f172a';
+        }
+
+        container.appendChild(div);
+    }
+
+    const mRadius = radius * 0.86;
+    for (let m = 0; m < 60; m += 5) {
+        const angleRad = ((m / 60 * 24 - 12) / 24) * Math.PI * 2 - Math.PI / 2;
+        
+        const mx = cx + mRadius * Math.cos(angleRad);
+        const my = cy + mRadius * Math.sin(angleRad);
+
+        const div = document.createElement('div');
+        div.className = 'min-num';
+        div.style.left = `${mx}px`;
+        div.style.top = `${my}px`;
+        div.innerText = String(m).padStart(2, '0');
+
+        container.appendChild(div);
+    }
+}
+
+function updatePageBackground(times) {
+    if (!times) return;
+    const now = new Date();
+    const h = timeToHours(now);
+    const currentColor = getIntervalColor(h, times);
     document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
 }
 
@@ -340,35 +247,7 @@ function formatTime(date) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-function updateMoonDigitalPanel(illumination, moonTimes) {
-    const iconEl = document.getElementById('moon-digital-icon');
-    const phaseNameEl = document.getElementById('moon-phase-name');
-    const riseEl = document.getElementById('moon-rise');
-    const setEl = document.getElementById('moon-set');
-    
-    if (!illumination) return;
-    const phase = illumination.phase;
-
-    let phaseName = "";
-    let iconSymbol = "🌕";
-
-    if (phase < 0.03 || phase > 0.97) { iconSymbol = "🌑"; phaseName = "Luna Nuova"; }
-    else if (phase < 0.22) { iconSymbol = "🌒"; phaseName = "Crescente"; }
-    else if (phase < 0.28) { iconSymbol = "🌓"; phaseName = "Primo Quarto"; }
-    else if (phase < 0.47) { iconSymbol = "🌔"; phaseName = "Gibbosa Crescente"; }
-    else if (phase < 0.53) { iconSymbol = "🌕"; phaseName = "Luna Piena"; }
-    else if (phase < 0.72) { iconSymbol = "🌖"; phaseName = "Gibbosa Calante"; }
-    else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto"; }
-    else { iconSymbol = "🌘"; phaseName = "Calante"; }
-
-    iconEl.innerText = iconSymbol;
-    phaseNameEl.innerText = phaseName;
-    riseEl.innerText = moonTimes && isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-    setEl.innerText = moonTimes && isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
-}
-
 function populateTable(times) {
-    if (!times) return;
     const tbody = document.getElementById('times-table-body');
     tbody.innerHTML = `
         <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
@@ -397,27 +276,27 @@ function toggleSettingsModal(show) {
 }
 
 function updateHands() {
-    try {
-        const now = new Date();
-        document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+    const now = new Date();
+    const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+    const m = now.getMinutes() + now.getSeconds() / 60;
+    const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-        const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-        const m = now.getMinutes() + now.getSeconds() / 60;
-        const s = now.getSeconds() + now.getMilliseconds() / 1000;
+    const hourDeg = ((h - 12) / 24) * 360;
+    document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-        const hourDeg = ((h - 12) / 24) * 360;
-        document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+    const minuteDeg = (m / 60) * 360;
+    document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-        const minuteDeg = (m / 60) * 360;
-        document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+    const secDeg = (s / 60) * 360;
+    document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-        const secDeg = (s / 60) * 360;
-        document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+    const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+    const utcDeg = ((utcHours - 12) / 24) * 360;
+    document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
 
-        if (cachedTimes) {
-            updatePageBackground(cachedTimes, now);
-        }
-    } catch (e) {}
+    if (cachedTimes) {
+        updatePageBackground(cachedTimes);
+    }
 }
 
 initClock();
