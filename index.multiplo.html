@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sunclock 24H</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    
+    <!-- Librerie ufficiali usate nel progetto -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>Sunclock 24H</h1>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
+    </header>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            <div id="clock-elements-container"></div>
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-minute"></div>
+            <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-utc"></div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <div id="info-panel">
+        <div id="location-text">Piacenza (Lat: 45.04, Lon: 9.68)</div>
+        <div class="info-grid">
+            <div>Alba: <span id="txt-sunrise">--:--</span></div>
+            <div>Tramonto: <span id="txt-sunset">--:--</span></div>
+            <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
+        </div>
+    </div>
+
+    <!-- Modale Impostazioni -->
+    <div id="modal-settings" class="modal" style="display:none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Imposta Posizione</strong>
+                <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
+            </div>
+            <div class="form-group">
+                <label>Latitudine:</label>
+                <input type="number" step="any" id="input-lat" value="45.04">
+            </div>
+            <div class="form-group">
+                <label>Longitudine:</label>
+                <input type="number" step="any" id="input-lon" value="9.68">
+            </div>
+            <button class="action-btn" onclick="applyManualLocation()" style="width:100%; margin-top:10px;">Salva</button>
+        </div>
+    </div>
+
+    <script src="script.js?v=100"></script>
+</body>
+</html>
