@@ -553,19 +553,28 @@
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
-            // Sfondo predefinito sicuro
+            // Sfondo predefinito sicuro basato sulla notte
             ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Calcoli sicuri con fallback proporzionali per preservare la sequenza completa dei crepuscoli
-            let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
-            let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
-            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
+            // Gestione robusta dei crepuscoli: se mancano (es. estate al nord), usiamo stime simmetriche intorno a mezzanotte
+            let dawnH = timeToHours(times.dawn);
+            let duskH = timeToHours(times.dusk);
+            let nautDawnH = timeToHours(times.nauticalDawn);
+            let nautDuskH = timeToHours(times.nauticalDusk);
+            let astroDawnH = timeToHours(times.astronomicalDawn);
+            let astroDuskH = timeToHours(times.astronomicalDusk);
+
+            let nadirH = timeToHours(times.nadir) ?? 0.0;
+
+            if (dawnH === null) dawnH = (hSunrise - 1.0 + 24) % 24;
+            if (duskH === null) duskH = (hSunset + 1.0) % 24;
+            if (nautDawnH === null) nautDawnH = (dawnH - 0.8 + 24) % 24;
+            if (nautDuskH === null) nautDuskH = (duskH + 0.8) % 24;
+            if (astroDawnH === null) astroDawnH = (nautDawnH - 0.8 + 24) % 24;
+            if (astroDuskH === null) astroDuskH = (nautDuskH + 0.8) % 24;
 
             let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
