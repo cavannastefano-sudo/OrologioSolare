@@ -505,10 +505,8 @@
             const hSunset = timeToHours(times.sunset) ?? 20.0;
             const hCivilDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             const hCivilDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            const hNautDawn = timeToHours(times.nauticalDawn) ?? hCivilDawn;
-            const hNautDusk = timeToHours(times.nauticalDusk) ?? hCivilDusk;
-            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? hNautDawn;
-            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? hNautDusk;
+            const hNightStart = timeToHours(times.nauticalDusk) ?? hCivilDusk;
+            const hNightEnd = timeToHours(times.nauticalDawn) ?? hCivilDawn;
 
             const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
@@ -522,14 +520,16 @@
             if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
             if (h >= hSunset && h < hCivilDusk) return PALETTE.civil;
             if (h >= hCivilDawn && h < hSunrise) return PALETTE.civil;
+            
+            if (h >= hNightEnd && h < hCivilDawn) return PALETTE.naut;
+            if (h >= hCivilDusk && h < hNightStart) return PALETTE.naut;
 
-            if (h >= hCivilDusk && h < hNautDusk) return PALETTE.naut;
-            if (h >= hNautDawn && h < hCivilDawn) return PALETTE.naut;
+            // Determiniamo se la notte profonda è reale o se siamo in una notte bianca (regolando il colore minimo)
+            let nadirTime = times.nadir;
+            let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
+            let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
-            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
-            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
-
-            if (h >= hAstroDusk || h < hAstroDawn) return PALETTE.night;
+            if (h >= hNightStart || h < hNightEnd) return effectiveNightColor;
             return PALETTE.day;
         }
 
@@ -544,7 +544,12 @@
                 return;
             }
 
-            ctx.fillStyle = PALETTE.night;
+            // Controlliamo l'altezza minima a notte fonda (nadir) per evitare il nero assoluto nelle notti bianche
+            let nadirTime = times.nadir;
+            let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
+            let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
+
+            ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
@@ -562,7 +567,7 @@
             let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
 
             let rawIntervals = [
-                { start: astroDawnH, color: PALETTE.astro },
+                { start: astroDawnH, color: effectiveNightColor },
                 { start: nautDawnH, color: PALETTE.naut },
                 { start: dawnH, color: PALETTE.civil },
                 { start: hSunrise, color: PALETTE.sunriseSunset },
@@ -572,8 +577,8 @@
                 { start: sunsetStartH, color: PALETTE.sunriseSunset },
                 { start: hSunset, color: PALETTE.civil },
                 { start: duskH, color: PALETTE.naut },
-                { start: nautDuskH, color: PALETTE.astro },
-                { start: astroDuskH, color: PALETTE.night }
+                { start: nautDuskH, color: PALETTE.naut },
+                { start: astroDuskH, color: effectiveNightColor }
             ];
 
             let valid = rawIntervals.filter(i => i.start !== null && !isNaN(i.start));
@@ -592,18 +597,18 @@
 
                 let lastEnd = fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].end : 0;
                 if (lastEnd < 24.0) {
-                    fullCycle.push({ start: lastEnd, end: 24.0, color: PALETTE.night });
+                    fullCycle.push({ start: lastEnd, end: 24.0, color: fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].color : effectiveNightColor });
                 }
                 let firstStart = fullCycle.length > 0 ? fullCycle[0].start : 0;
                 if (firstStart > 0.0) {
-                    fullCycle.unshift({ start: 0.0, end: firstStart, color: PALETTE.night });
+                    fullCycle.unshift({ start: 0.0, end: firstStart, color: fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].color : effectiveNightColor });
                 }
 
                 for (let slice of fullCycle) {
                     drawSector(slice.start, slice.end, slice.color, radius);
                 }
             } else {
-                drawSector(0.0, 24.0, PALETTE.night, radius);
+                drawSector(0.0, 24.0, effectiveNightColor, radius);
             }
         }
 
