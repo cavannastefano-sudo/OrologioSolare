@@ -505,8 +505,10 @@
             const hSunset = timeToHours(times.sunset) ?? 20.0;
             const hCivilDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             const hCivilDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            const hNightStart = timeToHours(times.nauticalDusk) ?? hCivilDusk;
-            const hNightEnd = timeToHours(times.nauticalDawn) ?? hCivilDawn;
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hCivilDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hCivilDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
 
             const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
@@ -521,14 +523,17 @@
             if (h >= hSunset && h < hCivilDusk) return PALETTE.civil;
             if (h >= hCivilDawn && h < hSunrise) return PALETTE.civil;
             
-            if (h >= hNightEnd && h < hCivilDawn) return PALETTE.naut;
-            if (h >= hCivilDusk && h < hNightStart) return PALETTE.naut;
+            if (h >= hNautDawn && h < hCivilDawn) return PALETTE.naut;
+            if (h >= hCivilDusk && h < hNautDusk) return PALETTE.naut;
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
 
             let nadirTime = times.nadir;
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
-            if (h >= hNightStart || h < hNightEnd) return effectiveNightColor;
+            if (h >= hAstroDusk || h < hAstroDawn) return effectiveNightColor;
             return PALETTE.day;
         }
 
@@ -565,7 +570,7 @@
             let sunsetStartH = timeToHours(times.sunsetStart);
 
             let rawIntervals = [
-                { start: astroDawnH, color: effectiveNightColor },
+                { start: astroDawnH, color: PALETTE.astro },
                 { start: nautDawnH, color: PALETTE.naut },
                 { start: dawnH, color: PALETTE.civil },
                 { start: hSunrise, color: PALETTE.sunriseSunset },
@@ -575,7 +580,7 @@
                 { start: sunsetStartH, color: PALETTE.sunriseSunset },
                 { start: hSunset, color: PALETTE.civil },
                 { start: duskH, color: PALETTE.naut },
-                { start: nautDuskH, color: PALETTE.naut },
+                { start: nautDuskH, color: PALETTE.astro },
                 { start: astroDuskH, color: effectiveNightColor }
             ];
 
