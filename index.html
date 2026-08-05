@@ -7,55 +7,38 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
-    <!-- Librerie esterne -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- Fogli di stile esterni -->
+    <!-- Libreria Astronomy Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+    
+    <!-- Foglio di stile -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <header>
-        <div class="header-title-container">
-            <h1>Sunclock 24H</h1>
-            <div id="location-header-name">Piacenza</div>
-        </div>
+        <h1>Sunclock 24H</h1>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
-
-    <div id="top-info-container">
-        <div id="digital-clock">00:00:00</div>
-        <div id="moon-digital-panel">
-            <div id="moon-digital-icon">🌕</div>
-            <div id="moon-digital-text">
-                <span id="moon-phase-name">Calcolo...</span>
-                <span>Sorge: <span id="moon-rise">--:--</span></span>
-                <span>Tramonta: <span id="moon-set">--:--</span></span>
-            </div>
-        </div>
-    </div>
 
     <div id="clock-wrapper">
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
+            <div id="clock-elements-container"></div>
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-utc"></div>
             <div id="center-dot"></div>
         </div>
     </div>
 
     <div id="info-panel">
-        <div id="location-text">Piacenza (Lat: 45.04, Lon: 9.68)</div>
+        <div id="location-text">Rilevamento posizione in corso...</div>
         <div class="info-grid">
             <div>Alba: <span id="txt-sunrise">--:--</span></div>
             <div>Tramonto: <span id="txt-sunset">--:--</span></div>
             <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
             <div>Mezzanotte S.: <span id="txt-midnight">--:--</span></div>
-            <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
-            <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
         </div>
         <div class="panel-buttons">
             <button class="action-btn" onclick="toggleTimesModal(true)">Tutti i tempi</button>
@@ -83,23 +66,6 @@
                 <strong>Imposta Posizione</strong>
                 <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
             </div>
-            
-            <div class="form-group">
-                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
-                <div style="display: flex; gap: 6px;">
-                    <input type="text" id="input-city" placeholder="Nome città...">
-                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
-                </div>
-                <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
-            </div>
-
-            <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
-                <div id="map-container"></div>
-            </div>
-
-            <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
-
             <div class="form-group">
                 <label>Latitudine:</label>
                 <input type="number" step="any" id="input-lat" value="45.04">
@@ -115,7 +81,6 @@
         </div>
     </div>
 
-    <!-- Script principale -->
     <script src="script.js"></script>
 </body>
 </html>
