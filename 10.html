@@ -508,15 +508,19 @@
             const hNightStart = timeToHours(times.nauticalDusk) ?? hCivilDusk;
             const hNightEnd = timeToHours(times.nauticalDawn) ?? hCivilDawn;
 
-            if (h >= hSunrise && h < timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2)) return PALETTE.sunriseSunset;
-            if (h >= (timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2)) && h < (timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0))) return PALETTE.golden;
-            if (h >= (timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0)) && h < (timeToHours(times.goldenHour) ?? (hSunset - 1.0))) return PALETTE.day;
-            if (h >= (timeToHours(times.goldenHour) ?? (hSunset - 1.0)) && h < (timeToHours(times.sunsetStart) ?? (hSunset - 0.2))) return PALETTE.golden;
-            if (h >= (timeToHours(times.sunsetStart) ?? (hSunset - 0.2)) && h < hSunset) return PALETTE.sunriseSunset;
+            const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            const hGoldenStartVal = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            const hSunsetStartVal = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
+            if (h >= hSunrise && h < hSunriseEndVal) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEndVal && h < hGoldenEndVal) return PALETTE.golden;
+            if (h >= hGoldenEndVal && h < hGoldenStartVal) return PALETTE.day;
+            if (h >= hGoldenStartVal && h < hSunsetStartVal) return PALETTE.golden;
+            if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
             if (h >= hSunset && h < hCivilDusk) return PALETTE.civil;
             if (h >= hCivilDawn && h < hSunrise) return PALETTE.civil;
             
-            // Se siamo nelle ore centrali della notte ma non esiste notte fonda (notti bianche), manteniamo il crepuscolo civile o nautico
             if (h >= hNightEnd && h < hCivilDawn) return PALETTE.naut;
             if (h >= hCivilDusk && h < hNightStart) return PALETTE.naut;
 
@@ -535,13 +539,11 @@
                 return;
             }
 
-            // Sfondo predefinito impostato sul crepuscolo/giorno anziché nero fisso per evitare coni neri anomali
             ctx.fillStyle = PALETTE.civil;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Fallbacks intelligenti per latitudini intermedie (es. Svezia) con notti bianche
             let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
             let nautDawnH = timeToHours(times.nauticalDawn) ?? dawnH;
@@ -549,15 +551,20 @@
             let astroDawnH = timeToHours(times.astronomicalDawn) ?? nautDawnH;
             let astroDuskH = timeToHours(times.astronomicalDusk) ?? nautDuskH;
 
+            let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
             let rawIntervals = [
                 { start: astroDawnH, color: PALETTE.astro },
                 { start: nautDawnH, color: PALETTE.naut },
                 { start: dawnH, color: PALETTE.civil },
                 { start: hSunrise, color: PALETTE.sunriseSunset },
-                { start: timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2), color: PALETTE.golden },
-                { start: timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0), color: PALETTE.day },
-                { start: timeToHours(times.goldenHour) ?? (hSunset - 1.0), color: PALETTE.golden },
-                { start: timeToHours(times.sunsetStart) ?? (hSunset - 0.2), color: PALETTE.sunriseSunset },
+                { start: sunriseEndH, color: PALETTE.golden },
+                { start: goldenEndH, color: PALETTE.day },
+                { start: goldenStartH, color: PALETTE.golden },
+                { start: sunsetStartH, color: PALETTE.sunriseSunset },
                 { start: hSunset, color: PALETTE.civil },
                 { start: duskH, color: PALETTE.naut },
                 { start: nautDuskH, color: PALETTE.astro },
