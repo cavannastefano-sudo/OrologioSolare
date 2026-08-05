@@ -239,7 +239,7 @@ function updatePageBackground(times) {
     const now = new Date();
     const h = timeToHours(now);
     const currentColor = getIntervalColor(h, times);
-    document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
+    document.body.style.backgroundColor = currentColor;
 }
 
 function formatTime(date) {
