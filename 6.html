@@ -118,7 +118,7 @@
         }
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } /* Viola */
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } 
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
@@ -517,7 +517,6 @@
         }
 
         function drawSolarMeridianLines(times) {
-            // Mezzogiorno solare (ora bianco)
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
                 if (noonHours !== null) {
@@ -525,13 +524,12 @@
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                    ctx.strokeStyle = '#ffffff';
+                    ctx.strokeStyle = '#ef4444';
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
                 }
             }
 
-            // Mezzanotte solare / nadir (ora rosso)
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
                 if (nadirHours !== null) {
@@ -570,9 +568,7 @@
         }
 
         function drawClockNumbers(times) {
-            const hSunrise = timeToHours(times.sunrise) ?? 6.0;
-            const hSunset = timeToHours(times.sunset) ?? 18.0;
-
+            // 1. Disegno delle Ore (1 a 24) con bordo giallo evidenziatore
             ctx.font = 'bold 15px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -583,20 +579,30 @@
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
-                const checkHour = i === 24 ? 0 : i;
-                ctx.fillStyle = (checkHour < hSunrise || checkHour > hSunset) ? '#ffffff' : '#0f172a';
+                ctx.lineWidth = 3.5;
+                ctx.strokeStyle = '#facc15'; // Giallo evidenziatore
+                ctx.strokeText(i, hx, hy);
+
+                ctx.fillStyle = '#0f172a';
                 ctx.fillText(i, hx, hy);
             }
 
+            // 2. Disegno dei Minuti (00, 05, 10... 55) con bordo giallo evidenziatore
             ctx.font = 'bold 11px sans-serif';
-            ctx.fillStyle = '#94a3b8';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
-                ctx.fillText(String(m).padStart(2, '0'), mx, my);
+                const minText = String(m).padStart(2, '0');
+
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#facc15'; // Giallo evidenziatore
+                ctx.strokeText(minText, mx, my);
+
+                ctx.fillStyle = '#1e293b';
+                ctx.fillText(minText, mx, my);
             }
         }
 
