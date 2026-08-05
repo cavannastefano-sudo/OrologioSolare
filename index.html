@@ -127,7 +127,6 @@
             z-index: 20;
         }
         
-        /* Lancetta Sole: Arancione Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff5500; 
@@ -137,16 +136,15 @@
         #hand-hour::after {
             content: "☀️";
             position: absolute;
-            top: -22px;
+            top: -24px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 14px;
+            font-size: 18px; /* Ingrandito */
         }
 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } 
         
-        /* Lancetta Luna: Bianca Fluorescente */
         #hand-moon { 
             width: 4px; height: 40%; 
             background: #ffffff; 
@@ -156,10 +154,10 @@
         #hand-moon::after {
             content: "🌙";
             position: absolute;
-            top: -22px;
+            top: -24px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 14px;
+            font-size: 18px; /* Ingrandito */
         }
 
         #center-dot {
@@ -550,11 +548,14 @@
                 { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
             ];
 
-            let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null && i.start < i.end);
+            let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null);
             validIntervals.sort((a, b) => a.start - b.start);
 
             validIntervals.forEach(interval => {
-                drawSector(interval.start, interval.end, interval.color, radius);
+                let s = interval.start;
+                let e = interval.end;
+                if (e < s) e += 24;
+                drawSector(s, e, interval.color, radius);
             });
         }
 
@@ -695,6 +696,11 @@
             phaseNameEl.innerText = phaseName;
             riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
             setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+
+            const moonHand = document.getElementById('hand-moon');
+            if(moonHand) {
+                moonHand.style.setProperty('--moon-icon', `"${iconSymbol}"`);
+            }
         }
 
         function populateTable(times) {
