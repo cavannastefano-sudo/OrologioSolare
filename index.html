@@ -305,9 +305,11 @@
         let marker = null;
 
         if (typeof SunCalc !== 'undefined') {
-            SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
-            SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
-            SunCalc.addTime(-6, 'dawn', 'dusk');
+            try {
+                SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+                SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+                SunCalc.addTime(-6, 'dawn', 'dusk');
+            } catch (e) {}
         }
 
         function initClock() {
@@ -324,7 +326,6 @@
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
             
-            // Avvio immediato senza blocchi
             updateSunClock(cachedLat, cachedLon);
         }
 
@@ -343,13 +344,11 @@
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
-                    (error) => {
-                        alert("Impossibile rilevare la posizione GPS.");
-                    },
+                    (error) => { alert("Impossibile rilevare la posizione GPS."); },
                     { timeout: 10000, maximumAge: 60000 }
                 );
             } else {
-                alert("Geolocalizzazione non supportata dal browser.");
+                alert("Geolocalizzazione non supportata.");
             }
         }
 
@@ -371,14 +370,11 @@
                     localStorage.setItem('sunclock_name', currentCityName);
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
-                    
                     statusEl.innerHTML = `<b>${currentCityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
-                    
                     if (map && marker) {
                         map.setView([cachedLat, cachedLon], 10);
                         marker.setLatLng([cachedLat, cachedLon]);
                     }
-
                     setTimeout(() => { applyManualLocation(); }, 800);
                 } else {
                     statusEl.innerText = "Località non trovata.";
@@ -397,20 +393,16 @@
                 if (!map) {
                     const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
                     const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
-                    
                     map = L.map('map-container').setView([currentLat, currentLon], 6);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19, attribution: '© OpenStreetMap'
                     }).addTo(map);
-
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
-
                     marker.on('dragend', function(e) {
                         const pos = marker.getLatLng();
                         document.getElementById('input-lat').value = pos.lat.toFixed(4);
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
                     });
-
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
@@ -436,32 +428,36 @@
         }
 
         function updateSunClock(lat, lon) {
-            const now = new Date();
-            if (typeof SunCalc !== 'undefined') {
-                cachedTimes = SunCalc.getTimes(now, lat, lon);
-                cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-                cachedMoonIllumination = SunCalc.getMoonIllumination(now);
-                updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
-                populateTable(cachedTimes);
-            }
+            try {
+                const now = new Date();
+                if (typeof SunCalc !== 'undefined') {
+                    cachedTimes = SunCalc.getTimes(now, lat, lon);
+                    cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
+                    cachedMoonIllumination = SunCalc.getMoonIllumination(now);
+                    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+                    populateTable(cachedTimes);
+                }
 
-            ctx.clearRect(0, 0, 500, 500);
-            drawSunSlicesSafe(cachedTimes, now, lat, lon);
-            drawSolarMeridianLines(cachedTimes);
-            drawMinuteRingSafe(cachedTimes, now, lat, lon);
-            drawClockNumbers(cachedTimes);
-            updatePageBackground(cachedTimes, now, lat, lon);
+                ctx.clearRect(0, 0, 500, 500);
+                drawSunSlicesSafe(cachedTimes, now, lat, lon);
+                drawSolarMeridianLines(cachedTimes);
+                drawMinuteRingSafe(cachedTimes, now, lat, lon);
+                drawClockNumbers(cachedTimes);
+                updatePageBackground(cachedTimes, now, lat, lon);
 
-            document.getElementById('location-header-name').innerText = currentCityName;
-            document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
-            
-            if (cachedTimes) {
-                document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-                document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
-                document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-                document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-                document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-                document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+                document.getElementById('location-header-name').innerText = currentCityName;
+                document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
+                
+                if (cachedTimes) {
+                    document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+                    document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+                    document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
+                    document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
+                    document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
+                    document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+                }
+            } catch (err) {
+                console.error("Errore aggiornamento sole:", err);
             }
         }
 
@@ -496,28 +492,30 @@
 
             if (typeof Astronomy === 'undefined') return;
 
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const baseDate = new Date(date);
-            baseDate.setHours(0, 0, 0, 0);
+            try {
+                const observer = new Astronomy.Observer(lat, lon, 0);
+                const baseDate = new Date(date);
+                baseDate.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 1440; i += 5) {
-                const fraction = i / 1440;
-                const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
-                const astroTime = Astronomy.MakeTime(checkDate);
-                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
+                for (let i = 0; i < 1440; i += 10) {
+                    const fraction = i / 1440;
+                    const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
+                    const astroTime = Astronomy.MakeTime(checkDate);
+                    const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
+                    const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
 
-                const color = getSunElevationColor(hor.altitude);
-                const startAngle = (fraction) * Math.PI * 2 - Math.PI / 2;
-                const endAngle = ((i + 5) / 1440) * Math.PI * 2 - Math.PI / 2;
+                    const color = getSunElevationColor(hor.altitude);
+                    const startAngle = (fraction) * Math.PI * 2 - Math.PI / 2;
+                    const endAngle = ((i + 10) / 1440) * Math.PI * 2 - Math.PI / 2;
 
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.arc(cx, cy, radius, startAngle, endAngle);
-                ctx.closePath();
-                ctx.fillStyle = color;
-                ctx.fill();
-            }
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.arc(cx, cy, radius, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+            } catch (e) {}
         }
 
         function drawSolarMeridianLines(times) {
@@ -546,33 +544,34 @@
 
         function drawMinuteRingSafe(times, date, lat, lon) {
             if (typeof Astronomy === 'undefined') return;
+            try {
+                const observer = new Astronomy.Observer(lat, lon, 0);
+                const baseDate = new Date(date);
+                baseDate.setHours(0, 0, 0, 0);
 
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const baseDate = new Date(date);
-            baseDate.setHours(0, 0, 0, 0);
+                for (let i = 0; i < 60; i++) {
+                    const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
+                    const astroTime = Astronomy.MakeTime(checkDate);
+                    const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
+                    const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
+                    const sectorColor = getSunElevationColor(hor.altitude);
 
-            for (let i = 0; i < 60; i++) {
-                const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
-                const astroTime = Astronomy.MakeTime(checkDate);
-                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-                const sectorColor = getSunElevationColor(hor.altitude);
+                    const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                    const len = (i % 5 === 0) ? 14 : 7;
 
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 14 : 7;
+                    const x1 = cx + (radius - len) * Math.cos(angle);
+                    const y1 = cy + (radius - len) * Math.sin(angle);
+                    const x2 = cx + radius * Math.cos(angle);
+                    const y2 = cy + radius * Math.sin(angle);
 
-                const x1 = cx + (radius - len) * Math.cos(angle);
-                const y1 = cy + (radius - len) * Math.sin(angle);
-                const x2 = cx + radius * Math.cos(angle);
-                const y2 = cy + radius * Math.sin(angle);
-
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
-                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
-                ctx.stroke();
-            }
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
+                    ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+                    ctx.stroke();
+                }
+            } catch (e) {}
         }
 
         function drawClockNumbers(times) {
@@ -613,12 +612,14 @@
 
         function updatePageBackground(times, date, lat, lon) {
             if (typeof Astronomy === 'undefined') return;
-            const observer = new Astronomy.Observer(lat, lon, 0);
-            const astroTime = Astronomy.MakeTime(date);
-            const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
-            const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
-            const currentColor = getSunElevationColor(hor.altitude);
-            document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
+            try {
+                const observer = new Astronomy.Observer(lat, lon, 0);
+                const astroTime = Astronomy.MakeTime(date);
+                const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
+                const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
+                const currentColor = getSunElevationColor(hor.altitude);
+                document.body.style.backgroundColor = currentColor === PALETTE.night ? '#000000' : currentColor;
+            } catch (e) {}
         }
 
         function formatTime(date) {
@@ -683,21 +684,23 @@
         }
 
         function updateHands() {
-            const now = new Date();
-            document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+            try {
+                const now = new Date();
+                document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
 
-            const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-            const m = now.getMinutes() + now.getSeconds() / 60;
-            const s = now.getSeconds() + now.getMilliseconds() / 1000;
+                const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+                const m = now.getMinutes() + now.getSeconds() / 60;
+                const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 180;
-            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+                const hourDeg = (h / 24) * 360 - 180;
+                document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const minuteDeg = (m / 60) * 360;
-            document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+                const minuteDeg = (m / 60) * 360;
+                document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-            const secDeg = (s / 60) * 360;
-            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+                const secDeg = (s / 60) * 360;
+                document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+            } catch (e) {}
         }
 
         // Avvio immediato sicuro
