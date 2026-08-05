@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H App</title>
+    <title>Sunclock 24H</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
-    <!-- Libreria Astronomy Engine -->
+    <!-- Librerie ufficiali usate nel progetto -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
     
-    <!-- Foglio di stile -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -33,34 +33,16 @@
     </div>
 
     <div id="info-panel">
-        <div id="location-text">Rilevamento posizione in corso...</div>
+        <div id="location-text">Piacenza (Lat: 45.04, Lon: 9.68)</div>
         <div class="info-grid">
             <div>Alba: <span id="txt-sunrise">--:--</span></div>
             <div>Tramonto: <span id="txt-sunset">--:--</span></div>
             <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
-            <div>Mezzanotte S.: <span id="txt-midnight">--:--</span></div>
-        </div>
-        <div class="panel-buttons">
-            <button class="action-btn" onclick="toggleTimesModal(true)">Tutti i tempi</button>
-        </div>
-    </div>
-
-    <!-- Modale Tempi -->
-    <div id="modal-times" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <strong>Tutti i tempi solari</strong>
-                <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
-            </div>
-            <table class="times-table">
-                <thead><tr><th>Evento</th><th>Tempo</th></tr></thead>
-                <tbody id="times-table-body"></tbody>
-            </table>
         </div>
     </div>
 
     <!-- Modale Impostazioni -->
-    <div id="modal-settings" class="modal">
+    <div id="modal-settings" class="modal" style="display:none;">
         <div class="modal-content">
             <div class="modal-header">
                 <strong>Imposta Posizione</strong>
@@ -74,14 +56,10 @@
                 <label>Longitudine:</label>
                 <input type="number" step="any" id="input-lon" value="9.68">
             </div>
-            <div style="display: flex; gap: 8px; margin-top: 15px;">
-                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
-                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
-            </div>
+            <button class="action-btn" onclick="applyManualLocation()" style="width:100%; margin-top:10px;">Salva</button>
         </div>
     </div>
 
-    <!-- Script principale con forzatura cache -->
-    <script src="script.js?v=99"></script>
+    <script src="script.js?v=100"></script>
 </body>
 </html>
