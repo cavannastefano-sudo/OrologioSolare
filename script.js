@@ -16,7 +16,6 @@ const PALETTE = {
 
 let cachedLat = 45.04;
 let cachedLon = 9.68;
-let worker = null;
 
 function initClock() {
     const savedLat = localStorage.getItem('sunclock_lat');
@@ -30,24 +29,8 @@ function initClock() {
         if (lonInput) lonInput.value = cachedLon;
     }
 
-    if (window.Worker) {
-        worker = new Worker('worker.js');
-        worker.onmessage = function(e) {
-            if (e.data.status === 'success') {
-                drawSunSlicesFromWorker(e.data.slices);
-                updateBackgroundAndClock(e.data.slices);
-            }
-        };
-    }
-
-    requestSunData();
+    updateSunClock(cachedLat, cachedLon);
     useGPSLocation(true);
-}
-
-function requestSunData() {
-    if (worker) {
-        worker.postMessage({ lat: cachedLat, lon: cachedLon, dateStr: new Date().toISOString() });
-    }
 }
 
 function useGPSLocation(silent = false) {
@@ -60,7 +43,7 @@ function useGPSLocation(silent = false) {
                 const lonInput = document.getElementById('input-lon');
                 if (latInput) latInput.value = cachedLat;
                 if (lonInput) lonInput.value = cachedLon;
-                requestSunData();
+                updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             },
             (error) => {
@@ -81,7 +64,7 @@ function applyManualLocation() {
         cachedLon = lon;
         localStorage.setItem('sunclock_lat', lat);
         localStorage.setItem('sunclock_lon', lon);
-        requestSunData();
+        updateSunClock(cachedLat, cachedLon);
         toggleSettingsModal(false);
     }
 }
@@ -96,13 +79,27 @@ function getSunElevationColor(altitudeDeg) {
     return PALETTE.night;
 }
 
-function drawSunSlicesFromWorker(slices) {
-    if (!ctx) return;
-    ctx.fillStyle = PALETTE.night;
-    ctx.beginPath();
-    ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-    ctx.fill();
+function updateSunClock(lat, lon) {
+    if (!ctx || typeof Astronomy === 'undefined') return;
 
+    ctx.clearRect(0, 0, 500, 500);
+
+    const observer = new Astronomy.Observer(lat, lon, 0);
+    const baseDate = new Date();
+    baseDate.setHours(0, 0, 0, 0);
+
+    let slices = [];
+    for (let i = 0; i < 1440; i += 2) {
+        const fraction = i / 1440;
+        const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
+        const astroTime = Astronomy.MakeTime(checkDate);
+        const eq = Astronomy.Equator(Astronomy.Body.Sun, astroTime, observer, true, true);
+        const hor = Astronomy.Horizon(astroTime, observer, eq.right_ascension, eq.declination, "normal");
+
+        slices.push({ fraction, altitude: hor.altitude });
+    }
+
+    // Disegna spicchi
     slices.forEach(slice => {
         const color = getSunElevationColor(slice.altitude);
         const angleDeg = slice.fraction * 360;
@@ -117,11 +114,12 @@ function drawSunSlicesFromWorker(slices) {
         ctx.fill();
     });
 
-    drawMinuteRing(slices);
+    drawMinuteRing();
     createClockNumbers();
+    updateBackgroundAndClock(slices, lat, lon);
 }
 
-function drawMinuteRing(slices) {
+function drawMinuteRing() {
     for (let i = 0; i < 60; i++) {
         const fraction = i / 60;
         const angle = (fraction * Math.PI * 2) - Math.PI / 2;
@@ -161,18 +159,17 @@ function createClockNumbers() {
     }
 }
 
-function updateBackgroundAndClock(slices) {
+function updateBackgroundAndClock(slices, lat, lon) {
     const now = new Date();
     const dayFraction = (now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds()) / 86400;
     
-    // Trova la fascia più vicina all'ora corrente per colorare lo sfondo della pagina
     let closest = slices.reduce((prev, curr) => Math.abs(curr.fraction - dayFraction) < Math.abs(prev.fraction - dayFraction) ? curr : prev, slices[0]);
     if (closest) {
         document.body.style.backgroundColor = getSunElevationColor(closest.altitude);
     }
 
     const locText = document.getElementById('location-text');
-    if (locText) locText.innerHTML = `Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
+    if (locText) locText.innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
 }
 
 function toggleTimesModal(show) {
