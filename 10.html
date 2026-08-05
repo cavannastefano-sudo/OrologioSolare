@@ -529,39 +529,64 @@
         }
 
         function drawSunSlicesSafe(times) {
+            // Controllo per latitudini estreme (es. Polo Nord / giorno continuo estivo)
+            let hasValidSunset = isValidDate(times.sunset) && isValidDate(times.sunrise);
+            let hSunrise = timeToHours(times.sunrise);
+            let hSunset = timeToHours(times.sunset);
+
+            if (!hasValidSunset || isNaN(hSunrise) || isNaN(hSunset) || hSunrise === hSunset) {
+                drawSector(0.0, 24.0, PALETTE.day, radius);
+                return;
+            }
+
             ctx.fillStyle = PALETTE.night;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            let intervals = [
-                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
-                { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
-                { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
-                { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
-                { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
-                { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
-                { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
-                { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
-                { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
-                { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
-                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
+            let rawIntervals = [
+                { start: timeToHours(times.astronomicalDawn), color: PALETTE.astro },
+                { start: timeToHours(times.nauticalDawn), color: PALETTE.naut },
+                { start: timeToHours(times.dawn), color: PALETTE.civil },
+                { start: timeToHours(times.sunrise), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunriseEnd), color: PALETTE.golden },
+                { start: timeToHours(times.goldenHourEnd), color: PALETTE.day },
+                { start: timeToHours(times.goldenHour), color: PALETTE.golden },
+                { start: timeToHours(times.sunsetStart), color: PALETTE.sunriseSunset },
+                { start: timeToHours(times.sunset), color: PALETTE.civil },
+                { start: timeToHours(times.dusk), color: PALETTE.naut },
+                { start: timeToHours(times.nauticalDusk), color: PALETTE.astro },
+                { start: timeToHours(times.astronomicalDusk), color: PALETTE.night }
             ];
 
-            let validIntervals = intervals.filter(i => i.start !== null && i.end !== null);
-            validIntervals.sort((a, b) => a.start - b.start);
+            let valid = rawIntervals.filter(i => i.start !== null && !isNaN(i.start));
+            valid.sort((a, b) => a.start - b.start);
 
-            for (let interval of validIntervals) {
-                let s = interval.start;
-                let e = interval.end;
-
-                if (e < s) {
-                    // Gestione pulita e divisione del settore a cavallo di mezzanotte per evitare il triangolo nero
-                    drawSector(s, 24.0, interval.color, radius);
-                    drawSector(0.0, e, interval.color, radius);
-                } else {
-                    drawSector(s, e, interval.color, radius);
+            if (valid.length >= 2) {
+                let fullCycle = [];
+                for (let i = 0; i < valid.length; i++) {
+                    let current = valid[i];
+                    let nextStart = (i + 1 < valid.length) ? valid[i + 1].start : 24.0;
+                    
+                    if (nextStart > current.start) {
+                        fullCycle.push({ start: current.start, end: nextStart, color: current.color });
+                    }
                 }
+
+                let lastEnd = fullCycle.length > 0 ? fullCycle[fullCycle.length - 1].end : 0;
+                if (lastEnd < 24.0) {
+                    fullCycle.push({ start: lastEnd, end: 24.0, color: PALETTE.night });
+                }
+                let firstStart = fullCycle.length > 0 ? fullCycle[0].start : 0;
+                if (firstStart > 0.0) {
+                    fullCycle.unshift({ start: 0.0, end: firstStart, color: PALETTE.night });
+                }
+
+                for (let slice of fullCycle) {
+                    drawSector(slice.start, slice.end, slice.color, radius);
+                }
+            } else {
+                drawSector(0.0, 24.0, PALETTE.night, radius);
             }
         }
 
