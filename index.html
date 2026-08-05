@@ -328,6 +328,11 @@
             document.getElementById('location-header-name').innerText = currentCityName;
             
             updateSunClock(cachedLat, cachedLon);
+            
+            // Secondo controllo di sicurezza ritardato per garantire il rendering dei colori se il motore astronomico carica tardi
+            setTimeout(() => {
+                updateSunClock(cachedLat, cachedLon);
+            }, 300);
         }
 
         async function resolveCityName(lat, lon) {
