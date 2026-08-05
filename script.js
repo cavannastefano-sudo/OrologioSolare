@@ -1,5 +1,5 @@
 const canvas = document.getElementById('clockCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 const cx = 250;
 const cy = 250;
 const radius = 248;
@@ -19,13 +19,23 @@ let cachedLat = 45.04;
 let cachedLon = 9.68;
 
 function initClock() {
+    try {
+        if (typeof SunCalc !== 'undefined') {
+            SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+            SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+            SunCalc.addTime(-6, 'dawn', 'dusk');
+        }
+    } catch (e) {}
+
     const savedLat = localStorage.getItem('sunclock_lat');
     const savedLon = localStorage.getItem('sunclock_lon');
     if (savedLat && savedLon) {
         cachedLat = parseFloat(savedLat);
         cachedLon = parseFloat(savedLon);
-        document.getElementById('input-lat').value = cachedLat;
-        document.getElementById('input-lon').value = cachedLon;
+        const latInput = document.getElementById('input-lat');
+        const lonInput = document.getElementById('input-lon');
+        if (latInput) latInput.value = cachedLat;
+        if (lonInput) lonInput.value = cachedLon;
         updateSunClock(cachedLat, cachedLon);
     } else {
         useGPSLocation();
@@ -38,14 +48,17 @@ function useGPSLocation() {
             (position) => {
                 cachedLat = position.coords.latitude;
                 cachedLon = position.coords.longitude;
-                document.getElementById('input-lat').value = cachedLat;
-                document.getElementById('input-lon').value = cachedLon;
+                const latInput = document.getElementById('input-lat');
+                const lonInput = document.getElementById('input-lon');
+                if (latInput) latInput.value = cachedLat;
+                if (lonInput) lonInput.value = cachedLon;
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             },
             (error) => {
                 updateSunClock(cachedLat, cachedLon); 
-                document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite (Piacenza).";
+                const locText = document.getElementById('location-text');
+                if (locText) locText.innerText = "GPS disattivato. Coordinate predefinite (Piacenza).";
             }
         );
     } else {
@@ -54,8 +67,11 @@ function useGPSLocation() {
 }
 
 function applyManualLocation() {
-    const lat = parseFloat(document.getElementById('input-lat').value);
-    const lon = parseFloat(document.getElementById('input-lon').value);
+    const latInput = document.getElementById('input-lat');
+    const lonInput = document.getElementById('input-lon');
+    if (!latInput || !lonInput) return;
+    const lat = parseFloat(latInput.value);
+    const lon = parseFloat(lonInput.value);
     if (!isNaN(lat) && !isNaN(lon)) {
         cachedLat = lat;
         cachedLon = lon;
@@ -67,24 +83,43 @@ function applyManualLocation() {
 }
 
 function updateSunClock(lat, lon) {
-    const now = new Date();
-    cachedTimes = SunCalc.getTimes(now, lat, lon);
+    try {
+        const now = new Date();
+        if (typeof SunCalc !== 'undefined') {
+            cachedTimes = SunCalc.getTimes(now, lat, lon);
+        }
 
-    ctx.clearRect(0, 0, 500, 500);
+        if (ctx) {
+            ctx.clearRect(0, 0, 500, 500);
+            if (cachedTimes) {
+                drawSunSlices(cachedTimes);
+                drawMinuteRing(cachedTimes);
+                createClockNumbers(cachedTimes);
+                populateTable(cachedTimes);
+            }
+        }
 
-    drawSunSlices(cachedTimes);
-    drawMinuteRing(cachedTimes);
-    createClockNumbers(cachedTimes);
-    updatePageBackground(cachedTimes);
-    populateTable(cachedTimes);
+        updatePageBackground(cachedTimes);
 
-    document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-    document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-    document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
-    document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-    document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-    document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-    document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+        const locText = document.getElementById('location-text');
+        if (locText) locText.innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+        
+        if (cachedTimes) {
+            setElementText('txt-sunrise', formatTime(cachedTimes.sunrise));
+            setElementText('txt-sunset', formatTime(cachedTimes.sunset));
+            setElementText('txt-noon', formatTime(cachedTimes.solarNoon));
+            setElementText('txt-midnight', formatTime(cachedTimes.nadir)); 
+            setElementText('txt-mgold', formatTime(cachedTimes.goldenHourEnd));
+            setElementText('txt-egold', formatTime(cachedTimes.goldenHour));
+        }
+    } catch (err) {
+        console.error("Errore in updateSunClock:", err);
+    }
+}
+
+function setElementText(id, text) {
+    const el = document.getElementById(id);
+    if (el) el.innerText = text;
 }
 
 function timeToHours(date) {
@@ -101,6 +136,7 @@ function isValidDate(d) {
 }
 
 function getIntervalColor(h, times) {
+    if (!times) return PALETTE.night;
     const hAstroDawn = isValidDate(times.astronomicalDawn) ? timeToHours(times.astronomicalDawn) : 4.11;
     const hNautDawn = isValidDate(times.nauticalDawn) ? timeToHours(times.nauticalDawn) : 4.92;
     const hDawn = isValidDate(times.dawn) ? timeToHours(times.dawn) : 5.61;
@@ -129,6 +165,7 @@ function getIntervalColor(h, times) {
 }
 
 function drawSunSlices(times) {
+    if (!ctx) return;
     ctx.fillStyle = PALETTE.night;
     ctx.beginPath();
     ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -188,6 +225,7 @@ function drawMinuteRing(times) {
 
 function createClockNumbers(times) {
     const container = document.getElementById('clock-elements-container');
+    if (!container) return;
     container.innerHTML = '';
     
     const hSunrise = timeToHours(times.sunrise);
@@ -249,6 +287,7 @@ function formatTime(date) {
 
 function populateTable(times) {
     const tbody = document.getElementById('times-table-body');
+    if (!tbody) return;
     tbody.innerHTML = `
         <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
         <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
@@ -268,34 +307,53 @@ function populateTable(times) {
 }
 
 function toggleTimesModal(show) {
-    document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
+    const modal = document.getElementById('modal-times');
+    if (modal) modal.style.display = show ? 'flex' : 'none';
 }
 
 function toggleSettingsModal(show) {
-    document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
+    const modal = document.getElementById('modal-settings');
+    if (modal) modal.style.display = show ? 'flex' : 'none';
 }
 
 function updateHands() {
-    const now = new Date();
-    const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-    const m = now.getMinutes() + now.getSeconds() / 60;
-    const s = now.getSeconds() + now.getMilliseconds() / 1000;
+    try {
+        const now = new Date();
+        const digitalClock = document.getElementById('digital-clock');
+        if (digitalClock) digitalClock.innerText = now.toLocaleTimeString();
 
-    const hourDeg = ((h - 12) / 24) * 360;
-    document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+        const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+        const m = now.getMinutes() + now.getSeconds() / 60;
+        const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-    const minuteDeg = (m / 60) * 360;
-    document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+        const handHour = document.getElementById('hand-hour');
+        const handMinute = document.getElementById('hand-minute');
+        const handSecond = document.getElementById('hand-second');
+        const handUtc = document.getElementById('hand-utc');
 
-    const secDeg = (s / 60) * 360;
-    document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+        if (handHour) {
+            const hourDeg = ((h - 12) / 24) * 360;
+            handHour.style.transform = `rotate(${hourDeg}deg)`;
+        }
+        if (handMinute) {
+            const minuteDeg = (m / 60) * 360;
+            handMinute.style.transform = `rotate(${minuteDeg}deg)`;
+        }
+        if (handSecond) {
+            const secDeg = (s / 60) * 360;
+            handSecond.style.transform = `rotate(${secDeg}deg)`;
+        }
+        if (handUtc) {
+            const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
+            const utcDeg = ((utcHours - 12) / 24) * 360;
+            handUtc.style.transform = `rotate(${utcDeg}deg)`;
+        }
 
-    const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-    const utcDeg = ((utcHours - 12) / 24) * 360;
-    document.getElementById('hand-utc').style.transform = `rotate(${utcDeg}deg)`;
-
-    if (cachedTimes) {
-        updatePageBackground(cachedTimes);
+        if (cachedTimes) {
+            updatePageBackground(cachedTimes);
+        }
+    } catch (e) {
+        console.error("Errore in updateHands:", e);
     }
 }
 
