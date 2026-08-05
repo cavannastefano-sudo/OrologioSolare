@@ -114,7 +114,7 @@
             font-weight: bold;
             text-align: center;
             z-index: 10;
-            font-size: 12px;
+            font-size: 11px;
             color: #94a3b8;
             width: 28px;
             height: 20px;
@@ -464,7 +464,7 @@
                 ctx.clearRect(0, 0, 500, 500);
                 drawSunSlicesSunCalc(cachedTimes);
                 drawSolarMeridianLines(cachedTimes);
-                drawMinuteRingSunCalc(cachedTimes);
+                drawMinuteTicksSunCalc(cachedTimes);
                 drawClockNumbers(cachedTimes);
                 updatePageBackground(cachedTimes);
 
@@ -488,8 +488,8 @@
         }
 
         function hoursToAngle(h) {
-            // 0 ore in alto (-PI/2), senso orario
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            // 12 in alto (-PI/2), 0/24 in basso (+PI/2), senso orario
+            return ((h - 12) / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -500,7 +500,6 @@
             if (!times) return PALETTE.night;
             const h = t.getHours() + t.getMinutes() / 60;
             
-            const hNadir = timeToHours(times.nadir) ?? 0;
             const hAstro = timeToHours(times.astronomicalDawn) ?? 4;
             const hNaut = timeToHours(times.nauticalDawn) ?? 5;
             const hCivil = timeToHours(times.dawn) ?? 6;
@@ -532,13 +531,13 @@
             const baseDate = new Date();
             baseDate.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 1440; i += 5) {
+            for (let i = 0; i < 1440; i += 2) {
                 const fraction = i / 1440;
                 const checkDate = new Date(baseDate.getTime() + fraction * 86400000);
                 const color = getIntervalColor(checkDate, times);
 
-                const startAngle = fraction * Math.PI * 2 - Math.PI / 2;
-                const endAngle = ((i + 5) / 1440) * Math.PI * 2 - Math.PI / 2;
+                const startAngle = ((fraction * 24 - 12) / 24) * Math.PI * 2 - Math.PI / 2;
+                const endAngle = (((fraction + 2/1440) * 24 - 12) / 24) * Math.PI * 2 - Math.PI / 2;
 
                 ctx.beginPath();
                 ctx.moveTo(cx, cy);
@@ -573,16 +572,16 @@
             }
         }
 
-        function drawMinuteRingSunCalc(times) {
+        function drawMinuteTicksSunCalc(times) {
             const baseDate = new Date();
             baseDate.setHours(0, 0, 0, 0);
 
-            for (let i = 0; i < 60; i++) {
+            for (let i = 0; i < 60; i += 5) {
                 const checkDate = new Date(baseDate.getTime() + (i / 60) * 3600000);
                 const sectorColor = getIntervalColor(checkDate, times);
 
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 14 : 7;
+                const angle = ((i / 60) * 24 - 12) / 24 * Math.PI * 2 - Math.PI / 2;
+                const len = 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
                 const y1 = cy + (radius - len) * Math.sin(angle);
@@ -593,7 +592,7 @@
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = (sectorColor === '#bae6fd' || sectorColor === '#eab308') ? '#0f172a' : '#ffffff';
-                ctx.lineWidth = (i % 5 === 0) ? 2 : 1;
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
             }
         }
@@ -605,7 +604,7 @@
             const hSunrise = times && isValidDate(times.sunrise) ? timeToHours(times.sunrise) : 6.0;
             const hSunset = times && isValidDate(times.sunset) ? timeToHours(times.sunset) : 18.0;
 
-            ctx.font = 'bold 15px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
@@ -621,7 +620,7 @@
 
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
+                const angleRad = ((m / 60 * 24 - 12) / 24) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
@@ -709,7 +708,7 @@
                 const m = now.getMinutes() + now.getSeconds() / 60;
                 const s = now.getSeconds() + now.getMilliseconds() / 1000;
 
-                const hourDeg = (h / 24) * 360 - 180;
+                const hourDeg = ((h - 12) / 24) * 360;
                 document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
                 const minuteDeg = (m / 60) * 360;
