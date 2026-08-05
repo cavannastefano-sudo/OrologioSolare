@@ -93,20 +93,9 @@
             box-sizing: border-box;
         }
 
-        #moon-digital-icon {
-            font-size: 1.5rem;
-        }
-
-        #moon-digital-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.2;
-        }
-
-        #moon-digital-text span {
-            color: #38bdf8;
-            font-weight: 600;
-        }
+        #moon-digital-icon { font-size: 1.5rem; }
+        #moon-digital-text { display: flex; flex-direction: column; line-height: 1.2; }
+        #moon-digital-text span { color: #38bdf8; font-weight: 600; }
 
         #clock-wrapper {
             position: relative;
@@ -190,12 +179,8 @@
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
         #map-container {
-            width: 100%;
-            height: 250px;
-            border-radius: 8px;
-            margin-top: 8px;
-            display: none;
-            border: 1px solid #475569;
+            width: 100%; height: 250px; border-radius: 8px;
+            margin-top: 8px; display: none; border: 1px solid #475569;
         }
     </style>
 </head>
@@ -204,7 +189,7 @@
     <header>
         <div class="header-title-container">
             <h1>Sunclock 24H</h1>
-            <div id="location-header-name">Caricamento località...</div>
+            <div id="location-header-name">Piacenza</div>
         </div>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
@@ -214,7 +199,7 @@
         <div id="moon-digital-panel">
             <div id="moon-digital-icon">🌕</div>
             <div id="moon-digital-text">
-                <span id="moon-phase-name">Caricamento...</span>
+                <span id="moon-phase-name">Calcolo...</span>
                 <span>Sorge: <span id="moon-rise">--:--</span></span>
                 <span>Tramonta: <span id="moon-set">--:--</span></span>
             </div>
@@ -233,7 +218,7 @@
     </div>
 
     <div id="info-panel">
-        <div id="location-text">Rilevamento posizione in corso...</div>
+        <div id="location-text">Piacenza (Lat: 45.04, Lon: 9.68)</div>
         <div class="info-grid">
             <div>Alba: <span id="txt-sunrise">--:--</span></div>
             <div>Tramonto: <span id="txt-sunset">--:--</span></div>
@@ -299,10 +284,6 @@
     </div>
 
     <script>
-        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
-        SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
-        SunCalc.addTime(-6, 'dawn', 'dusk');
-
         const canvas = document.getElementById('clockCanvas');
         const ctx = canvas.getContext('2d');
         const cx = 250;
@@ -323,6 +304,12 @@
         let map = null;
         let marker = null;
 
+        if (typeof SunCalc !== 'undefined') {
+            SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+            SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+            SunCalc.addTime(-6, 'dawn', 'dusk');
+        }
+
         function initClock() {
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
@@ -332,17 +319,16 @@
                 cachedLat = parseFloat(savedLat);
                 cachedLon = parseFloat(savedLon);
                 if (savedName) currentCityName = savedName;
-                document.getElementById('input-lat').value = cachedLat;
-                document.getElementById('input-lon').value = cachedLon;
-                updateSunClock(cachedLat, cachedLon);
-            } else {
-                // Avvio immediato con coordinate predefinite (Piacenza) per evitare blocchi grafici, poi tenta GPS in background
-                updateSunClock(cachedLat, cachedLon);
-                useGPSLocation(true); 
             }
+            
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+            
+            // Avvio immediato senza blocchi
+            updateSunClock(cachedLat, cachedLon);
         }
 
-        function useGPSLocation(isStartup = false) {
+        function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -355,15 +341,15 @@
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         updateSunClock(cachedLat, cachedLon);
-                        if (!isStartup) toggleSettingsModal(false);
+                        toggleSettingsModal(false);
                     },
                     (error) => {
-                        if (!isStartup) {
-                            document.getElementById('location-text').innerText = "GPS disattivato o non disponibile.";
-                        }
+                        alert("Impossibile rilevare la posizione GPS.");
                     },
                     { timeout: 10000, maximumAge: 60000 }
                 );
+            } else {
+                alert("Geolocalizzazione non supportata dal browser.");
             }
         }
 
@@ -393,9 +379,7 @@
                         marker.setLatLng([cachedLat, cachedLon]);
                     }
 
-                    setTimeout(() => {
-                        applyManualLocation();
-                    }, 1000);
+                    setTimeout(() => { applyManualLocation(); }, 800);
                 } else {
                     statusEl.innerText = "Località non trovata.";
                 }
@@ -416,8 +400,7 @@
                     
                     map = L.map('map-container').setView([currentLat, currentLon], 6);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        attribution: '© OpenStreetMap'
+                        maxZoom: 19, attribution: '© OpenStreetMap'
                     }).addTo(map);
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
@@ -454,29 +437,32 @@
 
         function updateSunClock(lat, lon) {
             const now = new Date();
-            cachedTimes = SunCalc.getTimes(now, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
-
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+            if (typeof SunCalc !== 'undefined') {
+                cachedTimes = SunCalc.getTimes(now, lat, lon);
+                cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
+                cachedMoonIllumination = SunCalc.getMoonIllumination(now);
+                updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+                populateTable(cachedTimes);
+            }
 
             ctx.clearRect(0, 0, 500, 500);
-
             drawSunSlicesSafe(cachedTimes, now, lat, lon);
             drawSolarMeridianLines(cachedTimes);
             drawMinuteRingSafe(cachedTimes, now, lat, lon);
             drawClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes, now, lat, lon);
-            populateTable(cachedTimes);
 
             document.getElementById('location-header-name').innerText = currentCityName;
             document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
-            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
-            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+            
+            if (cachedTimes) {
+                document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+                document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+                document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
+                document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
+                document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
+                document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
+            }
         }
 
         function timeToHours(date) {
@@ -535,29 +521,25 @@
         }
 
         function drawSolarMeridianLines(times) {
-            if (cachedTimes && isValidDate(cachedTimes.solarNoon)) {
-                const noonHours = timeToHours(cachedTimes.solarNoon);
+            if (times && isValidDate(times.solarNoon)) {
+                const noonHours = timeToHours(times.solarNoon);
                 if (noonHours !== null) {
                     const noonAngle = hoursToAngle(noonHours);
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                    ctx.strokeStyle = '#ffffff';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
+                    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5; ctx.stroke();
                 }
             }
 
-            if (cachedTimes && isValidDate(cachedTimes.nadir)) {
-                const nadirHours = timeToHours(cachedTimes.nadir);
+            if (times && isValidDate(times.nadir)) {
+                const nadirHours = timeToHours(times.nadir);
                 if (nadirHours !== null) {
                     const nadirAngle = hoursToAngle(nadirHours);
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
+                    ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.5; ctx.stroke();
                 }
             }
         }
@@ -609,7 +591,6 @@
                 const angleRad = hoursToAngle(i);
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
-
                 const checkHour = i === 24 ? 0 : i;
                 ctx.fillStyle = (checkHour < hSunrise || checkHour > hSunset) ? '#ffffff' : '#0f172a';
                 ctx.fillText(i, hx, hy);
@@ -703,7 +684,6 @@
 
         function updateHands() {
             const now = new Date();
-            
             document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
 
             const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
@@ -718,19 +698,11 @@
 
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
-
-            if (cachedLat && cachedLon && cachedTimes) {
-                updatePageBackground(cachedTimes, now, cachedLat, cachedLon);
-            }
         }
 
-        // Avvio sicuro
+        // Avvio immediato sicuro
         initClock();
         setInterval(updateHands, 50);
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.service.worker.js').catch(() => {});
-        }
     </script>
 </body>
 </html>
