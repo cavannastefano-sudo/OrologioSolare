@@ -289,7 +289,7 @@
             </div>
             
             <div class="form-group">
-                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
+                <label>Cerca Località (es. Piacenza, Albino, Bergamo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
@@ -306,11 +306,11 @@
 
             <div class="form-group">
                 <label>Latitudine:</label>
-                <input type="number" step="any" id="input-lat" value="45.04">
+                <input type="number" step="any" id="input-lat" value="45.78">
             </div>
             <div class="form-group">
                 <label>Longitudine:</label>
-                <input type="number" step="any" id="input-lon" value="9.68">
+                <input type="number" step="any" id="input-lon" value="9.83">
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
                 <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
@@ -338,8 +338,8 @@
         let cachedTimes = null;
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
-        let cachedLat = 45.04;
-        let cachedLon = 9.68;
+        let cachedLat = 45.78; // Val Seriana / Bergamo default
+        let cachedLon = 9.83;
         let map = null;
         let marker = null;
 
@@ -349,12 +349,10 @@
             if (savedLat && savedLon) {
                 cachedLat = parseFloat(savedLat);
                 cachedLon = parseFloat(savedLon);
-                document.getElementById('input-lat').value = cachedLat;
-                document.getElementById('input-lon').value = cachedLon;
-                updateSunClock(cachedLat, cachedLon);
-            } else {
-                useGPSLocation();
             }
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function useGPSLocation() {
@@ -561,8 +559,8 @@
             let duskH = timeToHours(times.dusk);
             let nautDawnH = timeToHours(times.nauticalDawn);
             let nautDuskH = timeToHours(times.nauticalDusk);
-            let astroDawnH = timeToHours(times.astronomicalDawn);
-            let astroDuskH = timeToHours(times.astronomicalDusk);
+            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH !== null ? nautDawnH - 0.8 : null);
+            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH !== null ? nautDuskH + 0.8 : null);
 
             let sunriseEndH = timeToHours(times.sunriseEnd);
             let goldenEndH = timeToHours(times.goldenHourEnd);
