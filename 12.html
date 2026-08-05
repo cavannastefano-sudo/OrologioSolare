@@ -506,11 +506,10 @@
             const hCivilDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             const hCivilDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
             
-            // Fallbacks intelligenti per i crepuscoli profondi mancanti alle alte latitudini estive
-            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hCivilDawn > 2 ? hCivilDawn - 1.0 : 1.0);
-            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hCivilDusk < 22 ? hCivilDusk + 1.0 : 23.0);
-            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn > 1 ? hNautDawn - 1.0 : 0.5);
-            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk < 23 ? hNautDusk + 1.0 : 23.5);
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hCivilDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hCivilDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
 
             const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
@@ -554,18 +553,19 @@
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
+            // Sfondo predefinito sicuro
             ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Gestione sicura dei tempi con fallback proporzionali per evitare buchi quando i dati mancano
+            // Calcoli sicuri con fallback proporzionali per preservare la sequenza completa dei crepuscoli
             let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH > 2 ? dawnH - 1.0 : 1.0);
-            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH < 22 ? duskH + 1.0 : 23.0);
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH > 1 ? nautDawnH - 1.0 : 0.5);
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH < 23 ? nautDuskH + 1.0 : 23.5);
+            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
+            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
+            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
+            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
 
             let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
             let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
