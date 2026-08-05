@@ -35,7 +35,17 @@
             width: min(90vw, 480px);
             margin-bottom: 5px;
         }
+        .header-title-container {
+            display: flex;
+            flex-direction: column;
+        }
         h1 { margin: 0; color: #38bdf8; font-size: 1.3rem; }
+        #location-header-name {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-top: 2px;
+        }
         #btn-settings {
             background: #1e293b; color: #38bdf8; border: 1px solid #475569;
             padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
@@ -191,7 +201,10 @@
 <body>
 
     <header>
-        <h1>Sunclock 24H</h1>
+        <div class="header-title-container">
+            <h1>Sunclock 24H</h1>
+            <div id="location-header-name">Caricamento località...</div>
+        </div>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
     </header>
 
@@ -305,15 +318,18 @@
         let cachedMoonIllumination = null;
         let cachedLat = 45.04;
         let cachedLon = 9.68;
+        let currentCityName = "Piacenza";
         let map = null;
         let marker = null;
 
         function initClock() {
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
+            const savedName = localStorage.getItem('sunclock_name');
             if (savedLat && savedLon) {
                 cachedLat = parseFloat(savedLat);
                 cachedLon = parseFloat(savedLon);
+                if (savedName) currentCityName = savedName;
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
                 updateSunClock(cachedLat, cachedLon);
@@ -328,12 +344,15 @@
                     (position) => {
                         cachedLat = position.coords.latitude;
                         cachedLon = position.coords.longitude;
+                        currentCityName = "Posizione GPS";
+                        localStorage.setItem('sunclock_name', currentCityName);
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
                     (error) => {
+                        currentCityName = "Piacenza";
                         updateSunClock(cachedLat, cachedLon); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
                     }
@@ -357,11 +376,12 @@
                 if (data && data.length > 0) {
                     cachedLat = parseFloat(data[0].lat);
                     cachedLon = parseFloat(data[0].lon);
+                    currentCityName = data[0].display_name.split(',')[0];
+                    localStorage.setItem('sunclock_name', currentCityName);
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    const cityName = data[0].display_name.split(',')[0];
-                    statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
+                    statusEl.innerHTML = `<b>${currentCityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
                     
                     if (map && marker) {
                         map.setView([cachedLat, cachedLon], 10);
@@ -421,6 +441,7 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
+                localStorage.setItem('sunclock_name', currentCityName);
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             }
@@ -443,7 +464,8 @@
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes);
 
-            document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+            document.getElementById('location-header-name').innerText = currentCityName;
+            document.getElementById('location-text').innerHTML = `${currentCityName} (Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)})`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
             document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
@@ -516,8 +538,13 @@
             let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null && i.start < i.end);
             validIntervals.sort((a, b) => a.start - b.start);
 
+            // Controllo rigoroso anti-sovrapposizione ed eliminazione del triangolo nero anomalo
+            let lastEnd = 0;
             validIntervals.forEach(interval => {
-                drawSector(interval.start, interval.end, interval.color, radius);
+                if (interval.start >= lastEnd) {
+                    drawSector(interval.start, interval.end, interval.color, radius);
+                    lastEnd = interval.end;
+                }
             });
         }
 
