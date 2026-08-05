@@ -118,11 +118,11 @@
         }
         #hand-hour { width: 6px; height: 38%; background: #fbbf24; box-shadow: 0 0 8px rgba(251,191,36,0.6); z-index: 24; } 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #ef4444; z-index: 23; } 
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } /* Viola */
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
-            background: #ef4444; border: 2px solid #fff; border-radius: 50%;
+            background: #a855f7; border: 2px solid #fff; border-radius: 50%;
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 26;
         }
         #info-panel {
@@ -517,6 +517,7 @@
         }
 
         function drawSolarMeridianLines(times) {
+            // Mezzogiorno solare (ora bianco)
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
                 if (noonHours !== null) {
@@ -530,6 +531,7 @@
                 }
             }
 
+            // Mezzanotte solare / nadir (ora rosso)
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
                 if (nadirHours !== null) {
@@ -571,7 +573,6 @@
             const hSunrise = timeToHours(times.sunrise) ?? 6.0;
             const hSunset = timeToHours(times.sunset) ?? 18.0;
 
-            // Disegno delle Ore (1 a 24)
             ctx.font = 'bold 15px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -587,7 +588,6 @@
                 ctx.fillText(i, hx, hy);
             }
 
-            // Disegno dei Minuti più grandi direttamente sul Canvas (00, 05, 10... 55)
             ctx.font = 'bold 11px sans-serif';
             ctx.fillStyle = '#94a3b8';
             const mRadius = radius * 0.85;
