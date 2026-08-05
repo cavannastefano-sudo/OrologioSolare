@@ -139,7 +139,7 @@
             top: -24px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px; /* Ingrandito */
+            font-size: 18px;
         }
 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
@@ -157,7 +157,7 @@
             top: -24px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px; /* Ingrandito */
+            font-size: 18px;
         }
 
         #center-dot {
@@ -501,68 +501,126 @@
         }
 
         function getIntervalColorSafe(h, times) {
-            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? 4.0;
-            const hNautDawn = timeToHours(times.nauticalDawn) ?? 5.0;
-            const hDawn = timeToHours(times.dawn) ?? 5.5;
-            const hSunrise = timeToHours(times.sunrise) ?? 6.0;
-            const hSunriseEnd = timeToHours(times.sunriseEnd) ?? 6.2;
-            const hGoldenEnd = timeToHours(times.goldenHourEnd) ?? 7.0;
-            const hGoldenStart = timeToHours(times.goldenHour) ?? 19.0;
-            const hSunsetStart = timeToHours(times.sunsetStart) ?? 20.0;
-            const hSunset = timeToHours(times.sunset) ?? 20.2;
-            const hDusk = timeToHours(times.dusk) ?? 21.0;
-            const hNautDusk = timeToHours(times.nauticalDusk) ?? 22.0;
-            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? 23.0;
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+
+            if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
+                let testDate = new Date();
+                testDate.setHours(Math.floor(h), (h % 1) * 60, 0, 0);
+                let alt = SunCalc.getPosition(testDate, cachedLat, cachedLon).altitude * (180 / Math.PI);
+                if (alt > 0) return PALETTE.day;
+                if (alt > -6) return PALETTE.civil;
+                if (alt > -12) return PALETTE.naut;
+                if (alt > -18) return PALETTE.astro;
+                return PALETTE.night;
+            }
+
+            const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
+            const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
+
+            const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            const hGoldenStartVal = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            const hSunsetStartVal = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
+            if (h >= hSunrise && h < hSunriseEndVal) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEndVal && h < hGoldenEndVal) return PALETTE.golden;
+            if (h >= hGoldenEndVal && h < hGoldenStartVal) return PALETTE.day;
+            if (h >= hGoldenStartVal && h < hSunsetStartVal) return PALETTE.golden;
+            if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
 
             if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
-            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
-            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
-            if (h >= hSunrise && h < hSunriseEnd) return PALETTE.sunriseSunset;
-            if (h >= hSunriseEnd && h < hGoldenEnd) return PALETTE.golden;
-            if (h >= hGoldenEnd && h < hGoldenStart) return PALETTE.day;
-            if (h >= hGoldenStart && h < hSunsetStart) return PALETTE.golden;
-            if (h >= hSunsetStart && h < hSunset) return PALETTE.sunriseSunset;
-            if (h >= hSunset && h < hDusk) return PALETTE.civil;
-            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
             if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
-            return PALETTE.night;
+
+            let nadirTime = times.nadir;
+            let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
+            let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
+
+            if (h >= hAstroDusk || h < hAstroDawn) return effectiveNightColor;
+            return PALETTE.day;
         }
 
         function drawSunSlicesSafe(times) {
-            ctx.fillStyle = PALETTE.night;
+            let hSunrise = timeToHours(times.sunrise);
+            let hSunset = timeToHours(times.sunset);
+
+            let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
+            
+            if (!hasValidSunset) {
+                for (let i = 0; i < 24; i += 0.25) {
+                    let sampleDate = new Date();
+                    sampleDate.setHours(Math.floor(i), (i % 1) * 60, 0, 0);
+                    let alt = SunCalc.getPosition(sampleDate, cachedLat, cachedLon).altitude * (180 / Math.PI);
+                    
+                    let color = PALETTE.night;
+                    if (alt > 0) color = PALETTE.day;
+                    else if (alt > -6) color = PALETTE.civil;
+                    else if (alt > -12) color = PALETTE.naut;
+                    else if (alt > -18) color = PALETTE.astro;
+
+                    drawSector(i, i + 0.25, color, radius);
+                }
+                return;
+            }
+
+            let nadirTime = times.nadir;
+            let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
+            let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
+
+            // Sfondo base del quadrante ora coerente con la notte effettiva (es. blu astro se non è notte fonda)
+            ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            let rawIntervals = [
-                { start: timeToHours(times.astronomicalDawn), end: timeToHours(times.nauticalDawn), color: PALETTE.astro },
-                { start: timeToHours(times.nauticalDawn), end: timeToHours(times.dawn), color: PALETTE.naut },
-                { start: timeToHours(times.dawn), end: timeToHours(times.sunrise), color: PALETTE.civil },
-                { start: timeToHours(times.sunrise), end: timeToHours(times.sunriseEnd), color: PALETTE.sunriseSunset },
-                { start: timeToHours(times.sunriseEnd), end: timeToHours(times.goldenHourEnd), color: PALETTE.golden },
-                { start: timeToHours(times.goldenHourEnd), end: timeToHours(times.goldenHour), color: PALETTE.day },
-                { start: timeToHours(times.goldenHour), end: timeToHours(times.sunsetStart), color: PALETTE.golden },
-                { start: timeToHours(times.sunsetStart), end: timeToHours(times.sunset), color: PALETTE.sunriseSunset },
-                { start: timeToHours(times.sunset), end: timeToHours(times.dusk), color: PALETTE.civil },
-                { start: timeToHours(times.dusk), end: timeToHours(times.nauticalDusk), color: PALETTE.naut },
-                { start: timeToHours(times.nauticalDusk), end: timeToHours(times.astronomicalDusk), color: PALETTE.astro }
-            ];
+            let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
+            let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
+            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
+            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
+            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
+            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
 
-            let validIntervals = rawIntervals.filter(i => i.start !== null && i.end !== null);
-            validIntervals.sort((a, b) => a.start - b.start);
+            let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
 
-            validIntervals.forEach(interval => {
-                let s = interval.start;
-                let e = interval.end;
-                if (e < s) e += 24;
-                drawSector(s, e, interval.color, radius);
-            });
+            drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
+            drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
+            drawSector(dawnH, hSunrise, PALETTE.civil, radius);
+            drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
+            drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
+            drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
+            
+            drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
+            drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
+            drawSector(hSunset, duskH, PALETTE.civil, radius);
+            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
+            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
         }
 
         function drawSector(startH, endH, color, r) {
+            if (startH === null || endH === null || isNaN(startH) || isNaN(endH)) return;
+            startH = (startH + 24) % 24;
+            endH = (endH + 24) % 24;
+
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            if (endH < startH) {
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
+                ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
+            } else {
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            }
             ctx.closePath();
             ctx.fillStyle = color;
             ctx.fill();
