@@ -501,8 +501,20 @@
         }
 
         function getIntervalColorSafe(h, times) {
-            const hSunrise = timeToHours(times.sunrise) ?? 6.0;
-            const hSunset = timeToHours(times.sunset) ?? 20.0;
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+
+            if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
+                let testDate = new Date();
+                testDate.setHours(h, 0, 0, 0);
+                let alt = SunCalc.getPosition(testDate, cachedLat, cachedLon).altitude * (180 / Math.PI);
+                if (alt > 0) return PALETTE.day;
+                if (alt > -6) return PALETTE.civil;
+                if (alt > -12) return PALETTE.naut;
+                if (alt > -18) return PALETTE.astro;
+                return PALETTE.night;
+            }
+
             const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
             const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
@@ -541,10 +553,23 @@
             let hSunrise = timeToHours(times.sunrise);
             let hSunset = timeToHours(times.sunset);
 
-            let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset);
-            if (!hasValidSunset || isNaN(hSunrise) || isNaN(hSunset) || hSunrise === hSunset) {
-                let sunPos = SunCalc.getPosition(new Date(), cachedLat, cachedLon);
-                drawSector(0.0, 24.0, sunPos.altitude > 0 ? PALETTE.day : PALETTE.night, radius);
+            let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
+            
+            if (!hasValidSunset) {
+                // Gestione latitudini estreme (Polari / Sole di mezzanotte / Notte polare) campionando l'altezza ora per ora
+                for (let i = 0; i < 24; i += 0.25) {
+                    let sampleDate = new Date();
+                    sampleDate.setHours(Math.floor(i), (i % 1) * 60, 0, 0);
+                    let alt = SunCalc.getPosition(sampleDate, cachedLat, cachedLon).altitude * (180 / Math.PI);
+                    
+                    let color = PALETTE.night;
+                    if (alt > 0) color = PALETTE.day;
+                    else if (alt > -6) color = PALETTE.civil;
+                    else if (alt > -12) color = PALETTE.naut;
+                    else if (alt > -18) color = PALETTE.astro;
+
+                    drawSector(i, i + 0.25, color, radius);
+                }
                 return;
             }
 
@@ -552,13 +577,11 @@
             let minAlt = nadirTime ? SunCalc.getPosition(nadirTime, cachedLat, cachedLon).altitude * (180 / Math.PI) : -90;
             let effectiveNightColor = (minAlt > -18) ? PALETTE.astro : PALETTE.night;
 
-            // 1. Sfondo base: Notte profonda (o blu astronomico se notte chiara)
             ctx.fillStyle = effectiveNightColor;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Estrazione sicura dei tempi con fallback proporzionali
             let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
             let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
             let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
@@ -571,8 +594,6 @@
             let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
             let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
 
-            // 2. Disegno in sequenza cronologica fissa per evitare qualsiasi errore di ordinamento array
-            // Fasce della mattina (dalla notte verso il giorno)
             drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
             drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
             drawSector(dawnH, hSunrise, PALETTE.civil, radius);
@@ -580,7 +601,6 @@
             drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
             drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
             
-            // Fasce della sera (dal giorno verso la notte)
             drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
             drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
             drawSector(hSunset, duskH, PALETTE.civil, radius);
@@ -590,14 +610,12 @@
 
         function drawSector(startH, endH, color, r) {
             if (startH === null || endH === null || isNaN(startH) || isNaN(endH)) return;
-            // Normalizzazione ore nel ciclo 0-24
             startH = (startH + 24) % 24;
             endH = (endH + 24) % 24;
 
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             if (endH < startH) {
-                // Gestione cavalcata di mezzanotte
                 ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
                 ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
             } else {
