@@ -13,7 +13,14 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        :root { --bg-color: #000000; }
+        :root { 
+            --bg-color: #000000; 
+            color-scheme: dark;
+        }
+        html {
+            background-color: var(--bg-color);
+            transition: background-color 1s ease;
+        }
         body {
             background-color: var(--bg-color);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -23,6 +30,7 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
+            padding-bottom: env(safe-area-inset-bottom);
             color: #facc15;
             transition: background-color 1s ease;
             -webkit-user-select: none;
@@ -723,6 +731,7 @@
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
             
+            document.documentElement.style.backgroundColor = finalBg;
             document.body.style.backgroundColor = finalBg;
             
             let metaThemeColor = document.querySelector('meta[name="theme-color"]');
