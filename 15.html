@@ -40,7 +40,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            width: min(95vw, 480px);
+            width: min(98vw, 480px);
             margin-bottom: 8px;
             gap: 4px;
         }
@@ -53,30 +53,30 @@
         }
 
         #digital-clock {
-            font-size: 1.05rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #facc15;
             background: rgba(0,0,0,0.3);
-            padding: 3px 6px;
+            padding: 3px 5px;
             border-radius: 6px;
             border: 1px solid rgba(0,0,0,0.4);
             letter-spacing: 0.5px;
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
 
         #date-display-btn {
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(0,0,0,0.4);
+            background: none;
+            border: none;
             color: #38bdf8;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
-            padding: 3px 6px;
-            border-radius: 6px;
+            padding: 0;
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
         #date-display-btn:hover {
-            background: rgba(0,0,0,0.5);
             color: #7dd3fc;
         }
 
@@ -84,11 +84,12 @@
             background: rgba(56, 189, 248, 0.2);
             color: #38bdf8;
             border: 1px solid rgba(56, 189, 248, 0.4);
-            padding: 6px 8px;
-            border-radius: 6px;
-            font-size: 0.8rem;
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: bold;
             cursor: pointer;
+            white-space: nowrap;
         }
         #btn-now:hover {
             background: rgba(56, 189, 248, 0.4);
@@ -555,8 +556,8 @@
 
             ctx.save();
             ctx.beginPath();
-            let arcRadius = radius - 5;
-            ctx.lineWidth = 6;
+            let arcRadius = radius - 7;
+            ctx.lineWidth = 8; // Spessore di circa 4mm
             ctx.strokeStyle = '#64748b';
 
             if (endH < startH) {
@@ -728,7 +729,8 @@
         function drawMinuteRingSafe(times) {
             for (let i = 0; i < 60; i++) {
                 const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 14 : 7;
+                // Tacche ingrandite più lunghe e spesse
+                const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
                 const y1 = cy + (radius - len) * Math.sin(angle);
@@ -739,20 +741,20 @@
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = (i % 5 === 0) ? 3.5 : 2.5;
+                ctx.lineWidth = (i % 5 === 0) ? 4.5 : 3;
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = '#000000';
-                ctx.lineWidth = (i % 5 === 0) ? 1.5 : 1;
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1.2;
                 ctx.stroke();
             }
         }
 
         function drawClockNumbers(times) {
-            ctx.font = 'bold 15px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
@@ -770,7 +772,7 @@
                 ctx.fillText(i, hx, hy);
             }
 
-            ctx.font = 'bold 11px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
@@ -779,7 +781,7 @@
 
                 const minText = String(m).padStart(2, '0');
 
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 3.5;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(minText, mx, my);
 
