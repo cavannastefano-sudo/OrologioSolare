@@ -184,7 +184,7 @@
         }
         .info-grid {
             display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 6px; margin-top: 6px; font-size: 0.78rem;
+            gap: 8px; margin-top: 6px; font-size: 0.82rem;
         }
         .info-grid span { 
             color: #facc15; 
@@ -263,13 +263,10 @@
 
     <div id="info-panel">
         <div id="location-text">Rilevamento posizione in corso...</div>
-        <div class="info-grid">
-            <div>Alba: <span id="txt-sunrise">--:--</span></div>
-            <div>Tramonto: <span id="txt-sunset">--:--</span></div>
-            <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
-            <div>Mezzanotte S.: <span id="txt-midnight">--:--</span></div>
-            <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
-            <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
+        <div class="info-grid" style="grid-template-columns: repeat(3, 1fr);">
+            <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
+            <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
+            <div>Mezzogiorno:<br><span id="txt-noon">--:--</span></div>
         </div>
         <div class="panel-buttons">
             <button class="action-btn" onclick="toggleTimesModal(true)">Tutti i tempi</button>
@@ -279,7 +276,7 @@
     <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <strong>Tutti i tempi solari</strong>
+                <strong>Tutti i tempi solari e lunari</strong>
                 <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
             </div>
             <table class="times-table">
@@ -484,15 +481,12 @@
             drawMinuteRingSafe(cachedTimes);
             drawClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
-            populateTable(cachedTimes);
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
             document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
         }
 
         function timeToHours(date) {
@@ -734,7 +728,6 @@
             document.documentElement.style.backgroundColor = finalBg;
             document.body.style.backgroundColor = finalBg;
             
-            // Aggiorna dinamicamente anche lo schema di colore (chiaro/scuro) del sistema
             const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
             document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
             
@@ -774,9 +767,17 @@
             setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
-        function populateTable(times) {
+        function populateTable(times, moonTimes, illumination) {
             const tbody = document.getElementById('times-table-body');
+            const phasePct = Math.round(illumination.fraction * 100);
+            
             tbody.innerHTML = `
+                <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+                <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+                <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
+                
+                <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
                 <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
                 <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
