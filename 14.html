@@ -136,10 +136,10 @@
         #hand-hour::after {
             content: "☀️";
             position: absolute;
-            top: -24px;
+            top: -38px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 54px;
         }
 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
@@ -154,10 +154,10 @@
         #hand-moon::after {
             content: "🌙";
             position: absolute;
-            top: -24px;
+            top: -38px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 54px;
         }
 
         #center-dot {
@@ -723,10 +723,8 @@
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
             
-            // Imposta lo sfondo della pagina
             document.body.style.backgroundColor = finalBg;
             
-            // Aggiorna dinamicamente la barra di Chrome (theme-color)
             let metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', finalBg);
