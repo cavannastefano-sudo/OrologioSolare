@@ -38,11 +38,12 @@
         }
         header {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
             width: min(98vw, 480px);
             margin-bottom: 8px;
-            gap: 4px;
+            gap: 8px;
         }
         h1 { 
             margin: 0; 
@@ -165,6 +166,7 @@
 
         #bottom-panels-container {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
             width: min(90vw, 480px);
             margin-top: 12px;
@@ -173,6 +175,7 @@
 
         .info-panel-box {
             flex: 1;
+            min-width: 200px;
             background: rgba(0,0,0,0.25);
             padding: 10px;
             border-radius: 10px;
@@ -557,7 +560,7 @@
             ctx.save();
             ctx.beginPath();
             let arcRadius = radius - 7;
-            ctx.lineWidth = 8; // Spessore di circa 4mm
+            ctx.lineWidth = 8;
             ctx.strokeStyle = '#64748b';
 
             if (endH < startH) {
@@ -729,7 +732,6 @@
         function drawMinuteRingSafe(times) {
             for (let i = 0; i < 60; i++) {
                 const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                // Tacche ingrandite più lunghe e spesse
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
