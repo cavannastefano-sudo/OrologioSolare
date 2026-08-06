@@ -136,10 +136,10 @@
         #hand-hour::after {
             content: "☀️";
             position: absolute;
-            top: -24px;
+            top: -38px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 54px;
         }
 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
@@ -154,10 +154,10 @@
         #hand-moon::after {
             content: "🌙";
             position: absolute;
-            top: -24px;
+            top: -38px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 18px;
+            font-size: 54px;
         }
 
         #center-dot {
@@ -722,7 +722,13 @@
             const h = timeToHours(now);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+            
             document.body.style.backgroundColor = finalBg;
+            
+            let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', finalBg);
+            }
         }
 
         function formatTime(date) {
@@ -753,11 +759,6 @@
             phaseNameEl.innerText = phaseName;
             riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
             setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
-
-            const moonHand = document.getElementById('hand-moon');
-            if(moonHand) {
-                moonHand.style.setProperty('--moon-icon', `"${iconSymbol}"`);
-            }
         }
 
         function populateTable(times) {
@@ -809,13 +810,31 @@
             if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
                 const moonRiseH = timeToHours(cachedMoonTimes.rise);
                 const moonSetH = timeToHours(cachedMoonTimes.set);
+                const currentH = h;
+
+                let moonDeg = 0;
                 
-                let moonCurrentH = (h >= moonRiseH && h <= moonSetH) ? 
-                    ((h - moonRiseH) / (moonSetH - moonRiseH)) * 12 + 6 : 
-                    (((h + 24 - moonSetH) % 24) / (24 - (moonSetH - moonRiseH))) * 12 + 18;
-                
-                moonCurrentH = moonCurrentH % 24;
-                const moonDeg = (moonCurrentH / 24) * 360 - 180;
+                if (moonRiseH < moonSetH) {
+                    if (currentH >= moonRiseH && currentH <= moonSetH) {
+                        let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                    } else {
+                        let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
+                        moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
+                    }
+                } else {
+                    if (currentH >= moonRiseH || currentH <= moonSetH) {
+                        let totalVisible = (24 - moonRiseH) + moonSetH;
+                        let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
+                        let progress = elapsed / totalVisible;
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                    } else {
+                        let totalHidden = moonRiseH - moonSetH;
+                        let elapsed = currentH - moonSetH;
+                        let progress = elapsed / totalHidden;
+                        moonDeg = (18 + progress * 12) / 24 * 360 - 180;
+                    }
+                }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
                 const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
