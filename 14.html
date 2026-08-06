@@ -722,7 +722,15 @@
             const h = timeToHours(now);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+            
+            // Imposta lo sfondo della pagina
             document.body.style.backgroundColor = finalBg;
+            
+            // Aggiorna dinamicamente la barra di Chrome (theme-color)
+            let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', finalBg);
+            }
         }
 
         function formatTime(date) {
@@ -801,7 +809,6 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // CORRETTO: Mappatura accurata della posizione della Luna sul quadrante 24h basata sul tempo reale
             if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
                 const moonRiseH = timeToHours(cachedMoonTimes.rise);
                 const moonSetH = timeToHours(cachedMoonTimes.set);
@@ -809,19 +816,15 @@
 
                 let moonDeg = 0;
                 
-                // Se la luna sorge e tramonta nello stesso giorno solare
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
-                        // Nel cielo: mappata tra le ore 06:00 e 18:00 del quadrante (semicerchio superiore)
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
                         moonDeg = (6 + progress * 12) / 24 * 360 - 180;
                     } else {
-                        // Sotto l'orizzonte: mappata nel semicerchio inferiore
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
                         moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
                     }
                 } else {
-                    // Gestione quando sorge la sera tardi e tramonta il giorno dopo
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
