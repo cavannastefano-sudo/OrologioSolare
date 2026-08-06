@@ -734,6 +734,10 @@
             document.documentElement.style.backgroundColor = finalBg;
             document.body.style.backgroundColor = finalBg;
             
+            // Aggiorna dinamicamente anche lo schema di colore (chiaro/scuro) del sistema
+            const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
+            document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+            
             let metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', finalBg);
