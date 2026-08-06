@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sunclock 24H App</title>
+    <title>SunClock24</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     
@@ -38,82 +38,71 @@
         }
         header {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
-            width: min(90vw, 480px);
-            margin-bottom: 5px;
+            width: min(98vw, 480px);
+            margin-bottom: 8px;
+            gap: 8px;
         }
         h1 { 
             margin: 0; 
             color: #facc15; 
-            font-size: 1.3rem; 
+            font-size: 1rem; 
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-        }
-        #btn-settings {
-            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(0,0,0,0.5);
-            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: bold;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-        }
-        #btn-settings:hover { background: rgba(0,0,0,0.5); }
-
-        #top-info-container {
-            display: flex;
-            gap: 10px;
-            width: min(90vw, 480px);
-            margin-bottom: 12px;
-            box-sizing: border-box;
         }
 
         #digital-clock {
-            flex: 1;
-            font-size: 1.4rem;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #facc15;
-            background: rgba(0,0,0,0.25);
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(0,0,0,0.3);
-            letter-spacing: 1px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 5px;
+            border-radius: 6px;
+            border: 1px solid rgba(0,0,0,0.4);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
 
-        #moon-digital-panel {
-            flex: 1.2;
-            background: rgba(0,0,0,0.25);
-            padding: 8px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(0,0,0,0.3);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.75rem;
-            color: #facc15;
-            box-sizing: border-box;
+        #date-display-btn {
+            background: none;
+            border: none;
+            color: #38bdf8;
+            font-size: 1rem;
             font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
-
-        #moon-digital-icon {
-            font-size: 1.5rem;
+        #date-display-btn:hover {
+            color: #7dd3fc;
         }
 
-        #moon-digital-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1.2;
-        }
-
-        #moon-digital-text span {
-            color: #facc15;
+        #btn-now {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.7rem;
             font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        #btn-now:hover {
+            background: rgba(56, 189, 248, 0.4);
+        }
+
+        #btn-settings {
+            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(0,0,0,0.5);
+            padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+            white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
+        #btn-settings:hover { background: rgba(0,0,0,0.5); }
 
         #clock-wrapper {
             position: relative;
@@ -174,30 +163,53 @@
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 26;
             box-shadow: 0 0 8px #ff5500;
         }
-        #info-panel {
-            margin-top: 15px; background: rgba(0,0,0,0.25); padding: 10px 15px;
-            border-radius: 10px; font-size: 0.85rem; color: #facc15;
-            text-align: center; border: 1px solid rgba(0,0,0,0.3);
-            width: min(90vw, 460px); box-shadow: 0 4px 10px rgba(0,0,0,0.2); box-sizing: border-box;
-            font-weight: bold;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+
+        #bottom-panels-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: min(90vw, 480px);
+            margin-top: 12px;
+            box-sizing: border-box;
         }
+
+        .info-panel-box {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(0,0,0,0.25);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            color: #facc15;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            transition: background 0.2s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .info-panel-box:hover {
+            background: rgba(0,0,0,0.4);
+        }
+
         .info-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr);
-            gap: 6px; margin-top: 6px; font-size: 0.78rem;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+            font-size: 0.75rem;
         }
         .info-grid span { 
             color: #facc15; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
         }
-        .panel-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 8px; }
-        .action-btn {
-            background: rgba(0,0,0,0.4); color: #facc15; border: 1px solid rgba(0,0,0,0.5);
-            padding: 5px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.8rem;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-        }
-        .action-btn:hover { background: rgba(0,0,0,0.6); }
+
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
@@ -234,21 +246,15 @@
 <body>
 
     <header>
-        <h1>Sunclock 24H</h1>
-        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️ Posizione</button>
-    </header>
-
-    <div id="top-info-container">
+        <h1>SunClock24</h1>
         <div id="digital-clock">00:00:00</div>
-        <div id="moon-digital-panel">
-            <div id="moon-digital-icon">🌕</div>
-            <div id="moon-digital-text">
-                <span id="moon-phase-name">Caricamento...</span>
-                <span>Sorge: <span id="moon-rise">--:--</span></span>
-                <span>Tramonta: <span id="moon-set">--:--</span></span>
-            </div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
+            <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
-    </div>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
+    </header>
 
     <div id="clock-wrapper">
         <div id="clock-face">
@@ -261,25 +267,34 @@
         </div>
     </div>
 
-    <div id="info-panel">
-        <div id="location-text">Rilevamento posizione in corso...</div>
-        <div class="info-grid">
-            <div>Alba: <span id="txt-sunrise">--:--</span></div>
-            <div>Tramonto: <span id="txt-sunset">--:--</span></div>
-            <div>Mezzogiorno: <span id="txt-noon">--:--</span></div>
-            <div>Mezzanotte S.: <span id="txt-midnight">--:--</span></div>
-            <div>Ora d'Oro M.: <span id="txt-mgold">--:--</span></div>
-            <div>Ora d'Oro S.: <span id="txt-egold">--:--</span></div>
+    <div id="bottom-panels-container">
+        <!-- Riquadro Sole in basso a sinistra -->
+        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+            <div id="location-text">Posizione...</div>
+            <div class="info-grid">
+                <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
+                <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
+                <div>Mezzogiorno:<br><span id="txt-noon">--:--</span></div>
+            </div>
         </div>
-        <div class="panel-buttons">
-            <button class="action-btn" onclick="toggleTimesModal(true)">Tutti i tempi</button>
+
+        <!-- Riquadro Luna in basso a destra -->
+        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
+                <span id="moon-phase-name">Caricamento...</span>
+            </div>
+            <div class="info-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 8px;">
+                <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+            </div>
         </div>
     </div>
 
     <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <strong>Tutti i tempi solari</strong>
+                <strong>Tutti i tempi solari e lunari</strong>
                 <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
             </div>
             <table class="times-table">
@@ -348,10 +363,13 @@
         let cachedMoonIllumination = null;
         let cachedLat = 45.04;
         let cachedLon = 9.68;
+        let selectedDate = new Date();
+        let isCustomDate = false;
         let map = null;
         let marker = null;
 
         function initClock() {
+            updateDateInputVal();
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
             if (savedLat && savedLon) {
@@ -363,6 +381,30 @@
             } else {
                 useGPSLocation();
             }
+        }
+
+        function updateDateInputVal() {
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            document.getElementById('input-date').value = `${year}-${month}-${day}`;
+            document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
+        }
+
+        function onDateChanged(val) {
+            if (!val) return;
+            const parts = val.split('-');
+            selectedDate = new Date(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), selectedDate.getSeconds());
+            isCustomDate = true;
+            updateDateInputVal();
+            updateSunClock(cachedLat, cachedLon);
+        }
+
+        function resetToNow() {
+            selectedDate = new Date();
+            isCustomDate = false;
+            updateDateInputVal();
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function useGPSLocation() {
@@ -470,29 +512,27 @@
         }
 
         function updateSunClock(lat, lon) {
-            const now = new Date();
-            cachedTimes = SunCalc.getTimes(now, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(now, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(now);
+            const refDate = isCustomDate ? selectedDate : new Date();
+            cachedTimes = SunCalc.getTimes(refDate, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlicesSafe(cachedTimes);
+            drawMoonVisibilityArc(cachedMoonTimes);
             drawSolarMeridianLines(cachedTimes);
             drawMinuteRingSafe(cachedTimes);
             drawClockNumbers(cachedTimes);
             updatePageBackground(cachedTimes);
-            populateTable(cachedTimes);
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
             document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
-            document.getElementById('txt-midnight').innerText = formatTime(cachedTimes.nadir); 
-            document.getElementById('txt-mgold').innerText = formatTime(cachedTimes.goldenHourEnd);
-            document.getElementById('txt-egold').innerText = formatTime(cachedTimes.goldenHour);
         }
 
         function timeToHours(date) {
@@ -506,6 +546,34 @@
 
         function isValidDate(d) {
             return d instanceof Date && !isNaN(d);
+        }
+
+        function drawMoonVisibilityArc(moonTimes) {
+            if (!isValidDate(moonTimes.rise) || !isValidDate(moonTimes.set)) return;
+            let startH = timeToHours(moonTimes.rise);
+            let endH = timeToHours(moonTimes.set);
+            if (startH === null || endH === null) return;
+
+            startH = (startH + 24) % 24;
+            endH = (endH + 24) % 24;
+
+            ctx.save();
+            ctx.beginPath();
+            let arcRadius = radius - 7;
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#64748b';
+
+            if (endH < startH) {
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(24));
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(0), hoursToAngle(endH));
+                ctx.stroke();
+            } else {
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(endH));
+                ctx.stroke();
+            }
+            ctx.restore();
         }
 
         function getIntervalColorSafe(h, times) {
@@ -664,7 +732,7 @@
         function drawMinuteRingSafe(times) {
             for (let i = 0; i < 60; i++) {
                 const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 14 : 7;
+                const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
                 const y1 = cy + (radius - len) * Math.sin(angle);
@@ -675,20 +743,20 @@
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = (i % 5 === 0) ? 3.5 : 2.5;
+                ctx.lineWidth = (i % 5 === 0) ? 4.5 : 3;
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
                 ctx.strokeStyle = '#000000';
-                ctx.lineWidth = (i % 5 === 0) ? 1.5 : 1;
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1.2;
                 ctx.stroke();
             }
         }
 
         function drawClockNumbers(times) {
-            ctx.font = 'bold 15px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
@@ -706,7 +774,7 @@
                 ctx.fillText(i, hx, hy);
             }
 
-            ctx.font = 'bold 11px sans-serif';
+            ctx.font = 'bold 14px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
@@ -715,7 +783,7 @@
 
                 const minText = String(m).padStart(2, '0');
 
-                ctx.lineWidth = 2.5;
+                ctx.lineWidth = 3.5;
                 ctx.strokeStyle = '#000000';
                 ctx.strokeText(minText, mx, my);
 
@@ -726,7 +794,7 @@
 
         function updatePageBackground(times) {
             if (!times) return;
-            const now = new Date();
+            const now = isCustomDate ? selectedDate : new Date();
             const h = timeToHours(now);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
@@ -734,7 +802,6 @@
             document.documentElement.style.backgroundColor = finalBg;
             document.body.style.backgroundColor = finalBg;
             
-            // Aggiorna dinamicamente anche lo schema di colore (chiaro/scuro) del sistema
             const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
             document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
             
@@ -774,9 +841,17 @@
             setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
-        function populateTable(times) {
+        function populateTable(times, moonTimes, illumination) {
             const tbody = document.getElementById('times-table-body');
+            const phasePct = Math.round(illumination.fraction * 100);
+            
             tbody.innerHTML = `
+                <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+                <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+                <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
+                
+                <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
                 <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
                 <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
@@ -804,12 +879,15 @@
 
         function updateHands() {
             const now = new Date();
+            if (!isCustomDate) {
+                selectedDate = now;
+            }
             
-            document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
 
-            const h = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-            const m = now.getMinutes() + now.getSeconds() / 60;
-            const s = now.getSeconds() + now.getMilliseconds() / 1000;
+            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
