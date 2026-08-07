@@ -568,6 +568,8 @@
                     rise = nTimes.rise;
                     riseSource = "giorno successivo";
                 }
+            } else {
+                riseSource = "oggi";
             }
 
             if (!set) {
@@ -580,6 +582,8 @@
                     set = nTimes.set;
                     setSource = "giorno successivo";
                 }
+            } else {
+                setSource = "oggi";
             }
 
             return { 
@@ -906,14 +910,14 @@
             phaseNameEl.innerText = phaseName;
             
             if (isValidDate(moonTimes.rise)) {
-                let suffix = moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : "";
+                let suffix = moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : " (oggi)";
                 riseEl.innerHTML = formatTime(moonTimes.rise) + `<br><span style="font-size:0.6rem; opacity:0.8;">${suffix}</span>`;
             } else {
                 riseEl.innerText = moonTimes.rise || "--:--";
             }
 
             if (isValidDate(moonTimes.set)) {
-                let suffix = moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : "";
+                let suffix = moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : " (oggi)";
                 setEl.innerHTML = formatTime(moonTimes.set) + `<br><span style="font-size:0.6rem; opacity:0.8;">${suffix}</span>`;
             } else {
                 setEl.innerText = moonTimes.set || "--:--";
@@ -924,8 +928,8 @@
             const tbody = document.getElementById('times-table-body');
             const phasePct = Math.round(illumination.fraction * 100);
             
-            let riseStr = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) + (moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : "") : moonTimes.rise;
-            let setStr = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) + (moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : "") : moonTimes.set;
+            let riseStr = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) + (moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : " (oggi)") : moonTimes.rise;
+            let setStr = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) + (moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : " (oggi)") : moonTimes.set;
 
             tbody.innerHTML = `
                 <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
