@@ -330,7 +330,7 @@
             </div>
             
             <div class="form-group">
-                <label>Cerca Località (es. Piacenza, Lima, Tokyo):</label>
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
@@ -340,7 +340,7 @@
             </div>
 
             <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri Mappa con Fusi Orari</button>
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
                 <div id="map-container"></div>
             </div>
 
@@ -384,6 +384,7 @@
         let cachedLon = 9.68;
         let selectedDate = new Date();
         let isCustomTime = false;
+        let currentTzOffsetHours = 2; // Default Italia estiva (CEST = UTC+2)
         let map = null;
         let marker = null;
 
@@ -396,37 +397,63 @@
                 cachedLon = parseFloat(savedLon);
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
-                updateSunClock(cachedLat, cachedLon);
+                updateTimezoneAndClock(cachedLat, cachedLon);
             } else {
                 useGPSLocation();
             }
         }
 
+        async function fetchTimezoneOffset(lat, lon) {
+            try {
+                // Utilizziamo un servizio gratuito per ottenere il fuso orario esatto e l'ora legale attiva per le coordinate
+                const res = await fetch(`https://www.timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`);
+                const data = await res.json();
+                if (data && data.currentUtcOffset && typeof data.currentUtcOffset.seconds === 'number') {
+                    currentTzOffsetHours = data.currentUtcOffset.seconds / 3600;
+                } else {
+                    // Fallback basato sulla longitudine se l'API non risponde
+                    currentTzOffsetHours = lon / 15;
+                }
+            } catch (e) {
+                currentTzOffsetHours = lon / 15;
+            }
+        }
+
+        async function updateTimezoneAndClock(lat, lon) {
+            await fetchTimezoneOffset(lat, lon);
+            updateSunClock(lat, lon);
+        }
+
         function updateInputsVal() {
-            const year = selectedDate.getFullYear();
-            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-            const day = String(selectedDate.getDate()).padStart(2, '0');
-            const hours = String(selectedDate.getHours()).padStart(2, '0');
-            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+            const targetDate = getTargetTime(selectedDate, currentTzOffsetHours);
+            const year = targetDate.getUTCFullYear();
+            const month = String(targetDate.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(targetDate.getUTCDate()).padStart(2, '0');
+            const hours = String(targetDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(targetDate.getUTCMinutes()).padStart(2, '0');
 
             document.getElementById('input-date').value = `${year}-${month}-${day}`;
             document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
             document.getElementById('input-time').value = `${hours}:${minutes}`;
         }
 
-        function onDateChanged(val) {
+        async function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            selectedDate = new Date(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), selectedDate.getSeconds());
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
+            const utcDate = Date.UTC(parts[0], parts[1] - 1, parts[2], selectedDate.getUTCHours(), selectedDate.getUTCMinutes(), 0);
+            selectedDate = new Date(utcDate - tzOffsetMs);
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
 
-        function onTimeChanged(val) {
+        async function onTimeChanged(val) {
             if (!val) return;
             const parts = val.split(':');
-            selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
+            const utcDate = Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), parts[0], parts[1], 0);
+            selectedDate = new Date(utcDate - tzOffsetMs);
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -436,7 +463,7 @@
             selectedDate = new Date();
             isCustomTime = false;
             updateInputsVal();
-            updateSunClock(cachedLat, cachedLon);
+            updateTimezoneAndClock(cachedLat, cachedLon);
         }
 
         function useGPSLocation() {
@@ -447,16 +474,16 @@
                         cachedLon = position.coords.longitude;
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
-                        updateSunClock(cachedLat, cachedLon);
+                        updateTimezoneAndClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
                     (error) => {
-                        updateSunClock(cachedLat, cachedLon); 
+                        updateTimezoneAndClock(cachedLat, cachedLon); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
                     }
                 );
             } else {
-                updateSunClock(cachedLat, cachedLon);
+                updateTimezoneAndClock(cachedLat, cachedLon);
             }
         }
 
@@ -481,7 +508,7 @@
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
                     
                     if (map && marker) {
-                        map.setView([cachedLat, cachedLon], 4);
+                        map.setView([cachedLat, cachedLon], 10);
                         marker.setLatLng([cachedLat, cachedLon]);
                     }
 
@@ -506,29 +533,11 @@
                     const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
                     const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
                     
-                    map = L.map('map-container').testid = 'map';
-                    map.setView([currentLat, currentLon], 3);
-                    
-                    // Layer base OpenStreetMap pulito
+                    map = L.map('map-container').setView([currentLat, currentLon], 6);
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '© OpenStreetMap'
                     }).addTo(map);
-
-                    // Overlay ufficiale dei fusi orari mondiali (Timezones GeoJSON)
-                    fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/geojson/combined.json')
-                        .then(res => res.json())
-                        .then(data => {
-                            L.geoJSON(data, {
-                                style: {
-                                    color: '#facc15',
-                                    weight: 1,
-                                    fillColor: '#38bdf8',
-                                    fillOpacity: 0.15
-                                }
-                            }).addTo(map);
-                        })
-                        .catch(err => console.log("Caricamento fusi orari online non riuscito."));
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -549,51 +558,72 @@
             }
         }
 
-        function applyManualLocation() {
+        async function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
             if (!isNaN(lat) && !isNaN(lon)) {
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
-                updateSunClock(cachedLat, cachedLon);
+                await updateTimezoneAndClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             }
         }
 
+        function getTargetTime(baseDate, tzHours) {
+            const utcMs = baseDate.getTime() - (baseDate.getTimezoneOffset() * 60000);
+            const tzOffsetMs = tzHours * 3600000;
+            return new Date(utcMs + tzOffsetMs);
+        }
+
         function updateSunClock(lat, lon) {
             const refDate = selectedDate;
+            const targetDate = getTargetTime(refDate, currentTzOffsetHours);
 
-            cachedTimes = SunCalc.getTimes(refDate, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
+            cachedTimes = SunCalc.getTimes(targetDate, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(targetDate, lat, lon);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(targetDate);
 
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
+            const localTimes = {};
+            for (let key in cachedTimes) {
+                if (isValidDate(cachedTimes[key])) {
+                    localTimes[key] = new Date(cachedTimes[key].getTime() + tzOffsetMs);
+                } else {
+                    localTimes[key] = cachedTimes[key];
+                }
+            }
+
+            const localMoonTimes = {
+                rise: isValidDate(cachedMoonTimes.rise) ? new Date(cachedMoonTimes.rise.getTime() + tzOffsetMs) : null,
+                set: isValidDate(cachedMoonTimes.set) ? new Date(cachedMoonTimes.set.getTime() + tzOffsetMs) : null
+            };
+
+            updateMoonDigitalPanel(cachedMoonIllumination, localMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
-            drawSunSlicesSafe(cachedTimes);
-            drawMoonVisibilityArc(cachedMoonTimes);
-            drawSolarMeridianLines(cachedTimes);
-            drawMinuteRingSafe(cachedTimes);
-            drawClockNumbers(cachedTimes);
-            updatePageBackground(cachedTimes);
-            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+            drawSunSlicesSafe(localTimes);
+            drawMoonVisibilityArc(localMoonTimes);
+            drawSolarMeridianLines(localTimes);
+            drawMinuteRingSafe(localTimes);
+            drawClockNumbers(localTimes);
+            updatePageBackground(targetDate, localTimes);
+            populateTable(localTimes, localMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-            document.getElementById('txt-sunrise').innerText = isValidDate(cachedTimes.sunrise) ? formatTime(cachedTimes.sunrise) : "Non disponibile";
-            document.getElementById('txt-sunset').innerText = isValidDate(cachedTimes.sunset) ? formatTime(cachedTimes.sunset) : "Non disponibile";
-            document.getElementById('txt-noon').innerText = isValidDate(cachedTimes.solarNoon) ? formatTime(cachedTimes.solarNoon) : "Non disponibile";
+            document.getElementById('txt-sunrise').innerText = formatTime(localTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(localTimes.sunset);
+            document.getElementById('txt-noon').innerText = formatTime(localTimes.solarNoon);
         }
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
         }
 
-        // CORRETTO: 00 / 24 in alto (-Math.PI / 2), 12 in basso (+Math.PI / 2)
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -784,18 +814,17 @@
             ctx.textAlign = 'center';
 
             const hRadius = radius * 0.68;
-            for (let i = 0; i < 24; i++) {
-                let hourVal = i === 0 ? 24 : i;
+            for (let i = 1; i <= 24; i++) {
                 const angleRad = hoursToAngle(i);
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
                 ctx.lineWidth = 4;
                 ctx.strokeStyle = '#000000';
-                ctx.strokeText(hourVal, hx, hy);
+                ctx.strokeText(i, hx, hy);
 
                 ctx.fillStyle = '#facc15';
-                ctx.fillText(hourVal, hx, hy);
+                ctx.fillText(i, hx, hy);
             }
 
             ctx.font = 'bold 20px sans-serif';
@@ -812,13 +841,13 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#facc15';
-                ctx.fillText(minText, mx, my);
+                ctx.fillText(minText, mx, hy);
             }
         }
 
-        function updatePageBackground(times) {
+        function updatePageBackground(targetDate, times) {
             if (!times) return;
-            const h = timeToHours(selectedDate);
+            const h = timeToHours(targetDate);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
             
@@ -835,8 +864,10 @@
         }
 
         function formatTime(date) {
-            if (!isValidDate(date)) return "Non disponibile";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            if (!isValidDate(date)) return "--:--";
+            return String(date.getUTCHours()).padStart(2, '0') + ":" + 
+                   String(date.getUTCMinutes()).padStart(2, '0') + ":" + 
+                   String(date.getUTCSeconds()).padStart(2, '0');
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -860,8 +891,8 @@
 
             iconEl.innerText = iconSymbol;
             phaseNameEl.innerText = phaseName;
-            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "N/D";
-            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "N/D";
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise).substring(0, 5) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set).substring(0, 5) : "--:--";
         }
 
         function populateTable(times, moonTimes, illumination) {
@@ -906,13 +937,14 @@
                 updateInputsVal();
             }
             
-            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
+            const targetDate = getTargetTime(selectedDate, currentTzOffsetHours);
+            document.getElementById('digital-clock').innerText = formatTime(targetDate);
 
-            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
-            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
-            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
+            const h = targetDate.getUTCHours() + targetDate.getUTCMinutes() / 60 + targetDate.getUTCSeconds() / 3600;
+            const m = targetDate.getUTCMinutes() + targetDate.getUTCSeconds() / 60;
+            const s = targetDate.getUTCSeconds() + targetDate.getUTCMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360;
+            const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -931,32 +963,32 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 12) / 24 * 360;
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (12 + offProgress * 12) / 24 * 360;
+                        moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 12) / 24 * 360;
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (12 + progress * 12) / 24 * 360;
+                        moonDeg = (18 + progress * 12) / 24 * 360 - 180;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360;
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
             }
 
             if (cachedTimes) {
-                updatePageBackground(cachedTimes);
+                updatePageBackground(targetDate, cachedTimes);
             }
         }
 
