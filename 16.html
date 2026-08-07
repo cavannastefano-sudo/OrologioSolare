@@ -402,26 +402,14 @@
             }
         }
 
-        // Calcola l'offset esatto e gestisce l'ora legale nativamente tramite la longitudine approssimativa o fuso orario stimato
-        function getLocalTimeObject(date, lon) {
-            // Stimiamo il fuso orario standard in base alla longitudine (15 gradi = 1 ora)
-            // Usiamo Intl per gestire automaticamente l'ora legale della regione geografica più vicina
-            const targetTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
-            // Creiamo una conversione sicura basata sull'orario locale della coordinata
-            const localString = date.toLocaleString('en-US', { timeZone: targetTimeZone });
-            return new Date(localString);
-        }
-
-        function getLocalizedDate(date, lat, lon) {
-            // Approssimazione accurata e nativa dell'orario locale basata sulla longitudine e gestita dal browser senza API esterne errate
+        function getLocalizedDate(date, lon) {
             const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
             const hoursOffset = lon / 15;
             return new Date(utc + (3600000 * hoursOffset));
         }
 
         function updateInputsVal() {
-            const localNow = getLocalizedDate(selectedDate, cachedLat, cachedLon);
+            const localNow = getLocalizedDate(selectedDate, cachedLon);
             const year = localNow.getFullYear();
             const month = String(localNow.getMonth() + 1).padStart(2, '0');
             const day = String(localNow.getDate()).padStart(2, '0');
@@ -600,7 +588,7 @@
             drawMinuteRingSafe();
             drawClockNumbers();
             
-            const targetLocalTime = getLocalizedDate(refDate, lat, lon);
+            const targetLocalTime = getLocalizedDate(refDate, lon);
             updatePageBackground(targetLocalTime, localTimes);
             
             populateTable(localTimes, localMoonTimes, cachedMoonIllumination);
@@ -931,7 +919,7 @@
                 updateInputsVal();
             }
             
-            const targetLocalTime = getLocalizedDate(selectedDate, cachedLat, cachedLon);
+            const targetLocalTime = getLocalizedDate(selectedDate, cachedLon);
             document.getElementById('digital-clock').innerText = formatTime(targetLocalTime);
 
             const h = targetLocalTime.getUTCHours() + targetLocalTime.getUTCMinutes() / 60 + targetLocalTime.getUTCSeconds() / 3600;
@@ -957,22 +945,22 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 180;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
+                        moonDeg = (offProgress * 24) / 24 * 360 - 180;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 180;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (18 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 180;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
