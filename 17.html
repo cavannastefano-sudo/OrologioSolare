@@ -710,8 +710,6 @@
 
         function updateSunClock(lat, lon) {
             const tzOffsetHours = getCurrentTzOffsetHours();
-            
-            // Usiamo direttamente la data UTC di riferimento corretta per calcolare i tempi solari locali
             const utcBaseDate = new Date(Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 12, 0, 0) - (tzOffsetHours * 3600000));
 
             const rawTimes = SunCalc.getTimes(utcBaseDate, lat, lon);
@@ -751,7 +749,7 @@
         }
 
         function hoursToAngle(h) {
-            // Allineamento corretto per mantenere la mezzanotte solare e il blocco notte in basso (00/24)
+            // Asse corretto: 12 in alto (- Math.PI / 2), 24/00 in basso
             return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
@@ -1103,7 +1101,8 @@
             const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
             const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 90;
+            // Rotazione lancetta delle ore corretta con 12 in alto e 24 in basso
+            const hourDeg = (h / 24) * 360;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -1133,27 +1132,27 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 24) / 24 * 360 - 90;
+                        moonDeg = (progress * 24) / 24 * 360;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (offProgress * 24) / 24 * 360 - 90;
+                        moonDeg = (offProgress * 24) / 24 * 360;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 24) / 24 * 360 - 90;
+                        moonDeg = (progress * 24) / 24 * 360;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (progress * 24) / 24 * 360 - 90;
+                        moonDeg = (progress * 24) / 24 * 360;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 90;
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
             }
 
