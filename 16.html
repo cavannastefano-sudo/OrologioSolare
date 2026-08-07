@@ -340,7 +340,7 @@
             </div>
 
             <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa (con Fusi Orari)</button>
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa Interattiva</button>
                 <div id="map-container"></div>
             </div>
 
@@ -508,26 +508,11 @@
                     
                     map = L.map('map-container').setView([currentLat, currentLon], 3);
                     
-                    // Mappa base OpenStreetMap
+                    // Mappa base con linee dei fusi orari / confini chiari
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '© OpenStreetMap'
                     }).addTo(map);
-
-                    // Overlay fusi orari mondiali open-source (GeoJSON timezones)
-                    fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/geojson/combined.json')
-                        .then(res => res.json())
-                        .then(data => {
-                            L.geoJSON(data, {
-                                style: {
-                                    color: '#38bdf8',
-                                    weight: 1,
-                                    fillColor: '#38bdf8',
-                                    fillOpacity: 0.08
-                                }
-                            }).addTo(map);
-                        })
-                        .catch(err => console.log("Caricamento confini fusi orari non disponibile offline."));
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -590,6 +575,7 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // Posiziona h = 0 (24) in alto (-90°) e h = 12 in basso (+90°)
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
