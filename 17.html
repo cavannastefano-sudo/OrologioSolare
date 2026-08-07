@@ -476,11 +476,11 @@
         }
 
         function updateInputsVal() {
-            const year = selectedDate.getUTCFullYear();
-            const month = String(selectedDate.getUTCMonth() + 1).padStart(2, '0');
-            const day = String(selectedDate.getUTCDate()).padStart(2, '0');
-            const hours = String(selectedDate.getUTCHours()).padStart(2, '0');
-            const minutes = String(selectedDate.getUTCMinutes()).padStart(2, '0');
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
 
             document.getElementById('input-date').value = `${year}-${month}-${day}`;
             document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
@@ -490,10 +490,7 @@
         function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            let h = selectedDate.getUTCHours();
-            let m = selectedDate.getUTCMinutes();
-            let s = selectedDate.getUTCSeconds();
-            selectedDate = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], h, m, s));
+            selectedDate = new Date(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), selectedDate.getSeconds());
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -502,7 +499,7 @@
         function onTimeChanged(val) {
             if (!val) return;
             const parts = val.split(':');
-            selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+            selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -525,9 +522,9 @@
         function updateTimeForLocation() {
             if (!isCustomTime) {
                 const now = new Date();
-                const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
                 const tzOffsetHours = getCurrentTzOffsetHours();
-                selectedDate = new Date(utcTime + (3600000 * tzOffsetHours));
+                selectedDate = new Date(utc + (3600000 * tzOffsetHours));
             }
         }
 
@@ -676,6 +673,9 @@
             let nRise = nTimes.rise ? new Date(nTimes.rise.getTime() + offsetHours * 3600000) : null;
             let nSet = nTimes.set ? new Date(nTimes.set.getTime() + offsetHours * 3600000) : null;
 
+            let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+            let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
+
             if (!rise) {
                 if (times.alwaysUp) {
                     rise = "Sempre su";
@@ -748,7 +748,7 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
         function hoursToAngle(h) {
@@ -764,14 +764,14 @@
             let set = moonTimes.set;
 
             if (moonTimes.alwaysUp) {
-                rise = new Date(refDate); rise.setUTCHours(0,0,0,0);
-                set = new Date(refDate); set.setUTCHours(23,59,59,999);
+                rise = new Date(refDate); rise.setHours(0,0,0,0);
+                set = new Date(refDate); set.setHours(23,59,59,999);
             }
 
             if (!isValidDate(rise) || !isValidDate(set)) return;
 
-            let startDayStart = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate(), 0, 0, 0));
-            let startDayEnd = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate(), 23, 59, 59, 999));
+            let startDayStart = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+            let startDayEnd = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 23, 59, 59, 999);
 
             let startH, endH;
 
@@ -1012,10 +1012,7 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            const hh = String(date.getUTCHours()).padStart(2, '0');
-            const mm = String(date.getUTCMinutes()).padStart(2, '0');
-            const ss = String(date.getUTCSeconds()).padStart(2, '0');
-            return `${hh}:${mm}:${ss}`;
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -1100,14 +1097,11 @@
                 updateInputsVal();
             }
             
-            const hh = String(selectedDate.getUTCHours()).padStart(2, '0');
-            const mm = String(selectedDate.getUTCMinutes()).padStart(2, '0');
-            const ss = String(selectedDate.getUTCSeconds()).padStart(2, '0');
-            document.getElementById('digital-clock').innerText = `${hh}:${mm}:${ss}`;
+            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
 
-            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-            const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
-            const s = selectedDate.getUTCSeconds() + selectedDate.getUTCMilliseconds() / 1000;
+            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
@@ -1123,12 +1117,12 @@
                 let set = cachedMoonTimes.set;
 
                 if (cachedMoonTimes.alwaysUp) {
-                    rise = new Date(selectedDate); rise.setUTCHours(0,0,0,0);
-                    set = new Date(selectedDate); set.setUTCHours(23,59,59,999);
+                    rise = new Date(selectedDate); rise.setHours(0,0,0,0);
+                    set = new Date(selectedDate); set.setHours(23,59,59,999);
                 }
 
-                let startDayStart = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), 0, 0, 0));
-                let startDayEnd = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), 23, 59, 59, 999));
+                let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
 
                 let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(rise)) : 0;
                 let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(set)) : 24;
