@@ -351,8 +351,8 @@
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre, Capo Verde</option>
                     <option value="0">(UTC+00:00) Londra, Lisbona, Accra</option>
-                    <option value="1" selected>(UTC+01:00) Roma, Parigi, Berlino, Madrid</option>
-                    <option value="2">(UTC+02:00) Il Cairo, Atene, Johannesburg</option>
+                    <option value="1">(UTC+01:00) Roma, Parigi, Berlino, Madrid</option>
+                    <option value="2" selected>(UTC+02:00) Roma, Parigi (Ora Legale) / Il Cairo</option>
                     <option value="3">(UTC+03:00) Mosca, Istanbul, Riyadh</option>
                     <option value="4">(UTC+04:00) Dubai, Baku</option>
                     <option value="5">(UTC+05:00) Islamabad, Tashkent</option>
@@ -371,7 +371,7 @@
             </div>
 
             <div class="form-group" style="display: flex; align-items: center; gap: 8px; background: #0f172a; padding: 8px; border-radius: 6px; border: 1px solid #475569;">
-                <input type="checkbox" id="chk-dst" onchange="toggleDST()" style="width: 18px; height: 18px; cursor: pointer;">
+                <input type="checkbox" id="chk-dst" checked onchange="toggleDST()" style="width: 18px; height: 18px; cursor: pointer;">
                 <label for="chk-dst" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h)</label>
             </div>
 
@@ -429,7 +429,7 @@
         let cachedLon = 9.68;
         let selectedDate = new Date();
         let isCustomTime = false;
-        let isDstActive = false;
+        let isDstActive = true;
         let map = null;
         let marker = null;
 
@@ -438,6 +438,17 @@
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
+            } else {
+                // Rileva automaticamente l'offset del dispositivo se non salvato
+                let deviceOffsetMinutes = -new Date().getTimezoneOffset();
+                isDstActive = (deviceOffsetMinutes === 120); // Se UTC+2 (es. ora legale estiva in Italia)
+                document.getElementById('chk-dst').checked = isDstActive;
+                localStorage.setItem('sunclock_dst', isDstActive);
+                
+                // Imposta il preset a UTC+2 se siamo in Italia/Europa centrale in estate
+                if (deviceOffsetMinutes === 120) {
+                    document.getElementById('timezone-preset').value = "2";
+                }
             }
 
             const savedLat = localStorage.getItem('sunclock_lat');
