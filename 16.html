@@ -330,7 +330,7 @@
             </div>
             
             <div class="form-group">
-                <label>Cerca Località (es. Piacenza, Lima, Tokyo):</label>
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
@@ -402,19 +402,12 @@
             }
         }
 
-        function getLocalizedDate(date, lon) {
-            const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
-            const hoursOffset = lon / 15;
-            return new Date(utc + (3600000 * hoursOffset));
-        }
-
         function updateInputsVal() {
-            const localNow = getLocalizedDate(selectedDate, cachedLon);
-            const year = localNow.getFullYear();
-            const month = String(localNow.getMonth() + 1).padStart(2, '0');
-            const day = String(localNow.getDate()).padStart(2, '0');
-            const hours = String(localNow.getHours()).padStart(2, '0');
-            const minutes = String(localNow.getMinutes()).padStart(2, '0');
+            const year = selectedDate.getFullYear();
+            const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
 
             document.getElementById('input-date').value = `${year}-${month}-${day}`;
             document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
@@ -424,9 +417,7 @@
         function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            const hoursOffset = cachedLon / 15;
-            const utcDate = Date.UTC(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), 0);
-            selectedDate = new Date(utcDate - (hoursOffset * 3600000));
+            selectedDate = new Date(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), selectedDate.getSeconds());
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -435,9 +426,7 @@
         function onTimeChanged(val) {
             if (!val) return;
             const parts = val.split(':');
-            const hoursOffset = cachedLon / 15;
-            const utcDate = Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), parts[0], parts[1], 0);
-            selectedDate = new Date(utcDate - (hoursOffset * 3600000));
+            selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
             isCustomTime = true;
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -561,47 +550,27 @@
             cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
 
-            const hoursOffset = lon / 15;
-            const offsetMs = hoursOffset * 3600000;
-
-            const localTimes = {};
-            for (let key in cachedTimes) {
-                if (isValidDate(cachedTimes[key])) {
-                    localTimes[key] = new Date(cachedTimes[key].getTime() + offsetMs);
-                } else {
-                    localTimes[key] = cachedTimes[key];
-                }
-            }
-
-            const localMoonTimes = {
-                rise: isValidDate(cachedMoonTimes.rise) ? new Date(cachedMoonTimes.rise.getTime() + offsetMs) : null,
-                set: isValidDate(cachedMoonTimes.set) ? new Date(cachedMoonTimes.set.getTime() + offsetMs) : null
-            };
-
-            updateMoonDigitalPanel(cachedMoonIllumination, localMoonTimes);
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
-            drawSunSlicesSafe(localTimes);
-            drawMoonVisibilityArc(localMoonTimes);
-            drawSolarMeridianLines(localTimes);
+            drawSunSlicesSafe(cachedTimes);
+            drawMoonVisibilityArc(cachedMoonTimes);
+            drawSolarMeridianLines(cachedTimes);
             drawMinuteRingSafe();
             drawClockNumbers();
-            
-            const targetLocalTime = getLocalizedDate(refDate, lon);
-            updatePageBackground(targetLocalTime, localTimes);
-            
-            populateTable(localTimes, localMoonTimes, cachedMoonIllumination);
+            updatePageBackground(cachedTimes);
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-            document.getElementById('txt-sunrise').innerText = formatTime(localTimes.sunrise);
-            document.getElementById('txt-sunset').innerText = formatTime(localTimes.sunset);
-            document.getElementById('txt-noon').innerText = formatTime(localTimes.solarNoon);
+            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
         }
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
         function hoursToAngle(h) {
@@ -827,9 +796,9 @@
             }
         }
 
-        function updatePageBackground(targetDate, times) {
+        function updatePageBackground(times) {
             if (!times) return;
-            const h = timeToHours(targetDate);
+            const h = timeToHours(selectedDate);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
             
@@ -847,9 +816,7 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            return String(date.getUTCHours()).padStart(2, '0') + ":" + 
-                   String(date.getUTCMinutes()).padStart(2, '0') + ":" + 
-                   String(date.getUTCSeconds()).padStart(2, '0');
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -873,8 +840,8 @@
 
             iconEl.innerText = iconSymbol;
             phaseNameEl.innerText = phaseName;
-            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise).substring(0, 5) : "--:--";
-            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set).substring(0, 5) : "--:--";
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
         function populateTable(times, moonTimes, illumination) {
@@ -919,12 +886,11 @@
                 updateInputsVal();
             }
             
-            const targetLocalTime = getLocalizedDate(selectedDate, cachedLon);
-            document.getElementById('digital-clock').innerText = formatTime(targetLocalTime);
+            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
 
-            const h = targetLocalTime.getUTCHours() + targetLocalTime.getUTCMinutes() / 60 + targetLocalTime.getUTCSeconds() / 3600;
-            const m = targetLocalTime.getUTCMinutes() + targetLocalTime.getUTCSeconds() / 60;
-            const s = targetLocalTime.getUTCSeconds() + targetLocalTime.getUTCMilliseconds() / 1000;
+            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
@@ -970,7 +936,7 @@
             }
 
             if (cachedTimes) {
-                updatePageBackground(targetLocalTime, cachedTimes);
+                updatePageBackground(cachedTimes);
             }
         }
 
