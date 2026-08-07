@@ -474,11 +474,8 @@
             const dstOffset = isDstActive ? 1 : 0;
             const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
-            // Ora UTC di riferimento basata sul tempo corrente del sistema
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-            
-            // Restituisce la data traslata in base al fuso scelto + ora legale
             return new Date(utcTimeMs + (targetTotalOffsetHours * 3600000));
         }
 
@@ -536,7 +533,6 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        // Auto-aggiorna approssimativamente il fuso in base alla longitudine
                         let approxOffset = Math.round(cachedLon / 15);
                         let selectEl = document.getElementById('timezone-preset');
                         for(let opt of selectEl.options) {
@@ -894,7 +890,8 @@
 
         function drawMinuteRingSafe() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                // Invertito: 0 in alto (- Math.PI / 2)
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -940,7 +937,8 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 + Math.PI / 2;
+                // Minuti invertiti: 00 in alto, 30 in basso
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
@@ -1054,10 +1052,11 @@
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
-            const minuteDeg = (m / 60) * 360;
+            // Lancetta dei minuti allineata con lo 0 in alto (+ 180)
+            const minuteDeg = (m / 60) * 360 + 180;
             document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
 
-            const secDeg = (s / 60) * 360;
+            const secDeg = (s / 60) * 360 + 180;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             if (cachedMoonTimes && (isValidDate(cachedMoonTimes.rise) || isValidDate(cachedMoonTimes.set) || cachedMoonTimes.alwaysUp)) {
