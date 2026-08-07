@@ -890,7 +890,8 @@
 
         function drawMinuteRingSafe() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                // Spostato lo 0 in alto sottraendo Math.PI / 2
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -936,7 +937,8 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 + Math.PI / 2;
+                // Ruotato l'anello dei minuti: 00 in alto, 30 in basso
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
