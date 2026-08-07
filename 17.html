@@ -330,40 +330,40 @@
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <strong>Imposta Posizione / Fuso</strong>
+                <strong>Imposta Posizione / Fuso Solare</strong>
                 <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
             </div>
             
             <div class="form-group">
-                <label>🌍 Seleziona Fuso Orario Standard (UTC):</label>
+                <label>🌍 Fuso Orario Solare Base (UTC):</label>
                 <select id="timezone-preset" onchange="applyTimezonePreset(this.value)">
-                    <option value="">-- Seleziona Fuso Orario --</option>
+                    <option value="">-- Seleziona Fuso Solare --</option>
                     <option value="-12">(UTC-12:00) Isola Baker</option>
                     <option value="-11">(UTC-11:00) Niue, Samoa</option>
                     <option value="-10">(UTC-10:00) Hawaii, Tahiti</option>
                     <option value="-9">(UTC-09:00) Alaska</option>
                     <option value="-8">(UTC-08:00) Pacific Time (USA / Canada)</option>
                     <option value="-7">(UTC-07:00) Mountain Time (USA / Canada)</option>
-                    <option value="-6">(UTC-06:00) Central Time (USA / Canada), Città del Messico</option>
+                    <option value="-6">(UTC-06:00) Central Time (USA / Canada)</option>
                     <option value="-5">(UTC-05:00) Eastern Time (USA / Canada), Bogotà</option>
                     <option value="-4">(UTC-04:00) Caraibi, Santiago del Cile</option>
                     <option value="-3">(UTC-03:00) Buenos Aires, Brasilia, Rio</option>
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre, Capo Verde</option>
                     <option value="0">(UTC+00:00) Londra, Lisbona, Accra</option>
-                    <option value="1" selected>(UTC+01:00) Roma, Parigi, Berlino, Madrid (Solare)</option>
-                    <option value="2">(UTC+02:00) Roma, Parigi (Ora Legale) / Il Cairo</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Bergamo, Parigi, Berlino</option>
+                    <option value="2">(UTC+02:00) Il Cairo, Atene, Johannesburg</option>
                     <option value="3">(UTC+03:00) Mosca, Istanbul, Riyadh</option>
                     <option value="4">(UTC+04:00) Dubai, Baku</option>
                     <option value="5">(UTC+05:00) Islamabad, Tashkent</option>
                     <option value="5.5">(UTC+05:30) Nuova Deli, Mumbai</option>
                     <option value="6">(UTC+06:00) Almaty, Dacca</option>
-                    <option value="7">(UTC+07:00) Bangkok, Giacarta, Ho Chi Minh</option>
+                    <option value="7">(UTC+07:00) Bangkok, Giacarta</option>
                     <option value="8">(UTC+08:00) Pechino, Singapore, Perth</option>
                     <option value="9">(UTC+09:00) Tokyo, Seul</option>
                     <option value="9.5">(UTC+09:30) Darwin, Adelaide</option>
-                    <option value="10">(UTC+10:00) Sydney, Melbourne, Vladivostok</option>
-                    <option value="11">(UTC+11:00) Isole Salomone, Nuova Caledonia</option>
+                    <option value="10">(UTC+10:00) Sydney, Melbourne</option>
+                    <option value="11">(UTC+11:00) Isole Salomone</option>
                     <option value="12">(UTC+12:00) Auckland, Figi</option>
                     <option value="13">(UTC+13:00) Samoa, Tonga</option>
                     <option value="14">(UTC+14:00) Isole Line</option>
@@ -438,14 +438,6 @@
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
-            } else {
-                let deviceOffsetMinutes = -new Date().getTimezoneOffset();
-                isDstActive = (deviceOffsetMinutes === 120);
-                document.getElementById('chk-dst').checked = isDstActive;
-                localStorage.setItem('sunclock_dst', isDstActive);
-                if (deviceOffsetMinutes === 120) {
-                    document.getElementById('timezone-preset').value = "2";
-                }
             }
 
             const savedLat = localStorage.getItem('sunclock_lat');
@@ -485,9 +477,9 @@
 
         function getCurrentTzOffsetHours() {
             const selectEl = document.getElementById('timezone-preset');
-            let offset = selectEl.value !== "" ? parseFloat(selectEl.value) : (cachedLon / 15);
-            if (isDstActive) offset += 1;
-            return offset;
+            let solarOffset = selectEl.value !== "" ? parseFloat(selectEl.value) : (cachedLon / 15);
+            let totalOffset = solarOffset + (isDstActive ? 1 : 0);
+            return totalOffset;
         }
 
         function updateInputsVal() {
