@@ -468,19 +468,10 @@
         }
 
         function resetToNow() {
+            selectedDate = new Date();
             isCustomTime = false;
-            updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
-        }
-
-        function updateTimeForLocation() {
-            if (!isCustomTime) {
-                const now = new Date();
-                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                const tzOffsetHours = cachedLon / 15; // 15 gradi = 1 ora
-                selectedDate = new Date(utc + (3600000 * tzOffsetHours));
-            }
         }
 
         function useGPSLocation() {
@@ -492,6 +483,7 @@
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         
+                        // Imposta il selettore del fuso in base alla longitudine approssimativa
                         let approxOffset = Math.round(cachedLon / 15);
                         let selectEl = document.getElementById('timezone-preset');
                         for(let opt of selectEl.options) {
@@ -501,7 +493,6 @@
                             }
                         }
 
-                        updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
@@ -518,7 +509,9 @@
         function applyTimezonePreset(val) {
             if (val === "") return;
             let offsetHours = parseFloat(val);
+            // Longitudine approssimativa stimata dal fuso orario (15 gradi per ora)
             let estimatedLon = offsetHours * 15;
+            // Manteniamo la latitudine attuale o usiamo 0 (Equatore) se non specificata
             let currentLat = parseFloat(document.getElementById('input-lat').value) || 0;
 
             document.getElementById('input-lon').value = estimatedLon;
@@ -620,7 +613,6 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
-                updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             }
@@ -1048,7 +1040,7 @@
 
         function updateHands() {
             if (!isCustomTime) {
-                updateTimeForLocation();
+                selectedDate = new Date();
                 updateInputsVal();
             }
             
