@@ -543,11 +543,38 @@
             }
         }
 
+        function getCompleteMoonTimes(date, lat, lon) {
+            let times = SunCalc.getMoonTimes(date, lat, lon);
+            
+            let rise = times.rise;
+            let set = times.set;
+
+            if (!rise || !set || times.alwaysUp || times.alwaysDown) {
+                let dPrev = new Date(date);
+                dPrev.setDate(date.getDate() - 1);
+                let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
+
+                let dNext = new Date(date);
+                dNext.setDate(date.getDate() + 1);
+                let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
+
+                if (!rise) {
+                    if (pTimes.rise && pTimes.rise > dPrev) rise = pTimes.rise;
+                    else if (nTimes.rise) rise = nTimes.rise;
+                }
+                if (!set) {
+                    if (pTimes.set && pTimes.set > dPrev) set = pTimes.set;
+                    else if (nTimes.set) set = nTimes.set;
+                }
+            }
+            return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
+        }
+
         function updateSunClock(lat, lon) {
             const refDate = selectedDate;
 
             cachedTimes = SunCalc.getTimes(refDate, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
+            cachedMoonTimes = getCompleteMoonTimes(refDate, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
@@ -555,7 +582,7 @@
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlicesSafe(cachedTimes);
-            drawMoonVisibilityArc(cachedMoonTimes);
+            drawMoonVisibilityArc(cachedMoonTimes, refDate);
             drawSolarMeridianLines(cachedTimes);
             drawMinuteRingSafe();
             drawClockNumbers();
@@ -581,10 +608,28 @@
             return d instanceof Date && !isNaN(d);
         }
 
-        function drawMoonVisibilityArc(moonTimes) {
-            if (!isValidDate(moonTimes.rise) || !isValidDate(moonTimes.set)) return;
-            let startH = timeToHours(moonTimes.rise);
-            let endH = timeToHours(moonTimes.set);
+        function drawMoonVisibilityArc(moonTimes, refDate) {
+            let rise = moonTimes.rise;
+            let set = moonTimes.set;
+
+            if (moonTimes.alwaysUp) {
+                rise = new Date(refDate); rise.setHours(0,0,0,0);
+                set = new Date(refDate); set.setHours(23,59,59,999);
+            }
+
+            if (!isValidDate(rise) || !isValidDate(set)) return;
+
+            let startDayStart = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
+            let startDayEnd = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 23, 59, 59, 999);
+
+            let startH, endH;
+
+            if (rise < startDayStart) startH = 0;
+            else startH = timeToHours(rise);
+
+            if (set > startDayEnd) endH = 24;
+            else endH = timeToHours(set);
+
             if (startH === null || endH === null) return;
 
             ctx.save();
@@ -901,11 +946,22 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
-                const moonRiseH = timeToHours(cachedMoonTimes.rise);
-                const moonSetH = timeToHours(cachedMoonTimes.set);
-                const currentH = h;
+            if (cachedMoonTimes && (isValidDate(cachedMoonTimes.rise) || isValidDate(cachedMoonTimes.set) || cachedMoonTimes.alwaysUp)) {
+                let rise = cachedMoonTimes.rise;
+                let set = cachedMoonTimes.set;
 
+                if (cachedMoonTimes.alwaysUp) {
+                    rise = new Date(selectedDate); rise.setHours(0,0,0,0);
+                    set = new Date(selectedDate); set.setHours(23,59,59,999);
+                }
+
+                let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
+                let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
+
+                let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(rise)) : 0;
+                let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(set)) : 24;
+
+                const currentH = h;
                 let moonDeg = 0;
                 
                 if (moonRiseH < moonSetH) {
