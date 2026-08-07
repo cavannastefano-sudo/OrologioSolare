@@ -384,7 +384,7 @@
         let cachedLon = 9.68;
         let selectedDate = new Date();
         let isCustomTime = false;
-        let currentTzOffsetHours = 2; // Offset dinamico in ore
+        let currentTzOffsetHours = 2;
         let map = null;
         let marker = null;
 
@@ -606,7 +606,10 @@
             drawSolarMeridianLines(localTimes);
             drawMinuteRingSafe();
             drawClockNumbers();
+            
+            // CORRETTO: Passiamo i localTimes e il targetDate corretto per allineare lo sfondo
             updatePageBackground(targetDate, localTimes);
+            
             populateTable(localTimes, localMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
@@ -620,7 +623,6 @@
             return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
         }
 
-        // 12 in alto (-90°) e 24/00 in basso (+90°)
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
