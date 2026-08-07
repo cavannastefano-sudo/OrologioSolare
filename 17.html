@@ -654,27 +654,24 @@
             }
         }
 
-        function getCompleteMoonTimes(baseDate, lat, lon, offsetHours) {
-            let times = SunCalc.getMoonTimes(baseDate, lat, lon);
+        function getCompleteMoonTimes(utcBaseDate, lat, lon, offsetHours) {
+            let times = SunCalc.getMoonTimes(utcBaseDate, lat, lon);
             let rise = times.rise ? new Date(times.rise.getTime() + offsetHours * 3600000) : null;
             let set = times.set ? new Date(times.set.getTime() + offsetHours * 3600000) : null;
             let riseSource = "oggi";
             let setSource = "oggi";
 
-            let dPrev = new Date(baseDate);
+            let dPrev = new Date(utcBaseDate);
             dPrev.setUTCDate(dPrev.getUTCDate() - 1);
             let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
             let pRise = pTimes.rise ? new Date(pTimes.rise.getTime() + offsetHours * 3600000) : null;
             let pSet = pTimes.set ? new Date(pTimes.set.getTime() + offsetHours * 3600000) : null;
 
-            let dNext = new Date(baseDate);
+            let dNext = new Date(utcBaseDate);
             dNext.setUTCDate(dNext.getUTCDate() + 1);
             let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
             let nRise = nTimes.rise ? new Date(nTimes.rise.getTime() + offsetHours * 3600000) : null;
             let nSet = nTimes.set ? new Date(nTimes.set.getTime() + offsetHours * 3600000) : null;
-
-            let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-            let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
 
             if (!rise) {
                 if (times.alwaysUp) {
@@ -714,15 +711,13 @@
         function updateSunClock(lat, lon) {
             const tzOffsetHours = getCurrentTzOffsetHours();
             
-            // Per allineare perfettamente gli eventi calcolati da SunCalc con l'orario locale scelto,
-            // usiamo una data base UTC corretta sottraendo l'offset del fuso.
-            const utcBaseDate = new Date(selectedDate.getTime() - (tzOffsetHours * 3600000));
+            // Usiamo direttamente la data UTC di riferimento corretta per calcolare i tempi solari locali
+            const utcBaseDate = new Date(Date.UTC(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 12, 0, 0) - (tzOffsetHours * 3600000));
 
             const rawTimes = SunCalc.getTimes(utcBaseDate, lat, lon);
             cachedTimes = {};
             for (let key in rawTimes) {
                 if (isValidDate(rawTimes[key])) {
-                    // Convertiamo l'orario solare UTC restituito da SunCalc direttamente nell'orario del fuso locale
                     cachedTimes[key] = new Date(rawTimes[key].getTime() + (tzOffsetHours * 3600000));
                 } else {
                     cachedTimes[key] = rawTimes[key];
@@ -756,7 +751,8 @@
         }
 
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            // Allineamento corretto per mantenere la mezzanotte solare e il blocco notte in basso (00/24)
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -935,7 +931,7 @@
 
         function drawMinuteRingSafe() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -981,7 +977,7 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 + Math.PI / 2;
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
@@ -1107,7 +1103,7 @@
             const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
             const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 180;
+            const hourDeg = (h / 24) * 360 - 90;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -1137,27 +1133,27 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 90;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (offProgress * 24) / 24 * 360 - 180;
+                        moonDeg = (offProgress * 24) / 24 * 360 - 90;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 90;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
+                        moonDeg = (progress * 24) / 24 * 360 - 90;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 90;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
             }
 
