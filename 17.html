@@ -662,13 +662,13 @@
             let setSource = "oggi";
 
             let dPrev = new Date(utcDate);
-            dPrev.setUTCDate(dPrev.getUTCDate() - 1);
+            dPrev.setDate(dPrev.getDate() - 1);
             let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
             let pRise = pTimes.rise ? new Date(pTimes.rise.getTime() + offsetHours * 3600000) : null;
             let pSet = pTimes.set ? new Date(pTimes.set.getTime() + offsetHours * 3600000) : null;
 
             let dNext = new Date(utcDate);
-            dNext.setUTCDate(dNext.getUTCDate() + 1);
+            dNext.setDate(dNext.getDate() + 1);
             let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
             let nRise = nTimes.rise ? new Date(nTimes.rise.getTime() + offsetHours * 3600000) : null;
             let nSet = nTimes.set ? new Date(nTimes.set.getTime() + offsetHours * 3600000) : null;
@@ -713,9 +713,14 @@
 
         function updateSunClock(lat, lon) {
             const tzOffsetHours = getCurrentTzOffsetHours();
+            
+            // Per fare in modo che la fascia giorno/notte e gli orari solari seguano correttamente 
+            // il fuso orario selezionato sul quadrante, calcoliamo SunCalc usando la data di riferimento 
+            // depurata dall'offset del fuso e passiamo una longitudine virtuale corrispondente al meridiano centrale del fuso.
+            const calcLon = tzOffsetHours * 15;
             const utcBaseDate = new Date(selectedDate.getTime() - (tzOffsetHours * 3600000));
 
-            const rawTimes = SunCalc.getTimes(utcBaseDate, lat, lon);
+            const rawTimes = SunCalc.getTimes(utcBaseDate, lat, calcLon);
             cachedTimes = {};
             for (let key in rawTimes) {
                 if (isValidDate(rawTimes[key])) {
@@ -725,7 +730,7 @@
                 }
             }
 
-            cachedMoonTimes = getCompleteMoonTimes(utcBaseDate, lat, lon, tzOffsetHours);
+            cachedMoonTimes = getCompleteMoonTimes(utcBaseDate, lat, calcLon, tzOffsetHours);
             cachedMoonIllumination = SunCalc.getMoonIllumination(utcBaseDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
