@@ -545,22 +545,10 @@
 
         function updateSunClock(lat, lon) {
             const refDate = selectedDate;
-            const tzOffsetMs = -refDate.getTimezoneOffset() * 60000;
 
-            const rawTimes = SunCalc.getTimes(refDate, lat, lon);
-            const rawMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
+            cachedTimes = SunCalc.getTimes(refDate, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
-
-            // Convert SunCalc UTC times to local civil time (including timezone and DST)
-            cachedTimes = {};
-            for (let key in rawTimes) {
-                cachedTimes[key] = isValidDate(rawTimes[key]) ? new Date(rawTimes[key].getTime() + tzOffsetMs) : rawTimes[key];
-            }
-
-            cachedMoonTimes = {
-                rise: isValidDate(rawMoonTimes.rise) ? new Date(rawMoonTimes.rise.getTime() + tzOffsetMs) : null,
-                set: isValidDate(rawMoonTimes.set) ? new Date(rawMoonTimes.set.getTime() + tzOffsetMs) : null
-            };
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
