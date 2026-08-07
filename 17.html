@@ -337,7 +337,7 @@
             <div class="form-group">
                 <label>🌍 Fuso Orario Solare Base (UTC):</label>
                 <select id="timezone-preset" onchange="applyTimezonePreset(this.value)">
-                    <option value="">-- Seleziona Fuso Solare --</option>
+                    <option value="">-- Seleziona Fuso Solare Base --</option>
                     <option value="-12">(UTC-12:00) Isola Baker</option>
                     <option value="-11">(UTC-11:00) Niue, Samoa</option>
                     <option value="-10">(UTC-10:00) Hawaii, Tahiti</option>
@@ -350,23 +350,21 @@
                     <option value="-3">(UTC-03:00) Buenos Aires, Brasilia, Rio</option>
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre, Capo Verde</option>
-                    <option value="0">(UTC+00:00) Londra, Lisbona, Accra</option>
-                    <option value="1" selected>(UTC+01:00) Roma, Bergamo, Parigi, Berlino</option>
-                    <option value="2">(UTC+02:00) Il Cairo, Atene, Johannesburg</option>
-                    <option value="3">(UTC+03:00) Mosca, Istanbul, Riyadh</option>
-                    <option value="4">(UTC+04:00) Dubai, Baku</option>
-                    <option value="5">(UTC+05:00) Islamabad, Tashkent</option>
-                    <option value="5.5">(UTC+05:30) Nuova Deli, Mumbai</option>
-                    <option value="6">(UTC+06:00) Almaty, Dacca</option>
-                    <option value="7">(UTC+07:00) Bangkok, Giacarta</option>
-                    <option value="8">(UTC+08:00) Pechino, Singapore, Perth</option>
+                    <option value="0" selected>(UTC+00:00) Ora Solare Standard di Riferimento (Londra/UTC)</option>
+                    <option value="1">(UTC+01:00) Roma, Bergamo, Parigi, Berlino (Ora Solare)</option>
+                    <option value="2">(UTC+02:00) Il Cairo, Atene</option>
+                    <option value="3">(UTC+03:00) Mosca, Istanbul</option>
+                    <option value="4">(UTC+04:00) Dubai</option>
+                    <option value="5">(UTC+05:00) Islamabad</option>
+                    <option value="5.5">(UTC+05:30) Nuova Deli</option>
+                    <option value="6">(UTC+06:00) Almaty</option>
+                    <option value="7">(UTC+07:00) Bangkok</option>
+                    <option value="8">(UTC+08:00) Pechino, Singapore</option>
                     <option value="9">(UTC+09:00) Tokyo, Seul</option>
-                    <option value="9.5">(UTC+09:30) Darwin, Adelaide</option>
-                    <option value="10">(UTC+10:00) Sydney, Melbourne</option>
+                    <option value="9.5">(UTC+09:30) Darwin</option>
+                    <option value="10">(UTC+10:00) Sydney</option>
                     <option value="11">(UTC+11:00) Isole Salomone</option>
-                    <option value="12">(UTC+12:00) Auckland, Figi</option>
-                    <option value="13">(UTC+13:00) Samoa, Tonga</option>
-                    <option value="14">(UTC+14:00) Isole Line</option>
+                    <option value="12">(UTC+12:00) Auckland</option>
                 </select>
             </div>
 
@@ -477,7 +475,7 @@
 
         function getCurrentTzOffsetHours() {
             const selectEl = document.getElementById('timezone-preset');
-            let solarOffset = selectEl.value !== "" ? parseFloat(selectEl.value) : (cachedLon / 15);
+            let solarOffset = selectEl.value !== "" ? parseFloat(selectEl.value) : 1; // Default UTC+1 per Bergamo
             let totalOffset = solarOffset + (isDstActive ? 1 : 0);
             return totalOffset;
         }
