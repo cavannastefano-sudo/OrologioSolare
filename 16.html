@@ -545,52 +545,29 @@
 
         function getCompleteMoonTimes(date, lat, lon) {
             let times = SunCalc.getMoonTimes(date, lat, lon);
+            
             let rise = times.rise;
             let set = times.set;
-            let riseSource = "oggi";
-            let setSource = "oggi";
 
-            let dPrev = new Date(date);
-            dPrev.setDate(date.getDate() - 1);
-            let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
+            if (!rise || !set || times.alwaysUp || times.alwaysDown) {
+                let dPrev = new Date(date);
+                dPrev.setDate(date.getDate() - 1);
+                let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
 
-            let dNext = new Date(date);
-            dNext.setDate(date.getDate() + 1);
-            let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
+                let dNext = new Date(date);
+                dNext.setDate(date.getDate() + 1);
+                let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
 
-            if (!rise) {
-                if (times.alwaysUp) {
-                    rise = "Sempre su";
-                } else if (pTimes.rise && pTimes.rise > dPrev) {
-                    rise = pTimes.rise;
-                    riseSource = "giorno precedente";
-                } else if (nTimes.rise) {
-                    rise = nTimes.rise;
-                    riseSource = "giorno successivo";
+                if (!rise) {
+                    if (pTimes.rise && pTimes.rise > dPrev) rise = pTimes.rise;
+                    else if (nTimes.rise) rise = nTimes.rise;
                 }
-            } else {
-                riseSource = "oggi";
-            }
-
-            if (!set) {
-                if (times.alwaysDown) {
-                    set = "Sempre giù";
-                } else if (pTimes.set && pTimes.set > dPrev) {
-                    set = pTimes.set;
-                    setSource = "giorno precedente";
-                } else if (nTimes.set) {
-                    set = nTimes.set;
-                    setSource = "giorno successivo";
+                if (!set) {
+                    if (pTimes.set && pTimes.set > dPrev) set = pTimes.set;
+                    else if (nTimes.set) set = nTimes.set;
                 }
-            } else {
-                setSource = "oggi";
             }
-
-            return { 
-                rise: rise, riseSource: riseSource, 
-                set: set, setSource: setSource, 
-                alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown 
-            };
+            return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
         }
 
         function updateSunClock(lat, lon) {
@@ -908,34 +885,19 @@
 
             iconEl.innerText = iconSymbol;
             phaseNameEl.innerText = phaseName;
-            
-            if (isValidDate(moonTimes.rise)) {
-                let suffix = moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : " (oggi)";
-                riseEl.innerHTML = formatTime(moonTimes.rise) + `<br><span style="font-size:0.6rem; opacity:0.8;">${suffix}</span>`;
-            } else {
-                riseEl.innerText = moonTimes.rise || "--:--";
-            }
-
-            if (isValidDate(moonTimes.set)) {
-                let suffix = moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : " (oggi)";
-                setEl.innerHTML = formatTime(moonTimes.set) + `<br><span style="font-size:0.6rem; opacity:0.8;">${suffix}</span>`;
-            } else {
-                setEl.innerText = moonTimes.set || "--:--";
-            }
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
         function populateTable(times, moonTimes, illumination) {
             const tbody = document.getElementById('times-table-body');
             const phasePct = Math.round(illumination.fraction * 100);
             
-            let riseStr = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) + (moonTimes.riseSource !== "oggi" ? ` (${moonTimes.riseSource})` : " (oggi)") : moonTimes.rise;
-            let setStr = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) + (moonTimes.setSource !== "oggi" ? ` (${moonTimes.setSource})` : " (oggi)") : moonTimes.set;
-
             tbody.innerHTML = `
                 <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-                <tr><td>Sorge la Luna</td><td>${riseStr}</td></tr>
-                <tr><td>Tramonta la Luna</td><td>${setStr}</td></tr>
+                <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+                <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
                 
                 <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
