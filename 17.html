@@ -714,13 +714,14 @@
         function updateSunClock(lat, lon) {
             const tzOffsetHours = getCurrentTzOffsetHours();
             
-            // Per fare in modo che la fascia giorno/notte e gli orari solari seguano correttamente 
-            // il fuso orario selezionato sul quadrante, calcoliamo SunCalc usando la data di riferimento 
-            // depurata dall'offset del fuso e passiamo una longitudine virtuale corrispondente al meridiano centrale del fuso.
-            const calcLon = tzOffsetHours * 15;
-            const utcBaseDate = new Date(selectedDate.getTime() - (tzOffsetHours * 3600000));
+            // Ripristinato l'uso delle coordinate geografiche reali (lat, lon) 
+            // e calcolo della data solare basato sul giorno locale depurato dal fuso.
+            const year = selectedDate.getFullYear();
+            const month = selectedDate.getMonth();
+            const day = selectedDate.getDate();
+            const sunCalcDate = new Date(Date.UTC(year, month, day, 12, 0, 0) - (tzOffsetHours * 3600000));
 
-            const rawTimes = SunCalc.getTimes(utcBaseDate, lat, calcLon);
+            const rawTimes = SunCalc.getTimes(sunCalcDate, lat, lon);
             cachedTimes = {};
             for (let key in rawTimes) {
                 if (isValidDate(rawTimes[key])) {
@@ -730,8 +731,8 @@
                 }
             }
 
-            cachedMoonTimes = getCompleteMoonTimes(utcBaseDate, lat, calcLon, tzOffsetHours);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(utcBaseDate);
+            cachedMoonTimes = getCompleteMoonTimes(sunCalcDate, lat, lon, tzOffsetHours);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(sunCalcDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
