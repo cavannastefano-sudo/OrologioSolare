@@ -405,13 +405,11 @@
 
         async function fetchTimezoneOffset(lat, lon) {
             try {
-                // Utilizziamo un servizio gratuito per ottenere il fuso orario esatto e l'ora legale attiva per le coordinate
                 const res = await fetch(`https://www.timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`);
                 const data = await res.json();
                 if (data && data.currentUtcOffset && typeof data.currentUtcOffset.seconds === 'number') {
                     currentTzOffsetHours = data.currentUtcOffset.seconds / 3600;
                 } else {
-                    // Fallback basato sulla longitudine se l'API non risponde
                     currentTzOffsetHours = lon / 15;
                 }
             } catch (e) {
@@ -622,8 +620,9 @@
             return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
         }
 
+        // Modificato per posizionare h = 0 in alto e h = 12 (giorno) in basso
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -841,7 +840,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#facc15';
-                ctx.fillText(minText, mx, hy);
+                ctx.fillText(minText, mx, my);
             }
         }
 
@@ -944,7 +943,8 @@
             const m = targetDate.getUTCMinutes() + targetDate.getUTCSeconds() / 60;
             const s = targetDate.getUTCSeconds() + targetDate.getUTCMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 180;
+            // Aggiornato per riflettere h = 0 in alto e h = 12 in basso
+            const hourDeg = (h / 24) * 360;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -963,27 +963,27 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (progress * 12) / 24 * 360;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
+                        moonDeg = (12 + offProgress * 12) / 24 * 360;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (progress * 12) / 24 * 360;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (18 + progress * 12) / 24 * 360 - 180;
+                        moonDeg = (12 + progress * 12) / 24 * 360;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
             }
 
