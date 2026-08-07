@@ -421,8 +421,8 @@
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
                 
-                // Aggiorna il select in base alla longitudine salvata
                 updateTimezoneSelect(cachedLon);
+                updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
             } else {
                 useGPSLocation();
