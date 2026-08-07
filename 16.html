@@ -340,7 +340,7 @@
             </div>
 
             <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa Interattiva</button>
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri Mappa con Fusi Orari</button>
                 <div id="map-container"></div>
             </div>
 
@@ -506,13 +506,29 @@
                     const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
                     const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
                     
-                    map = L.map('map-container').setView([currentLat, currentLon], 3);
+                    map = L.map('map-container').testid = 'map';
+                    map.setView([currentLat, currentLon], 3);
                     
-                    // Mappa base con linee dei fusi orari / confini chiari
+                    // Layer base OpenStreetMap pulito
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '© OpenStreetMap'
                     }).addTo(map);
+
+                    // Overlay ufficiale dei fusi orari mondiali (Timezones GeoJSON)
+                    fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/geojson/combined.json')
+                        .then(res => res.json())
+                        .then(data => {
+                            L.geoJSON(data, {
+                                style: {
+                                    color: '#facc15',
+                                    weight: 1,
+                                    fillColor: '#38bdf8',
+                                    fillOpacity: 0.15
+                                }
+                            }).addTo(map);
+                        })
+                        .catch(err => console.log("Caricamento fusi orari online non riuscito."));
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -575,7 +591,7 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
-        // Posiziona h = 0 (24) in alto (-90°) e h = 12 in basso (+90°)
+        // CORRETTO: 00 / 24 in alto (-Math.PI / 2), 12 in basso (+Math.PI / 2)
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
@@ -768,17 +784,18 @@
             ctx.textAlign = 'center';
 
             const hRadius = radius * 0.68;
-            for (let i = 1; i <= 24; i++) {
+            for (let i = 0; i < 24; i++) {
+                let hourVal = i === 0 ? 24 : i;
                 const angleRad = hoursToAngle(i);
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
                 ctx.lineWidth = 4;
                 ctx.strokeStyle = '#000000';
-                ctx.strokeText(i, hx, hy);
+                ctx.strokeText(hourVal, hx, hy);
 
                 ctx.fillStyle = '#facc15';
-                ctx.fillText(i, hx, hy);
+                ctx.fillText(hourVal, hx, hy);
             }
 
             ctx.font = 'bold 20px sans-serif';
