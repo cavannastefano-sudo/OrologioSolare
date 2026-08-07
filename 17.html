@@ -654,21 +654,21 @@
             }
         }
 
-        function getCompleteMoonTimes(utcDate, lat, lon, offsetHours) {
-            let times = SunCalc.getMoonTimes(utcDate, lat, lon);
+        function getCompleteMoonTimes(baseDate, lat, lon, offsetHours) {
+            let times = SunCalc.getMoonTimes(baseDate, lat, lon);
             let rise = times.rise ? new Date(times.rise.getTime() + offsetHours * 3600000) : null;
             let set = times.set ? new Date(times.set.getTime() + offsetHours * 3600000) : null;
             let riseSource = "oggi";
             let setSource = "oggi";
 
-            let dPrev = new Date(utcDate);
-            dPrev.setDate(dPrev.getDate() - 1);
+            let dPrev = new Date(baseDate);
+            dPrev.setUTCDate(dPrev.getUTCDate() - 1);
             let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
             let pRise = pTimes.rise ? new Date(pTimes.rise.getTime() + offsetHours * 3600000) : null;
             let pSet = pTimes.set ? new Date(pTimes.set.getTime() + offsetHours * 3600000) : null;
 
-            let dNext = new Date(utcDate);
-            dNext.setDate(dNext.getDate() + 1);
+            let dNext = new Date(baseDate);
+            dNext.setUTCDate(dNext.getUTCDate() + 1);
             let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
             let nRise = nTimes.rise ? new Date(nTimes.rise.getTime() + offsetHours * 3600000) : null;
             let nSet = nTimes.set ? new Date(nTimes.set.getTime() + offsetHours * 3600000) : null;
@@ -714,25 +714,23 @@
         function updateSunClock(lat, lon) {
             const tzOffsetHours = getCurrentTzOffsetHours();
             
-            // Ripristinato l'uso delle coordinate geografiche reali (lat, lon) 
-            // e calcolo della data solare basato sul giorno locale depurato dal fuso.
-            const year = selectedDate.getFullYear();
-            const month = selectedDate.getMonth();
-            const day = selectedDate.getDate();
-            const sunCalcDate = new Date(Date.UTC(year, month, day, 12, 0, 0) - (tzOffsetHours * 3600000));
+            // Per allineare perfettamente gli eventi calcolati da SunCalc con l'orario locale scelto,
+            // usiamo una data base UTC corretta sottraendo l'offset del fuso.
+            const utcBaseDate = new Date(selectedDate.getTime() - (tzOffsetHours * 3600000));
 
-            const rawTimes = SunCalc.getTimes(sunCalcDate, lat, lon);
+            const rawTimes = SunCalc.getTimes(utcBaseDate, lat, lon);
             cachedTimes = {};
             for (let key in rawTimes) {
                 if (isValidDate(rawTimes[key])) {
+                    // Convertiamo l'orario solare UTC restituito da SunCalc direttamente nell'orario del fuso locale
                     cachedTimes[key] = new Date(rawTimes[key].getTime() + (tzOffsetHours * 3600000));
                 } else {
                     cachedTimes[key] = rawTimes[key];
                 }
             }
 
-            cachedMoonTimes = getCompleteMoonTimes(sunCalcDate, lat, lon, tzOffsetHours);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(sunCalcDate);
+            cachedMoonTimes = getCompleteMoonTimes(utcBaseDate, lat, lon, tzOffsetHours);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(utcBaseDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
