@@ -64,6 +64,10 @@
             letter-spacing: 0.5px;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            cursor: pointer;
+        }
+        #digital-clock:hover {
+            background: rgba(0,0,0,0.5);
         }
 
         #date-display-btn {
@@ -247,7 +251,10 @@
 
     <header>
         <h1>SunClock24</h1>
-        <div id="digital-clock">00:00:00</div>
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
+            <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+        </div>
         <div style="display: flex; align-items: center; gap: 4px;">
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
@@ -364,12 +371,12 @@
         let cachedLat = 45.04;
         let cachedLon = 9.68;
         let selectedDate = new Date();
-        let isCustomDate = false;
+        let isCustomTime = false;
         let map = null;
         let marker = null;
 
         function initClock() {
-            updateDateInputVal();
+            updateInputsVal();
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
             if (savedLat && savedLon) {
@@ -383,27 +390,40 @@
             }
         }
 
-        function updateDateInputVal() {
+        function updateInputsVal() {
             const year = selectedDate.getFullYear();
             const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
             const day = String(selectedDate.getDate()).padStart(2, '0');
+            const hours = String(selectedDate.getHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getMinutes()).padStart(2, '0');
+
             document.getElementById('input-date').value = `${year}-${month}-${day}`;
             document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
+            document.getElementById('input-time').value = `${hours}:${minutes}`;
         }
 
         function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
             selectedDate = new Date(parts[0], parts[1] - 1, parts[2], selectedDate.getHours(), selectedDate.getMinutes(), selectedDate.getSeconds());
-            isCustomDate = true;
-            updateDateInputVal();
+            isCustomTime = true;
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+        }
+
+        function onTimeChanged(val) {
+            if (!val) return;
+            const parts = val.split(':');
+            selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+            isCustomTime = true;
+            updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
 
         function resetToNow() {
             selectedDate = new Date();
-            isCustomDate = false;
-            updateDateInputVal();
+            isCustomTime = false;
+            updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
 
@@ -511,11 +531,19 @@
             }
         }
 
+        function getLocalDateForLocation(date, lon) {
+            const tzOffsetHours = lon / 15;
+            const utcTime = date.getTime() + (date.getTimezoneOffset() * 60000);
+            return new Date(utcTime + (tzOffsetHours * 3600000));
+        }
+
         function updateSunClock(lat, lon) {
-            const refDate = isCustomDate ? selectedDate : new Date();
-            cachedTimes = SunCalc.getTimes(refDate, lat, lon);
-            cachedMoonTimes = SunCalc.getMoonTimes(refDate, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
+            const refDate = selectedDate;
+            const localRefDate = getLocalDateForLocation(refDate, lon);
+
+            cachedTimes = SunCalc.getTimes(localRefDate, lat, lon);
+            cachedMoonTimes = SunCalc.getMoonTimes(localRefDate, lat, lon);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(localRefDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
@@ -794,8 +822,8 @@
 
         function updatePageBackground(times) {
             if (!times) return;
-            const now = isCustomDate ? selectedDate : new Date();
-            const h = timeToHours(now);
+            const localNow = getLocalDateForLocation(selectedDate, cachedLon);
+            const h = timeToHours(localNow);
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
             
@@ -878,16 +906,17 @@
         }
 
         function updateHands() {
-            const now = new Date();
-            if (!isCustomDate) {
-                selectedDate = now;
+            if (!isCustomTime) {
+                selectedDate = new Date();
+                updateInputsVal();
             }
             
-            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
+            const localDate = getLocalDateForLocation(selectedDate, cachedLon);
+            document.getElementById('digital-clock').innerText = localDate.toLocaleTimeString();
 
-            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
-            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
-            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
+            const h = localDate.getHours() + localDate.getMinutes() / 60 + localDate.getSeconds() / 3600;
+            const m = localDate.getMinutes() + localDate.getSeconds() / 60;
+            const s = localDate.getSeconds() + localDate.getMilliseconds() / 1000;
 
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
