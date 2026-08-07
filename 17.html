@@ -354,6 +354,11 @@
                 </select>
             </div>
 
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; background: #0f172a; padding: 8px; border-radius: 6px; border: 1px solid #475569;">
+                <input type="checkbox" id="chk-dst" onchange="toggleDST()" style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="chk-dst" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h)</label>
+            </div>
+
             <div class="form-group">
                 <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
@@ -408,10 +413,18 @@
         let cachedLon = 9.68;
         let selectedDate = new Date();
         let isCustomTime = false;
+        let isDstActive = false;
         let map = null;
         let marker = null;
 
         function initClock() {
+            // Carica lo stato dell'ora legale salvato
+            const savedDst = localStorage.getItem('sunclock_dst');
+            if (savedDst !== null) {
+                isDstActive = (savedDst === 'true');
+                document.getElementById('chk-dst').checked = isDstActive;
+            }
+
             updateInputsVal();
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
@@ -427,6 +440,14 @@
             } else {
                 useGPSLocation();
             }
+        }
+
+        function toggleDST() {
+            isDstActive = document.getElementById('chk-dst').checked;
+            localStorage.setItem('sunclock_dst', isDstActive);
+            isCustomTime = false;
+            updateTimeForLocation();
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function updateTimezoneSelect(lon) {
@@ -482,9 +503,13 @@
                 const now = new Date();
                 const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
                 
-                // Legge direttamente il fuso orario selezionato nel menu a tendina
                 const selectEl = document.getElementById('timezone-preset');
                 let tzOffsetHours = selectEl.value !== "" ? parseFloat(selectEl.value) : (cachedLon / 15);
+                
+                // Aggiunge +1 ora se l'ora legale è attiva
+                if (isDstActive) {
+                    tzOffsetHours += 1;
+                }
                 
                 selectedDate = new Date(utc + (3600000 * tzOffsetHours));
             }
