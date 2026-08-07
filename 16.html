@@ -573,8 +573,9 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // 12 in alto (-90°) e 24/00 in basso (+90°)
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 - Math.PI / 2;
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -735,7 +736,7 @@
 
         function drawMinuteRingSafe(times) {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -781,7 +782,7 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
+                const angleRad = (m / 60) * Math.PI * 2 + Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
@@ -892,7 +893,7 @@
             const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
             const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360;
+            const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -911,27 +912,27 @@
                 if (moonRiseH < moonSetH) {
                     if (currentH >= moonRiseH && currentH <= moonSetH) {
                         let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 12) / 24 * 360;
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
                     } else {
                         let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (12 + offProgress * 12) / 24 * 360;
+                        moonDeg = (18 + offProgress * 12) / 24 * 360 - 180;
                     }
                 } else {
                     if (currentH >= moonRiseH || currentH <= moonSetH) {
                         let totalVisible = (24 - moonRiseH) + moonSetH;
                         let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
                         let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 12) / 24 * 360;
+                        moonDeg = (6 + progress * 12) / 24 * 360 - 180;
                     } else {
                         let totalHidden = moonRiseH - moonSetH;
                         let elapsed = currentH - moonSetH;
                         let progress = elapsed / totalHidden;
-                        moonDeg = (12 + progress * 12) / 24 * 360;
+                        moonDeg = (18 + progress * 12) / 24 * 360 - 180;
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
             } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360;
+                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
             }
 
