@@ -245,17 +245,6 @@
             display: none;
             border: 1px solid #475569;
         }
-        .timezone-link {
-            display: block;
-            text-align: center;
-            margin-top: 8px;
-            color: #38bdf8;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .timezone-link:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -345,8 +334,8 @@
                     <option value="-3">(UTC-03:00) Buenos Aires, Brasilia, Rio</option>
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre, Capo Verde</option>
-                    <option value="0" selected>(UTC+00:00) Londra, Lisbona, Accra</option>
-                    <option value="1">(UTC+01:00) Roma, Parigi, Berlino, Madrid</option>
+                    <option value="0">(UTC+00:00) Londra, Lisbona, Accra</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Parigi, Berlino, Madrid</option>
                     <option value="2">(UTC+02:00) Il Cairo, Atene, Johannesburg</option>
                     <option value="3">(UTC+03:00) Mosca, Istanbul, Riyadh</option>
                     <option value="4">(UTC+04:00) Dubai, Baku</option>
@@ -431,9 +420,23 @@
                 cachedLon = parseFloat(savedLon);
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
+                
+                // Aggiorna il select in base alla longitudine salvata
+                updateTimezoneSelect(cachedLon);
                 updateSunClock(cachedLat, cachedLon);
             } else {
                 useGPSLocation();
+            }
+        }
+
+        function updateTimezoneSelect(lon) {
+            let approxOffset = Math.round(lon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    break;
+                }
             }
         }
 
@@ -478,7 +481,7 @@
             if (!isCustomTime) {
                 const now = new Date();
                 const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-                const tzOffsetHours = cachedLon / 15; // 15 gradi = 1 ora
+                const tzOffsetHours = cachedLon / 15; 
                 selectedDate = new Date(utc + (3600000 * tzOffsetHours));
             }
         }
@@ -492,25 +495,19 @@
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                break;
-                            }
-                        }
-
+                        updateTimezoneSelect(cachedLon);
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
                     (error) => {
+                        updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
                     }
                 );
             } else {
+                updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
             }
         }
@@ -550,14 +547,7 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    let approxOffset = Math.round(cachedLon / 15);
-                    let selectEl = document.getElementById('timezone-preset');
-                    for(let opt of selectEl.options) {
-                        if(parseFloat(opt.value) === approxOffset) {
-                            selectEl.value = opt.value;
-                            break;
-                        }
-                    }
+                    updateTimezoneSelect(cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
@@ -620,6 +610,7 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
+                updateTimezoneSelect(cachedLon);
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
