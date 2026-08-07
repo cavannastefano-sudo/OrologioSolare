@@ -749,8 +749,8 @@
         }
 
         function hoursToAngle(h) {
-            // 12 in alto, 24/00 in basso (corretto con + Math.PI / 2)
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            // 12 in alto (- Math.PI / 2), 24/00 in basso, orario antiorario/orario corretto
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -929,7 +929,7 @@
 
         function drawMinuteRingSafe() {
             for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 + Math.PI / 2;
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
                 const x1 = cx + (radius - len) * Math.cos(angle);
@@ -975,7 +975,7 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 + Math.PI / 2;
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
 
@@ -1101,6 +1101,7 @@
             const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
             const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
+            // Rotazione lancette corretta con 12 in alto (-180° offset di base CSS)
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
