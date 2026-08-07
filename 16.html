@@ -384,6 +384,7 @@
         let cachedLon = 9.68;
         let selectedDate = new Date();
         let isCustomTime = false;
+        let currentTzOffsetHours = 2; // Default Italia estiva (CEST = UTC+2)
         let map = null;
         let marker = null;
 
@@ -396,14 +397,35 @@
                 cachedLon = parseFloat(savedLon);
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
-                updateSunClock(cachedLat, cachedLon);
+                updateTimezoneAndClock(cachedLat, cachedLon);
             } else {
                 useGPSLocation();
             }
         }
 
+        async function fetchTimezoneOffset(lat, lon) {
+            try {
+                // Utilizziamo un servizio gratuito per ottenere il fuso orario esatto e l'ora legale attiva per le coordinate
+                const res = await fetch(`https://www.timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`);
+                const data = await res.json();
+                if (data && data.currentUtcOffset && typeof data.currentUtcOffset.seconds === 'number') {
+                    currentTzOffsetHours = data.currentUtcOffset.seconds / 3600;
+                } else {
+                    // Fallback basato sulla longitudine se l'API non risponde
+                    currentTzOffsetHours = lon / 15;
+                }
+            } catch (e) {
+                currentTzOffsetHours = lon / 15;
+            }
+        }
+
+        async function updateTimezoneAndClock(lat, lon) {
+            await fetchTimezoneOffset(lat, lon);
+            updateSunClock(lat, lon);
+        }
+
         function updateInputsVal() {
-            const targetDate = getTargetTime(selectedDate, cachedLon);
+            const targetDate = getTargetTime(selectedDate, currentTzOffsetHours);
             const year = targetDate.getUTCFullYear();
             const month = String(targetDate.getUTCMonth() + 1).padStart(2, '0');
             const day = String(targetDate.getUTCDate()).padStart(2, '0');
@@ -415,10 +437,10 @@
             document.getElementById('input-time').value = `${hours}:${minutes}`;
         }
 
-        function onDateChanged(val) {
+        async function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            const tzOffsetMs = (cachedLon / 15) * 3600000;
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
             const utcDate = Date.UTC(parts[0], parts[1] - 1, parts[2], selectedDate.getUTCHours(), selectedDate.getUTCMinutes(), 0);
             selectedDate = new Date(utcDate - tzOffsetMs);
             isCustomTime = true;
@@ -426,10 +448,10 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        function onTimeChanged(val) {
+        async function onTimeChanged(val) {
             if (!val) return;
             const parts = val.split(':');
-            const tzOffsetMs = (cachedLon / 15) * 3600000;
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
             const utcDate = Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), parts[0], parts[1], 0);
             selectedDate = new Date(utcDate - tzOffsetMs);
             isCustomTime = true;
@@ -441,7 +463,7 @@
             selectedDate = new Date();
             isCustomTime = false;
             updateInputsVal();
-            updateSunClock(cachedLat, cachedLon);
+            updateTimezoneAndClock(cachedLat, cachedLon);
         }
 
         function useGPSLocation() {
@@ -452,16 +474,16 @@
                         cachedLon = position.coords.longitude;
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
-                        updateSunClock(cachedLat, cachedLon);
+                        updateTimezoneAndClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
                     },
                     (error) => {
-                        updateSunClock(cachedLat, cachedLon); 
+                        updateTimezoneAndClock(cachedLat, cachedLon); 
                         document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
                     }
                 );
             } else {
-                updateSunClock(cachedLat, cachedLon);
+                updateTimezoneAndClock(cachedLat, cachedLon);
             }
         }
 
@@ -536,33 +558,33 @@
             }
         }
 
-        function applyManualLocation() {
+        async function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
             if (!isNaN(lat) && !isNaN(lon)) {
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
-                updateSunClock(cachedLat, cachedLon);
+                await updateTimezoneAndClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
             }
         }
 
-        function getTargetTime(baseDate, lon) {
+        function getTargetTime(baseDate, tzHours) {
             const utcMs = baseDate.getTime() - (baseDate.getTimezoneOffset() * 60000);
-            const tzOffsetMs = (lon / 15) * 3600000;
+            const tzOffsetMs = tzHours * 3600000;
             return new Date(utcMs + tzOffsetMs);
         }
 
         function updateSunClock(lat, lon) {
             const refDate = selectedDate;
-            const targetDate = getTargetTime(refDate, lon);
+            const targetDate = getTargetTime(refDate, currentTzOffsetHours);
 
             cachedTimes = SunCalc.getTimes(targetDate, lat, lon);
             cachedMoonTimes = SunCalc.getMoonTimes(targetDate, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(targetDate);
 
-            const tzOffsetMs = (lon / 15) * 3600000;
+            const tzOffsetMs = currentTzOffsetHours * 3600000;
             const localTimes = {};
             for (let key in cachedTimes) {
                 if (isValidDate(cachedTimes[key])) {
@@ -819,7 +841,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#facc15';
-                ctx.fillText(minText, mx, my);
+                ctx.fillText(minText, mx, hy);
             }
         }
 
@@ -915,7 +937,7 @@
                 updateInputsVal();
             }
             
-            const targetDate = getTargetTime(selectedDate, cachedLon);
+            const targetDate = getTargetTime(selectedDate, currentTzOffsetHours);
             document.getElementById('digital-clock').innerText = formatTime(targetDate);
 
             const h = targetDate.getUTCHours() + targetDate.getUTCMinutes() / 60 + targetDate.getUTCSeconds() / 3600;
