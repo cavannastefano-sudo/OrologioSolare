@@ -148,7 +148,6 @@
             box-shadow: 0 0 12px #ff7722, 0 0 4px #ff3300; 
             z-index: 12; 
         } 
-        /* Icona del sole sulla punta della lancetta delle ore */
         #hand-hour::after {
             content: "☀️";
             position: absolute;
@@ -167,7 +166,13 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 11; } 
+        /* Lancetta minuti Verde Fluo */
+        #hand-minute { 
+            width: 4px; height: 42%; 
+            background: #39ff14; 
+            box-shadow: 0 0 12px #39ff14, 0 0 4px #22c55e;
+            z-index: 11; 
+        } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
         #hand-moon { 
@@ -176,7 +181,6 @@
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
         }
-        /* Icona della luna sulla punta della lancetta della luna */
         #hand-moon::after {
             content: "🌙";
             position: absolute;
@@ -379,7 +383,7 @@
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre</option>
                     <option value="0">(UTC+00:00) Londra, Lisbona (Ora Solare)</option>
-                    <option value="1" selected>(UTC+01:00) Roma, Bergamo, Parigi (Ora Solare)</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Piacenza, Parigi (Ora Solare)</option>
                     <option value="2">(UTC+02:00) Il Cairo, Atene</option>
                     <option value="3">(UTC+03:00) Mosca, Istanbul</option>
                     <option value="4">(UTC+04:00) Dubai</option>
@@ -402,7 +406,7 @@
             </div>
 
             <div class="form-group">
-                <label>Cerca Località (es. Bergamo, Roma, Tokyo):</label>
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
@@ -419,11 +423,11 @@
 
             <div class="form-group">
                 <label>Latitudine:</label>
-                <input type="number" step="any" id="input-lat" value="45.69">
+                <input type="number" step="any" id="input-lat" value="45.05">
             </div>
             <div class="form-group">
                 <label>Longitudine:</label>
-                <input type="number" step="any" id="input-lon" value="9.67">
+                <input type="number" step="any" id="input-lon" value="9.69">
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
                 <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
@@ -451,8 +455,8 @@
         let cachedTimes = null;
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
-        let cachedLat = 45.69; // Bergamo
-        let cachedLon = 9.67;
+        let cachedLat = 45.05; // Piacenza
+        let cachedLon = 9.69;
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
