@@ -148,7 +148,7 @@
             box-shadow: 0 0 12px #ff7722, 0 0 4px #ff3300; 
             z-index: 12; 
         } 
-        /* Icona del sole posizionata esattamente sulla punta della lancetta delle ore */
+        /* Icona del sole sulla punta della lancetta delle ore */
         #hand-hour::after {
             content: "☀️";
             position: absolute;
@@ -176,9 +176,9 @@
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
         }
-        /* Icona della luna posizionata esattamente sulla punta della lancetta della luna */
+        /* Icona della luna sulla punta della lancetta della luna */
         #hand-moon::after {
-            content: "🌕";
+            content: "🌙";
             position: absolute;
             top: -22px;
             left: 50%;
@@ -312,7 +312,6 @@
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             
-            <!-- Lancette originali con le nuove icone integrate direttamente in punta -->
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
@@ -1130,23 +1129,6 @@
                     }
                 }
                 document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
-
-                if (cachedMoonIllumination) {
-                    const phase = cachedMoonIllumination.phase;
-                    const moonHandEl = document.getElementById('hand-moon');
-                    
-                    let phaseSymbol = "🌕";
-                    if (phase < 0.03 || phase > 0.97) phaseSymbol = "🌑";
-                    else if (phase < 0.22) phaseSymbol = "🌒";
-                    else if (phase < 0.28) phaseSymbol = "🌓";
-                    else if (phase < 0.47) phaseSymbol = "🌔";
-                    else if (phase < 0.53) phaseSymbol = "🌕";
-                    else if (phase < 0.72) phaseSymbol = "🌖";
-                    else if (phase < 0.78) phaseSymbol = "🌗";
-                    else phaseSymbol = "🌘";
-
-                    moonHandEl.style.setProperty('--moon-emoji', `"${phaseSymbol}"`);
-                }
             } else {
                 const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
                 document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
