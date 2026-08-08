@@ -48,63 +48,77 @@
         h1 { 
             margin: 0; 
             color: #facc15; 
-            font-size: 1rem; 
+            font-size: 1.15rem; 
             white-space: nowrap;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
         #digital-clock {
-            font-size: 0.95rem;
+            font-size: 1.15rem;
             font-weight: bold;
             color: #facc15;
             background: rgba(0,0,0,0.3);
             padding: 3px 5px;
             border-radius: 6px;
-            border: 1px solid rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,0,0,0.6);
+            box-shadow: 0 0 6px rgba(255,0,0,0.4);
             letter-spacing: 0.5px;
             white-space: nowrap;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             cursor: pointer;
         }
         #digital-clock:hover {
             background: rgba(0,0,0,0.5);
         }
 
+        .header-box {
+            background: rgba(0,0,0,0.25);
+            padding: 6px 10px;
+            border-radius: 10px;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-sizing: border-box;
+        }
+
         #date-display-btn {
             background: none;
             border: none;
-            color: #38bdf8;
-            font-size: 1rem;
+            color: #39ff14;
+            font-size: 1.15rem;
             font-weight: bold;
             cursor: pointer;
             padding: 0;
             white-space: nowrap;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
         #date-display-btn:hover {
-            color: #7dd3fc;
+            color: #70ff33;
         }
 
         #btn-now {
-            background: rgba(56, 189, 248, 0.2);
-            color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.4);
-            padding: 2px 5px;
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            border: none;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 0.7rem;
+            font-size: 1.15rem;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
+            text-shadow: 0 0 8px rgba(57,255,20,0.6);
         }
         #btn-now:hover {
-            background: rgba(56, 189, 248, 0.4);
+            background: rgba(57, 255, 20, 0.3);
         }
 
         #btn-settings {
-            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(0,0,0,0.5);
+            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(255,0,0,0.6);
+            box-shadow: 0 0 6px rgba(255,0,0,0.4);
             padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
             white-space: nowrap;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
         #btn-settings:hover { background: rgba(0,0,0,0.5); }
 
@@ -119,53 +133,79 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             position: relative; overflow: hidden;
         }
-        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
         .hand {
             position: absolute; bottom: 50%; left: 50%;
             transform-origin: bottom center;
             border-top-left-radius: 4px; border-top-right-radius: 4px;
-            z-index: 20;
+            z-index: 10;
         }
         
+        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
-            background: #ff5500; 
-            box-shadow: 0 0 12px #ff7722, 0 0 4px #ff3300; 
-            z-index: 24; 
+            background: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
+            z-index: 12; 
         } 
         #hand-hour::after {
             content: "☀️";
             position: absolute;
-            top: -18px;
+            top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #ffd700;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #ffcc00;
         }
 
-        #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
-        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 23; } 
+        /* Lancetta minuti Verde Fluo */
+        #hand-minute { 
+            width: 4px; height: 42%; 
+            background: #39ff14; 
+            box-shadow: 0 0 12px #39ff14, 0 0 4px #22c55e;
+            z-index: 11; 
+        } 
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
+        /* Lancetta luna corta */
         #hand-moon { 
-            width: 4px; height: 40%; 
+            width: 4px; height: 25%; 
             background: #ffffff; 
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
-            z-index: 25; 
+            z-index: 9; 
         }
         #hand-moon::after {
             content: "🌙";
             position: absolute;
-            top: -18px;
+            top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #f1f5f9;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #cbd5e1;
         }
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
-            background: #ff5500; border: 2px solid #fff; border-radius: 50%;
-            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 26;
-            box-shadow: 0 0 8px #ff5500;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+            box-shadow: 0 0 8px #ff007f;
         }
 
         #bottom-panels-container {
@@ -183,14 +223,14 @@
             background: rgba(0,0,0,0.25);
             padding: 10px;
             border-radius: 10px;
-            font-size: 0.78rem;
-            color: #facc15;
+            font-size: 0.85rem;
+            color: #39ff14;
             text-align: center;
-            border: 1px solid rgba(0,0,0,0.3);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: none;
+            box-shadow: none;
             font-weight: bold;
             cursor: pointer;
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             transition: background 0.2s ease;
             box-sizing: border-box;
             display: flex;
@@ -203,15 +243,15 @@
 
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 4px;
             margin-top: 6px;
-            font-size: 0.75rem;
+            font-size: 1.15rem;
         }
         .info-grid span { 
-            color: #facc15; 
+            color: #39ff14; 
             font-weight: bold; 
-            text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
         .modal {
@@ -266,7 +306,7 @@
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
             <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
         </div>
-        <div style="display: flex; align-items: center; gap: 4px;">
+        <div class="header-box">
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
@@ -277,6 +317,7 @@
     <div id="clock-wrapper">
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
+            
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
@@ -286,13 +327,12 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra -->
+        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
-                <div>Mezzogiorno:<br><span id="txt-noon">--:--</span></div>
             </div>
         </div>
 
@@ -302,7 +342,7 @@
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
                 <span id="moon-phase-name">Caricamento...</span>
             </div>
-            <div class="info-grid" style="grid-template-columns: repeat(2, 1fr); margin-top: 8px;">
+            <div class="info-grid" style="margin-top: 8px;">
                 <div>Sorge:<br><span id="moon-rise">--:--</span></div>
                 <div>Tramonta:<br><span id="moon-set">--:--</span></div>
             </div>
@@ -344,8 +384,8 @@
                     <option value="-3">(UTC-03:00) Buenos Aires, Brasilia</option>
                     <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
                     <option value="-1">(UTC-01:00) Azzorre</option>
-                    <option value="0">(UTC+00:00) Londra, Lisbona (Ora Solare)</option>
-                    <option value="1" selected>(UTC+01:00) Roma, Bergamo, Parigi (Ora Solare)</option>
+                    <option value="0">(UTC+00:00) Londra, Lisbona</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Piacenza, Parigi</option>
                     <option value="2">(UTC+02:00) Il Cairo, Atene</option>
                     <option value="3">(UTC+03:00) Mosca, Istanbul</option>
                     <option value="4">(UTC+04:00) Dubai</option>
@@ -368,7 +408,7 @@
             </div>
 
             <div class="form-group">
-                <label>Cerca Località (es. Bergamo, Roma, Tokyo):</label>
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
@@ -385,11 +425,11 @@
 
             <div class="form-group">
                 <label>Latitudine:</label>
-                <input type="number" step="any" id="input-lat" value="45.69">
+                <input type="number" step="any" id="input-lat" value="45.05">
             </div>
             <div class="form-group">
                 <label>Longitudine:</label>
-                <input type="number" step="any" id="input-lon" value="9.67">
+                <input type="number" step="any" id="input-lon" value="9.69">
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
                 <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
@@ -417,8 +457,8 @@
         let cachedTimes = null;
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
-        let cachedLat = 45.69; // Bergamo
-        let cachedLon = 9.67;
+        let cachedLat = 45.05; // Piacenza
+        let cachedLon = 9.69;
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
@@ -702,7 +742,6 @@
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
-            document.getElementById('txt-noon').innerText = formatTime(cachedTimes.solarNoon);
         }
 
         function timeToHours(date) {
@@ -890,7 +929,6 @@
 
         function drawMinuteRingSafe() {
             for (let i = 0; i < 60; i++) {
-                // Spostato lo 0 in alto sottraendo Math.PI / 2
                 const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
                 const len = (i % 5 === 0) ? 18 : 10;
 
@@ -909,7 +947,7 @@
                 ctx.beginPath();
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(x2, y2);
-                ctx.strokeStyle = '#000000';
+                ctx.strokeStyle = '#ff0000';
                 ctx.lineWidth = (i % 5 === 0) ? 2 : 1.2;
                 ctx.stroke();
             }
@@ -927,7 +965,7 @@
                 const hy = cy + hRadius * Math.sin(angleRad);
 
                 ctx.lineWidth = 4;
-                ctx.strokeStyle = '#000000';
+                ctx.strokeStyle = '#ff0000';
                 ctx.strokeText(i, hx, hy);
 
                 ctx.fillStyle = '#facc15';
@@ -937,7 +975,6 @@
             ctx.font = 'bold 20px sans-serif';
             const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
-                // Ruotato l'anello dei minuti: 00 in alto, 30 in basso
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
                 const my = cy + mRadius * Math.sin(angleRad);
@@ -945,7 +982,7 @@
                 const minText = String(m).padStart(2, '0');
 
                 ctx.lineWidth = 4;
-                ctx.strokeStyle = '#000000';
+                ctx.strokeStyle = '#ff0000';
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#facc15';
