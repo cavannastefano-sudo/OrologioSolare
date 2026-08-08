@@ -75,8 +75,7 @@
             background: rgba(0,0,0,0.25);
             padding: 6px 10px;
             border-radius: 10px;
-            border: 1px solid rgba(255, 0, 0, 0.6);
-            box-shadow: 0 4px 10px rgba(255,0,0,0.15);
+            border: none;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -92,7 +91,8 @@
             cursor: pointer;
             padding: 0;
             white-space: nowrap;
-            text-shadow: 0 0 8px rgba(57,255,20,0.6);
+            /* Testo della data bordato di rosso */
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
         #date-display-btn:hover {
             color: #70ff33;
@@ -203,12 +203,13 @@
             font-size: 0.85rem;
             color: #39ff14;
             text-align: center;
-            border: 1px solid rgba(255, 0, 0, 0.6);
-            box-shadow: 0 4px 10px rgba(255,0,0,0.15);
+            border: none;
+            box-shadow: none;
             font-weight: bold;
             cursor: pointer;
-            text-shadow: 0 0 6px rgba(57,255,20,0.5);
-            transition: background 0.2s ease, border-color 0.2s ease;
+            /* Testi dei pannelli in basso bordati di rosso */
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            transition: background 0.2s ease;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
@@ -216,7 +217,6 @@
         }
         .info-panel-box:hover {
             background: rgba(0,0,0,0.4);
-            border-color: rgba(255, 0, 0, 0.9);
         }
 
         .info-grid {
@@ -229,7 +229,8 @@
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
-            text-shadow: 0 0 8px rgba(57,255,20,0.6);
+            /* Numeri/orari all'interno della griglia bordati di rosso */
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
         .modal {
