@@ -142,10 +142,11 @@
             z-index: 10;
         }
         
+        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
-            background: #ff5500; 
-            box-shadow: 0 0 12px #ff7722, 0 0 4px #ff3300; 
+            background: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
             z-index: 12; 
         } 
         #hand-hour::after {
@@ -166,6 +167,7 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
+        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -200,9 +202,9 @@
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
-            background: #ff5500; border: 2px solid #fff; border-radius: 50%;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
-            box-shadow: 0 0 8px #ff5500;
+            box-shadow: 0 0 8px #ff007f;
         }
 
         #bottom-panels-container {
@@ -717,22 +719,6 @@
             return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
         }
 
-        // Funzione per formattare l'orario aggiungendo < o > se la data differisce da quella selezionata
-        function formatMoonTimeWithArrow(date, refDate) {
-            if (!isValidDate(date)) return "--:--";
-            const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            
-            const dDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-            const rDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate());
-            
-            if (dDate < rDate) {
-                return `< ${timeStr}`;
-            } else if (dDate > rDate) {
-                return `${timeStr} >`;
-            }
-            return timeStr;
-        }
-
         function updateSunClock(lat, lon) {
             const refDate = selectedDate;
 
@@ -740,7 +726,7 @@
             cachedMoonTimes = getCompleteMoonTimes(refDate, lat, lon);
             cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
 
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes, refDate);
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
@@ -750,7 +736,7 @@
             drawMinuteRingSafe();
             drawClockNumbers();
             updatePageBackground(cachedTimes);
-            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination, refDate);
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
@@ -1026,7 +1012,7 @@
             return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
-        function updateMoonDigitalPanel(illumination, moonTimes, refDate) {
+        function updateMoonDigitalPanel(illumination, moonTimes) {
             const iconEl = document.getElementById('moon-digital-icon');
             const phaseNameEl = document.getElementById('moon-phase-name');
             const riseEl = document.getElementById('moon-rise');
@@ -1047,19 +1033,19 @@
 
             iconEl.innerText = iconSymbol;
             phaseNameEl.innerText = phaseName;
-            riseEl.innerHTML = formatMoonTimeWithArrow(moonTimes.rise, refDate);
-            setEl.innerHTML = formatMoonTimeWithArrow(moonTimes.set, refDate);
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
-        function populateTable(times, moonTimes, illumination, refDate) {
+        function populateTable(times, moonTimes, illumination) {
             const tbody = document.getElementById('times-table-body');
             const phasePct = Math.round(illumination.fraction * 100);
             
             tbody.innerHTML = `
                 <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-                <tr><td>Sorge la Luna</td><td>${formatMoonTimeWithArrow(moonTimes.rise, refDate)}</td></tr>
-                <tr><td>Tramonta la Luna</td><td>${formatMoonTimeWithArrow(moonTimes.set, refDate)}</td></tr>
+                <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+                <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
                 
                 <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
