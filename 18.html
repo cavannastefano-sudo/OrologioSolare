@@ -48,13 +48,13 @@
         h1 { 
             margin: 0; 
             color: #facc15; 
-            font-size: 1rem; 
+            font-size: 1.15rem; 
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
         #digital-clock {
-            font-size: 0.95rem;
+            font-size: 1.15rem;
             font-weight: bold;
             color: #facc15;
             background: rgba(0,0,0,0.3);
@@ -151,10 +151,11 @@
         #hand-hour::after {
             content: "☀️";
             position: absolute;
-            top: -18px;
+            top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 22px;
+            -webkit-text-stroke: 1px #000;
         }
 
         #hand-minute { width: 4px; height: 42%; background: #22c55e; z-index: 22; } 
@@ -169,10 +170,11 @@
         #hand-moon::after {
             content: "🌙";
             position: absolute;
-            top: -18px;
+            top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 16px;
+            font-size: 22px;
+            -webkit-text-stroke: 1px #000;
         }
 
         #center-dot {
