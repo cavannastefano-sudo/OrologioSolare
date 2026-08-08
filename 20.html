@@ -125,6 +125,10 @@
             font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         .header-btn:hover { background: rgba(0,0,0,0.5); }
 
@@ -283,28 +287,13 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        #map-container, #world-map-container {
+        #map-container {
             width: 100%;
             height: 250px;
             border-radius: 8px;
             margin-top: 8px;
             display: none;
             border: 1px solid #475569;
-        }
-        #world-map-container {
-            display: block;
-            height: 300px;
-        }
-        .timezone-link {
-            display: block;
-            text-align: center;
-            margin-top: 8px;
-            color: #38bdf8;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .timezone-link:hover {
-            text-decoration: underline;
         }
     </style>
 </head>
@@ -321,7 +310,7 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
-        <button class="header-btn" onclick="toggleWorldMapModal(true)" title="Mappa Mondiale">🌐</button>
+        <a href="world.html" class="header-btn" title="Mappa Mondiale">🌐</a>
         <button class="header-btn" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
 
@@ -338,7 +327,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -347,7 +335,6 @@
             </div>
         </div>
 
-        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -360,7 +347,6 @@
         </div>
     </div>
 
-    <!-- Modale Tempi Solari/Lunari -->
     <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -374,22 +360,6 @@
         </div>
     </div>
 
-    <!-- Modale Mappa Mondiale Fusi Orari -->
-    <div id="modal-world-map" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <strong>🌍 Mappa Mondiale Fusi Orari</strong>
-                <button class="close-btn" onclick="toggleWorldMapModal(false)">✕</button>
-            </div>
-            <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 6px;">
-                Clicca un punto qualsiasi nel mondo per impostare posizione e fuso orario:
-            </div>
-            <div id="world-map-container"></div>
-            <div id="world-map-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 8px; text-align: center;"></div>
-        </div>
-    </div>
-
-    <!-- Modale Impostazioni -->
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -492,8 +462,6 @@
         let isDstActive = true;
         let map = null;
         let marker = null;
-        let worldMap = null;
-        let worldMarker = null;
 
         function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -697,71 +665,50 @@
                         const pos = marker.getLatLng();
                         document.getElementById('input-lat').value = pos.lat.toFixed(4);
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
+                        
+                        cachedLat = pos.lat;
+                        cachedLon = pos.lng;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(parseFloat(opt.value) === approxOffset) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
                     });
 
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
                         document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
+                        
+                        cachedLat = e.latlng.lat;
+                        cachedLon = e.latlng.lng;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(parseFloat(opt.value) === approxOffset) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
                     });
                 } else {
                     map.invalidateSize();
                 }
-            }
-        }
-
-        function toggleWorldMapModal(show) {
-            const modal = document.getElementById('modal-world-map');
-            modal.style.display = show ? 'flex' : 'none';
-            if (show) {
-                setTimeout(() => {
-                    if (!worldMap) {
-                        worldMap = L.map('world-map-container', {worldCopyJump: true}).setView([cachedLat, cachedLon], 2);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                            maxZoom: 18,
-                            attribution: '© OpenStreetMap'
-                        }).addTo(worldMap);
-
-                        worldMarker = L.marker([cachedLat, cachedLon]).addTo(worldMap);
-
-                        worldMap.on('click', function(e) {
-                            const lat = e.latlng.lat;
-                            const lon = e.latlng.lng;
-                            worldMarker.setLatLng([lat, lon]);
-                            
-                            cachedLat = lat;
-                            cachedLon = lon;
-                            document.getElementById('input-lat').value = lat.toFixed(4);
-                            document.getElementById('input-lon').value = lon.toFixed(4);
-                            localStorage.setItem('sunclock_lat', lat);
-                            localStorage.setItem('sunclock_lon', lon);
-
-                            let approxOffset = Math.round(lon / 15);
-                            let selectEl = document.getElementById('timezone-preset');
-                            for(let opt of selectEl.options) {
-                                if(parseFloat(opt.value) === approxOffset) {
-                                    selectEl.value = opt.value;
-                                    localStorage.setItem('sunclock_tz', opt.value);
-                                    break;
-                                }
-                            }
-
-                            document.getElementById('world-map-status').innerText = `Aggiornato! Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-                            
-                            updateTimeForLocation();
-                            updateSunClock(cachedLat, cachedLon);
-
-                            setTimeout(() => {
-                                toggleWorldMapModal(false);
-                            }, 800);
-                        });
-                    } else {
-                        worldMap.invalidateSize();
-                        worldMap.setView([cachedLat, cachedLon], 2);
-                        worldMarker.setLatLng([cachedLat, cachedLon]);
-                        document.getElementById('world-map-status').innerText = "";
-                    }
-                }, 150);
             }
         }
 
@@ -772,6 +719,17 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
+                
+                let approxOffset = Math.round(cachedLon / 15);
+                let selectEl = document.getElementById('timezone-preset');
+                for(let opt of selectEl.options) {
+                    if(parseFloat(opt.value) === approxOffset) {
+                        selectEl.value = opt.value;
+                        localStorage.setItem('sunclock_tz', opt.value);
+                        break;
+                    }
+                }
+
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
@@ -831,7 +789,14 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            // Corretto: converte gli orari UTC di SunCalc nel fuso orario/longitudine corrente
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+
+            const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            let localHours = utcHours + targetTotalOffsetHours;
+            return (localHours + 24) % 24;
         }
 
         function hoursToAngle(h) {
