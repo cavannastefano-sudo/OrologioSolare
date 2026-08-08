@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappa Mondiale - SunClock24</title>
+    <meta name="theme-color" content="#000000">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            background-color: #000000;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #facc15;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        header {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        .back-btn {
+            background: rgba(0,0,0,0.3);
+            color: #39ff14;
+            border: 1px solid rgba(255,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-shadow: 0 0 8px rgba(57,255,20,0.6);
+        }
+        .back-btn:hover {
+            background: rgba(0,0,0,0.5);
+        }
+        #map {
+            width: 100%;
+            max-width: 600px;
+            height: 75vh;
+            border-radius: 12px;
+            border: 2px solid #334155;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+        }
+        #status-msg {
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: #38bdf8;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌍 Mappa Mondiale</h1>
+        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
+    </header>
+
+    <div id="map"></div>
+    <div id="status-msg">Clicca un punto qualsiasi del mondo per impostarlo come posizione attiva.</div>
+
+    <script>
+        const savedLat = parseFloat(localStorage.getItem('sunclock_lat')) || 45.05;
+        const savedLon = parseFloat(localStorage.getItem('sunclock_lon')) || 9.69;
+
+        const map = L.map('map', {worldCopyJump: true}).setView([savedLat, savedLon], 3);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 18,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marker = L.marker([savedLat, savedLon]).addTo(map);
+
+        map.on('click', function(e) {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+            
+            marker.setLatLng([lat, lon]);
+            
+            localStorage.setItem('sunclock_lat', lat);
+            localStorage.setItem('sunclock_lon', lon);
+
+            let approxOffset = Math.round(lon / 15);
+            localStorage.setItem('sunclock_tz', approxOffset);
+
+            document.getElementById('status-msg').innerText = `Posizione salvata! Ritorno in corso...`;
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 600);
+        });
+    </script>
+</body>
+</html>
