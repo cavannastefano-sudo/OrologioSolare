@@ -113,14 +113,22 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        #btn-settings {
-            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(255,0,0,0.6);
+        #btn-world, #btn-settings {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 1px solid rgba(255,0,0,0.6);
             box-shadow: 0 0 6px rgba(255,0,0,0.4);
-            padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
-        #btn-settings:hover { background: rgba(0,0,0,0.5); }
+        #btn-world:hover, #btn-settings:hover { 
+            background: rgba(0,0,0,0.5); 
+        }
 
         #clock-wrapper {
             position: relative;
@@ -297,6 +305,7 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
+        <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
 
@@ -533,7 +542,6 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        // --- TASTO "ADESSO" AGGIORNATO (GPS + ORA ATTUALE SENZA CAMBIARE PAGINA) ---
         function resetToNow() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -561,7 +569,6 @@
                         updateSunClock(cachedLat, cachedLon);
                     },
                     (error) => {
-                        // Fallback se il GPS è disattivato: aggiorna comunque solo l'orario corrente
                         isCustomTime = false;
                         updateTimeForLocation();
                         updateInputsVal();
