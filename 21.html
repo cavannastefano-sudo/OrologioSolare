@@ -142,7 +142,6 @@
             z-index: 10;
         }
         
-        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -167,7 +166,6 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -176,7 +174,6 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -285,17 +282,6 @@
             display: none;
             border: 1px solid #475569;
         }
-        .timezone-link {
-            display: block;
-            text-align: center;
-            margin-top: 8px;
-            color: #38bdf8;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .timezone-link:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -327,7 +313,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -336,7 +321,6 @@
             </div>
         </div>
 
-        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -549,11 +533,48 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        // --- TASTO "ADESSO" AGGIORNATO (GPS + ORA ATTUALE SENZA CAMBIARE PAGINA) ---
         function resetToNow() {
-            isCustomTime = false;
-            updateTimeForLocation();
-            updateInputsVal();
-            updateSunClock(cachedLat, cachedLon);
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        cachedLat = position.coords.latitude;
+                        cachedLon = position.coords.longitude;
+                        document.getElementById('input-lat').value = cachedLat;
+                        document.getElementById('input-lon').value = cachedLon;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(parseFloat(opt.value) === approxOffset) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+
+                        isCustomTime = false;
+                        updateTimeForLocation();
+                        updateInputsVal();
+                        updateSunClock(cachedLat, cachedLon);
+                    },
+                    (error) => {
+                        // Fallback se il GPS è disattivato: aggiorna comunque solo l'orario corrente
+                        isCustomTime = false;
+                        updateTimeForLocation();
+                        updateInputsVal();
+                        updateSunClock(cachedLat, cachedLon);
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            } else {
+                isCustomTime = false;
+                updateTimeForLocation();
+                updateInputsVal();
+                updateSunClock(cachedLat, cachedLon);
+            }
         }
 
         function updateTimeForLocation() {
@@ -562,25 +583,43 @@
             }
         }
 
-        // --- COLLEGAMENTO A posizione.html TRAMITE GPS ---
         function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        const lat = position.coords.latitude;
-                        const lon = position.coords.longitude;
-                        window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=GPS`;
+                        cachedLat = position.coords.latitude;
+                        cachedLon = position.coords.longitude;
+                        document.getElementById('input-lat').value = cachedLat;
+                        document.getElementById('input-lon').value = cachedLon;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(parseFloat(opt.value) === approxOffset) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
+                        toggleSettingsModal(false);
                     },
                     (error) => {
-                        alert("Impossibile rilevare la posizione GPS.");
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon); 
+                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
                     }
                 );
             } else {
-                alert("Geolocalizzazione non supportata dal browser.");
+                updateTimeForLocation();
+                updateSunClock(cachedLat, cachedLon);
             }
         }
 
-        // --- COLLEGAMENTO A posizione.html TRAMITE RICERCA CITTÀ ---
         async function searchCity() {
             const query = document.getElementById('input-city').value.trim();
             const statusEl = document.getElementById('search-status');
@@ -630,7 +669,6 @@
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
                     });
 
-                    // --- CLIC SULLA MAPPA: REINDIRIZZA A posizione.html ---
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
@@ -644,7 +682,6 @@
             }
         }
 
-        // --- COLLEGAMENTO A posizione.html TRAMITE SALVATAGGIO MANUALE ---
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
