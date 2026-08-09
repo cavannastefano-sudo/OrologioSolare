@@ -274,6 +274,10 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
+        .action-btn {
+            background: #334155; color: #f8fafc; border: 1px solid #475569; padding: 8px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 0.9rem;
+        }
+        .action-btn:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -384,6 +388,10 @@
                 <input type="checkbox" id="chk-dst" checked onchange="toggleDST()" style="width: 18px; height: 18px; cursor: pointer;">
                 <label for="chk-dst" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h)</label>
             </div>
+
+            <div class="form-group" style="margin-top: 15px;">
+                <button class="action-btn" onclick="useGPSLocation()">📍 Usa GPS</button>
+            </div>
         </div>
     </div>
 
@@ -452,6 +460,42 @@
                 updateTimeForLocation();
             }
             updateSunClock(cachedLat, cachedLon);
+        }
+
+        function useGPSLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        cachedLat = position.coords.latitude;
+                        cachedLon = position.coords.longitude;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(Math.abs(parseFloat(opt.value) - approxOffset) < 0.5) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
+                        toggleSettingsModal(false);
+                    },
+                    (error) => {
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon); 
+                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
+                        toggleSettingsModal(false);
+                    }
+                );
+            } else {
+                updateTimeForLocation();
+                updateSunClock(cachedLat, cachedLon);
+            }
         }
 
         function getEffectiveDate() {
