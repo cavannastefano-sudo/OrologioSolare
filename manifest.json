@@ -1,5 +1,5 @@
 {
-  "name": "Orologio Solare 24H",
+  "name": "SunClock24",
   "short_name": "Sunclock",
   "start_url": "./index.html",
   "display": "standalone",
