@@ -8,9 +8,6 @@
     <meta name="theme-color" content="#000000">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         :root { 
@@ -43,7 +40,7 @@
             align-items: center;
             width: min(98vw, 480px);
             margin-bottom: 8px;
-            gap: 6px;
+            gap: 8px;
         }
         h1 { 
             margin: 0; 
@@ -54,7 +51,7 @@
         }
 
         #digital-clock {
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: bold;
             color: #facc15;
             background: rgba(0,0,0,0.3);
@@ -73,12 +70,12 @@
 
         .header-box {
             background: rgba(0,0,0,0.25);
-            padding: 5px 8px;
+            padding: 6px 10px;
             border-radius: 10px;
             border: none;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             box-sizing: border-box;
         }
 
@@ -86,7 +83,7 @@
             background: none;
             border: none;
             color: #39ff14;
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: bold;
             cursor: pointer;
             padding: 0;
@@ -101,9 +98,9 @@
             background: rgba(57, 255, 20, 0.15);
             color: #39ff14;
             border: none;
-            padding: 3px 6px;
+            padding: 3px 8px;
             border-radius: 4px;
-            font-size: 1.05rem;
+            font-size: 1.15rem;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
@@ -113,30 +110,14 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        .header-icons-group {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .header-btn {
-            background: rgba(0,0,0,0.3); 
-            color: #facc15; 
-            border: 1px solid rgba(255,0,0,0.6);
+        #btn-settings {
+            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(255,0,0,0.6);
             box-shadow: 0 0 6px rgba(255,0,0,0.4);
-            padding: 5px 8px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 0.8rem; 
-            font-weight: bold;
+            padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
         }
-        .header-btn:hover { background: rgba(0,0,0,0.5); }
+        #btn-settings:hover { background: rgba(0,0,0,0.5); }
 
         #clock-wrapper {
             position: relative;
@@ -290,14 +271,10 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        #map-container {
-            width: 100%;
-            height: 250px;
-            border-radius: 8px;
-            margin-top: 8px;
-            display: none;
-            border: 1px solid #475569;
+        .action-btn {
+            background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer;
         }
+        .action-btn:hover { background: #0ea5e9; }
     </style>
 </head>
 <body>
@@ -313,10 +290,7 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
-        <div class="header-icons-group">
-            <a href="world.html" class="header-btn" title="Mappa Mondiale">🌐</a>
-            <button class="header-btn" onclick="toggleSettingsModal(true)">⚙️</button>
-        </div>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
 
     <div id="clock-wrapper">
@@ -419,11 +393,6 @@
                 <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
             </div>
 
-            <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
-                <div id="map-container"></div>
-            </div>
-
             <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
 
             <div class="form-group">
@@ -465,14 +434,17 @@
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
-        let map = null;
-        let marker = null;
 
         function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
+            }
+
+            const savedTz = localStorage.getItem('sunclock_tz');
+            if (savedTz !== null) {
+                document.getElementById('timezone-preset').value = savedTz;
             }
 
             const savedLat = localStorage.getItem('sunclock_lat');
@@ -484,21 +456,9 @@
                 document.getElementById('input-lon').value = cachedLon;
             }
 
-            syncTimezoneDropdownWithLon();
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
-        }
-
-        function syncTimezoneDropdownWithLon() {
-            let approxOffset = Math.round(cachedLon / 15);
-            let selectEl = document.getElementById('timezone-preset');
-            for(let opt of selectEl.options) {
-                if(parseFloat(opt.value) === approxOffset) {
-                    selectEl.value = opt.value;
-                    break;
-                }
-            }
         }
 
         function toggleDST() {
@@ -511,12 +471,8 @@
         }
 
         function applyTimezonePreset() {
-            // Se l'utente sceglie un fuso dal menu, forziamo la longitudine centrale di quel fuso per mantenere l'asse perfetto
-            const tzVal = parseFloat(document.getElementById('timezone-preset').value);
-            cachedLon = tzVal * 15;
-            document.getElementById('input-lon').value = cachedLon;
-            localStorage.setItem('sunclock_lon', cachedLon);
-
+            const tzVal = document.getElementById('timezone-preset').value;
+            localStorage.setItem('sunclock_tz', tzVal);
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -524,8 +480,9 @@
         }
 
         function getEffectiveDate() {
-            // Sincronizzazione basata esclusivamente sulla longitudine corrente
-            const targetTotalOffsetHours = cachedLon / 15;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -586,7 +543,16 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        syncTimezoneDropdownWithLon();
+                        let approxOffset = Math.round(cachedLon / 15);
+                        let selectEl = document.getElementById('timezone-preset');
+                        for(let opt of selectEl.options) {
+                            if(parseFloat(opt.value) === approxOffset) {
+                                selectEl.value = opt.value;
+                                localStorage.setItem('sunclock_tz', opt.value);
+                                break;
+                            }
+                        }
+
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
@@ -620,15 +586,19 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    syncTimezoneDropdownWithLon();
+                    // Sincronizza automaticamente il fuso orario in base alla longitudine della città cercata
+                    let approxOffset = Math.round(cachedLon / 15);
+                    let selectEl = document.getElementById('timezone-preset');
+                    for(let opt of selectEl.options) {
+                        if(parseFloat(opt.value) === approxOffset) {
+                            selectEl.value = opt.value;
+                            localStorage.setItem('sunclock_tz', opt.value);
+                            break;
+                        }
+                    }
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
-                    
-                    if (map && marker) {
-                        map.setView([cachedLat, cachedLon], 10);
-                        marker.setLatLng([cachedLat, cachedLon]);
-                    }
 
                     setTimeout(() => {
                         applyManualLocation();
@@ -641,59 +611,6 @@
             }
         }
 
-        function toggleMap() {
-            const mapContainer = document.getElementById('map-container');
-            if (mapContainer.style.display === 'block') {
-                mapContainer.style.display = 'none';
-            } else {
-                mapContainer.style.display = 'block';
-                if (!map) {
-                    const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
-                    const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
-                    
-                    map = L.map('map-container').setView([currentLat, currentLon], 6);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 19,
-                        attribution: '© OpenStreetMap'
-                    }).addTo(map);
-
-                    marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
-
-                    marker.on('dragend', function(e) {
-                        const pos = marker.getLatLng();
-                        document.getElementById('input-lat').value = pos.lat.toFixed(4);
-                        document.getElementById('input-lon').value = pos.lng.toFixed(4);
-                        
-                        cachedLat = pos.lat;
-                        cachedLon = pos.lng;
-                        localStorage.setItem('sunclock_lat', cachedLat);
-                        localStorage.setItem('sunclock_lon', cachedLon);
-                        
-                        syncTimezoneDropdownWithLon();
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon);
-                    });
-
-                    map.on('click', function(e) {
-                        marker.setLatLng(e.latlng);
-                        document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
-                        document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
-                        
-                        cachedLat = e.latlng.lat;
-                        cachedLon = e.latlng.lng;
-                        localStorage.setItem('sunclock_lat', cachedLat);
-                        localStorage.setItem('sunclock_lon', cachedLon);
-                        
-                        syncTimezoneDropdownWithLon();
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon);
-                    });
-                } else {
-                    map.invalidateSize();
-                }
-            }
-        }
-
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
@@ -702,7 +619,16 @@
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
                 
-                syncTimezoneDropdownWithLon();
+                let approxOffset = Math.round(cachedLon / 15);
+                let selectEl = document.getElementById('timezone-preset');
+                for(let opt of selectEl.options) {
+                    if(parseFloat(opt.value) === approxOffset) {
+                        selectEl.value = opt.value;
+                        localStorage.setItem('sunclock_tz', opt.value);
+                        break;
+                    }
+                }
+
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
@@ -762,7 +688,9 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            const targetTotalOffsetHours = cachedLon / 15;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
             const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
             let localHours = utcHours + targetTotalOffsetHours;
@@ -779,7 +707,9 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            const targetTotalOffsetHours = cachedLon / 15;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
             const shiftedDate = new Date(date.getTime() + (targetTotalOffsetHours * 3600000));
             return shiftedDate.toISOString().substr(11, 8);
