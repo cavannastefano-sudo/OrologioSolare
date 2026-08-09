@@ -63,6 +63,10 @@
             letter-spacing: 0.5px;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            cursor: pointer;
+        }
+        #digital-clock:hover {
+            background: rgba(0,0,0,0.5);
         }
 
         .header-box {
@@ -87,6 +91,9 @@
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
+        #date-display-btn:hover {
+            color: #70ff33;
+        }
 
         #btn-now {
             background: rgba(57, 255, 20, 0.15);
@@ -99,6 +106,9 @@
             cursor: pointer;
             white-space: nowrap;
             text-shadow: 0 0 8px rgba(57,255,20,0.6);
+        }
+        #btn-now:hover {
+            background: rgba(57, 255, 20, 0.3);
         }
 
         #clock-wrapper {
@@ -121,49 +131,128 @@
             z-index: 10;
         }
         
-        #hand-hour { width: 6px; height: 38%; background: #ff007f; box-shadow: 0 0 12px #ff007f; z-index: 12; } 
+        #hand-hour { 
+            width: 6px; height: 38%; 
+            background: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
+            z-index: 12; 
+        } 
         #hand-hour::after {
-            content: "☀️"; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
-            font-size: 22px; width: 28px; height: 28px; background: #ffd700; border: 2px solid #000; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px #ffcc00;
+            content: "☀️";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #ffd700;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #ffcc00;
         }
 
-        #hand-minute { width: 4px; height: 42%; background: #39ff14; box-shadow: 0 0 12px #39ff14; z-index: 11; } 
+        #hand-minute { 
+            width: 4px; height: 42%; 
+            background: #39ff14; 
+            box-shadow: 0 0 12px #39ff14, 0 0 4px #22c55e;
+            z-index: 11; 
+        } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        #hand-moon { width: 4px; height: 25%; background: #ffffff; box-shadow: 0 0 12px #ffffff; z-index: 9; }
+        #hand-moon { 
+            width: 4px; height: 25%; 
+            background: #ffffff; 
+            box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
+            z-index: 9; 
+        }
         #hand-moon::after {
-            content: "🌙"; position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
-            font-size: 22px; width: 28px; height: 28px; background: #f1f5f9; border: 2px solid #000; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px #cbd5e1;
+            content: "🌙";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #f1f5f9;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #cbd5e1;
         }
 
         #center-dot {
-            position: absolute; width: 14px; height: 14px; background: #ff007f; border: 2px solid #fff; border-radius: 50%;
-            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; box-shadow: 0 0 8px #ff007f;
+            position: absolute; width: 14px; height: 14px;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+            box-shadow: 0 0 8px #ff007f;
         }
 
         #bottom-panels-container {
-            display: flex; flex-wrap: wrap; gap: 10px; width: min(90vw, 480px); margin-top: 12px; box-sizing: border-box;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            width: min(90vw, 480px);
+            margin-top: 12px;
+            box-sizing: border-box;
         }
 
         .info-panel-box {
-            flex: 1; min-width: 200px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 10px;
-            font-size: 0.85rem; color: #39ff14; text-align: center; font-weight: bold; cursor: pointer;
+            flex: 1;
+            min-width: 200px;
+            background: rgba(0,0,0,0.25);
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #39ff14;
+            text-align: center;
+            border: none;
+            box-shadow: none;
+            font-weight: bold;
+            cursor: pointer;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;
+            transition: background 0.2s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
-        .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; margin-top: 6px; font-size: 1.15rem; }
-        .info-grid span { color: #39ff14; font-weight: bold; text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000; }
+        .info-panel-box:hover {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+            font-size: 1.15rem;
+        }
+        .info-grid span { 
+            color: #39ff14; 
+            font-weight: bold; 
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
 
         .modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: #1e293b; padding: 20px; border-radius: 12px; width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
-            border: 1px solid #475569; color: #f8fafc; box-sizing: border-box;
+            background: #1e293b; padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
+            border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
         }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
+        }
         .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
         table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
@@ -188,6 +277,7 @@
     <div id="clock-wrapper">
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
+            
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
@@ -250,7 +340,7 @@
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
         
-        // Legge i parametri passati nell'URL (lat, lon, city)
+        // Legge latitudine, longitudine e nome città passati dall'URL
         const urlParams = new URLSearchParams(window.location.search);
         let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
         let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
@@ -265,6 +355,7 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        // L'orario si basa esclusivamente sulla longitudine reale della città (15 gradi = 1 ora) senza fusi manuali
         function getEffectiveDate() {
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
