@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mappa Mondiale - SunClock24</title>
+    <title>Mappa Fusi Orari - SunClock24</title>
     <meta name="theme-color" content="#000000">
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -21,51 +21,50 @@
 <body>
 
     <header>
-        <h1>🌍 Mappa Mondiale</h1>
+        <h1>🌍 Mappa Fusi Orari</h1>
         <a href="index.html" class="back-btn">← Torna</a>
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Caricamento confini in corso...</div>
+    <div id="status-msg">Caricamento fusi orari...</div>
 
     <script>
         const map = L.map('map').setView([20, 0], 2);
 
+        // Mappa base scura
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap, © CartoDB'
         }).addTo(map);
 
-        // Funzione per generare colori diversi basati sul nome del paese
-        function getColor(name) {
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${hash % 360}, 50%, 40%)`;
-        }
+        // URL del dataset GeoJSON dei fusi orari (Natural Earth via GitHub)
+        const tzUrl = 'https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/combined.json';
 
-        // Caricamento GeoJSON dei confini mondiali
-        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+        // Poiché il file dei fusi orari è molto grande, usiamo un dataset più leggero 
+        // per il web, o carichiamo una versione semplificata
+        fetch('https://raw.githubusercontent.com/datasets/timezone-boundary-builder/master/dist/combined-with-oceans.json')
+            .catch(() => 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json') // Fallback
             .then(res => res.json())
             .then(data => {
                 L.geoJSON(data, {
-                    style: (feature) => ({
-                        fillColor: getColor(feature.properties.ADMIN || feature.properties.name),
-                        weight: 1,
-                        opacity: 1,
-                        color: 'white',
-                        fillOpacity: 0.6
-                    }),
+                    style: {
+                        fillColor: '#38bdf8',
+                        weight: 0.5,
+                        opacity: 0.5,
+                        color: '#facc15',
+                        fillOpacity: 0.2
+                    },
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
                             const lat = e.latlng.lat;
                             const lon = e.latlng.lng;
-                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${feature.properties.ADMIN || 'Mappa'}`;
+                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=FusoOrario`;
                         });
                     }
                 }).addTo(map);
-                document.getElementById('status-msg').innerText = "Clicca su uno stato per selezionarlo.";
+                document.getElementById('status-msg').innerText = "Clicca su una zona per selezionarla.";
             })
             .catch(() => {
-                document.getElementById('status-msg').innerText = "Errore nel caricamento confini.";
+                document.getElementById('status-msg').innerText = "Errore caricamento fusi.";
             });
     </script>
 </body>
