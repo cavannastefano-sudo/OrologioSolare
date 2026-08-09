@@ -1,3 +1,5 @@
+Si può disegnare i fusi orari nella world.html?
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
@@ -71,11 +73,11 @@
 
     <header>
         <h1>🌍 Mappa Mondiale</h1>
-        <a href="index.html" class="back-btn">← Torna</a>
+        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Clicca un punto per aprire la posizione.</div>
+    <div id="status-msg">Clicca un punto qualsiasi del mondo per aprire la posizione.</div>
 
     <script>
         const savedLat = parseFloat(localStorage.getItem('sunclock_lat')) || 45.05;
@@ -88,26 +90,6 @@
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // Disegno dei Fusi Orari
-        // Ogni fuso è largo 15 gradi (360 / 24 = 15)
-        for (let i = 0; i < 24; i++) {
-            let lonStart = -180 + (i * 15);
-            let lonEnd = lonStart + 15;
-            
-            // Colore alternato per visibilità
-            let color = (i % 2 === 0) ? '#38bdf8' : '#f97316';
-            
-            L.rectangle([
-                [-90, lonStart],
-                [90, lonEnd]
-            ], {
-                color: color,
-                weight: 1,
-                fillOpacity: 0.1,
-                interactive: false // Non interferisce con i click sulla mappa
-            }).addTo(map);
-        }
-
         let marker = L.marker([savedLat, savedLon]).addTo(map);
 
         map.on('click', function(e) {
@@ -116,7 +98,7 @@
             
             marker.setLatLng([lat, lon]);
             
-            document.getElementById('status-msg').innerText = `Posizione selezionata! Apertura...`;
+            document.getElementById('status-msg').innerText = `Posizione selezionata! Apertura in corso...`;
 
             setTimeout(() => {
                 window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Mappa`;
