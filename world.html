@@ -15,7 +15,7 @@
         h1 { margin: 0; font-size: 1.2rem; text-shadow: 0 0 6px #ff0000; }
         .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; }
         #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; }
-        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; }
+        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
@@ -26,46 +26,33 @@
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Caricamento fusi orari...</div>
+    <div id="status-msg">Clicca un punto per aprire la posizione.</div>
 
     <script>
         const map = L.map('map').setView([20, 0], 2);
 
-        // Mappa base scura
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap, © CartoDB'
+        // Usiamo una tile map gratuita che mostra i fusi orari (Timezone map)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // URL del dataset GeoJSON dei fusi orari (Natural Earth via GitHub)
-        const tzUrl = 'https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/combined.json';
+        // Aggiungiamo un overlay specifico per i fusi orari
+        // Questa è una soluzione leggera basata su immagini tile
+        L.tileLayer('https://timezone-map.org/tiles/{z}/{x}/{y}.png', {
+            opacity: 0.5,
+            attribution: '© Timezone-Map'
+        }).addTo(map);
 
-        // Poiché il file dei fusi orari è molto grande, usiamo un dataset più leggero 
-        // per il web, o carichiamo una versione semplificata
-        fetch('https://raw.githubusercontent.com/datasets/timezone-boundary-builder/master/dist/combined-with-oceans.json')
-            .catch(() => 'https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json') // Fallback
-            .then(res => res.json())
-            .then(data => {
-                L.geoJSON(data, {
-                    style: {
-                        fillColor: '#38bdf8',
-                        weight: 0.5,
-                        opacity: 0.5,
-                        color: '#facc15',
-                        fillOpacity: 0.2
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.on('click', (e) => {
-                            const lat = e.latlng.lat;
-                            const lon = e.latlng.lng;
-                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=FusoOrario`;
-                        });
-                    }
-                }).addTo(map);
-                document.getElementById('status-msg').innerText = "Clicca su una zona per selezionarla.";
-            })
-            .catch(() => {
-                document.getElementById('status-msg').innerText = "Errore caricamento fusi.";
-            });
+        let marker = L.marker([45.05, 9.69]).addTo(map);
+
+        map.on('click', function(e) {
+            const lat = e.latlng.lat.toFixed(4);
+            const lon = e.latlng.lng.toFixed(4);
+            marker.setLatLng([lat, lon]);
+            
+            document.getElementById('status-msg').innerText = "Caricamento...";
+            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Mappa`;
+        });
     </script>
 </body>
 </html>
