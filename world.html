@@ -75,7 +75,7 @@
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Clicca un punto qualsiasi del mondo per impostarlo come posizione attiva.</div>
+    <div id="status-msg">Clicca un punto qualsiasi del mondo per aprire la posizione.</div>
 
     <script>
         const savedLat = parseFloat(localStorage.getItem('sunclock_lat')) || 45.05;
@@ -96,17 +96,11 @@
             
             marker.setLatLng([lat, lon]);
             
-            localStorage.setItem('sunclock_lat', lat);
-            localStorage.setItem('sunclock_lon', lon);
-
-            let approxOffset = Math.round(lon / 15);
-            localStorage.setItem('sunclock_tz', approxOffset);
-
-            document.getElementById('status-msg').innerText = `Posizione salvata! Ritorno in corso...`;
+            document.getElementById('status-msg').innerText = `Posizione selezionata! Apertura in corso...`;
 
             setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 600);
+                window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Mappa`;
+            }, 400);
         });
     </script>
 </body>
