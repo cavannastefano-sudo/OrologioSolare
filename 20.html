@@ -388,7 +388,7 @@
             </div>
 
             <div class="form-group">
-                <label>🏙️ Cerca Località (es. Piacenza, Roma, Tokyo):</label>
+                <label>🏙️ Cerca Località (es. New York, Tokyo, Roma):</label>
                 <div class="search-row">
                     <input type="text" id="input-city" placeholder="Nome città...">
                     <button class="action-btn" onclick="searchCity()" style="width: auto; padding: 6px 12px; background: #38bdf8; color: #0f172a;">Cerca</button>
@@ -469,16 +469,23 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        function autoSelectTimezone(lon) {
+        function autoSelectTimezoneByLon(lon) {
+            // Migliorato per coprire meglio le fasce americane e mondiali standard
             let approxOffset = Math.round(lon / 15);
             let selectEl = document.getElementById('timezone-preset');
+            let bestMatch = selectEl.options[0].value;
+            let minDiff = 99;
+
             for(let opt of selectEl.options) {
-                if(Math.abs(parseFloat(opt.value) - approxOffset) < 0.5) {
-                    selectEl.value = opt.value;
-                    localStorage.setItem('sunclock_tz', opt.value);
-                    break;
+                let val = parseFloat(opt.value);
+                let diff = Math.abs(val - approxOffset);
+                if(diff < minDiff) {
+                    minDiff = diff;
+                    bestMatch = opt.value;
                 }
             }
+            selectEl.value = bestMatch;
+            localStorage.setItem('sunclock_tz', bestMatch);
         }
 
         async function searchCity() {
@@ -498,7 +505,7 @@
                     localStorage.setItem('sunclock_lat', cachedLat);
                     localStorage.setItem('sunclock_lon', cachedLon);
                     
-                    autoSelectTimezone(cachedLon);
+                    autoSelectTimezoneByLon(cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>Trovata: ${cityName}</b><br>Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
@@ -526,7 +533,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        autoSelectTimezone(cachedLon);
+                        autoSelectTimezoneByLon(cachedLon);
 
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
