@@ -469,10 +469,21 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        // Funzione avanzata per trovare il fuso orario esatto in base alla longitudine reale e alle regioni globali
         function autoSelectTimezoneByLon(lon) {
-            // Migliorato per coprire meglio le fasce americane e mondiali standard
-            let approxOffset = Math.round(lon / 15);
             let selectEl = document.getElementById('timezone-preset');
+            let approxOffset = lon / 15;
+            
+            // Correzioni mirate per le macro-aree americane e mondiali critiche
+            if (lon >= -175 && lon < -155) approxOffset = -10; // Hawaii
+            else if (lon >= -155 && lon < -140) approxOffset = -9; // Alaska
+            else if (lon >= -140 && lon < -125) approxOffset = -8; // Pacific Time
+            else if (lon >= -125 && lon < -110) approxOffset = -7; // Mountain Time
+            else if (lon >= -110 && lon < -95) approxOffset = -6; // Central Time
+            else if (lon >= -95 && lon < -75) approxOffset = -5; // Eastern Time
+            else if (lon >= -75 && lon < -60) approxOffset = -4; // Atlantic / Caraibi
+            else if (lon >= -60 && lon < -35) approxOffset = -3; // Brasilia / Argentina
+
             let bestMatch = selectEl.options[0].value;
             let minDiff = 99;
 
