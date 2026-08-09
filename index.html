@@ -296,10 +296,6 @@
         .timezone-link:hover {
             text-decoration: underline;
         }
-        .action-btn {
-            background: #334155; color: #f8fafc; border: 1px solid #475569; padding: 8px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 0.9rem;
-        }
-        .action-btn:hover { background: #475569; }
     </style>
 </head>
 <body>
@@ -415,7 +411,7 @@
                 <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
-                    <button class="action-btn" onclick="searchCity()" style="width: auto; padding: 6px 10px; background: #38bdf8; color: #0f172a;">Cerca</button>
+                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
                 </div>
                 <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
             </div>
@@ -634,13 +630,12 @@
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
                     });
 
-                    // --- CLIC SULLA MAPPA: AGGIORNA E REINDIRIZZA A posizione.html ---
+                    // --- CLIC SULLA MAPPA: REINDIRIZZA A posizione.html ---
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
                         document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
                         
-                        // Reindirizzamento immediato al click sulla mappa
                         window.location.href = `posizione.html?lat=${e.latlng.lat}&lon=${e.latlng.lng}&city=Mappa`;
                     });
                 } else {
@@ -649,7 +644,7 @@
             }
         }
 
-        // --- COLLEGAMENTO A posizione.html TRAMITE SALVATAGGIO MANUALE (o spostamento pin) ---
+        // --- COLLEGAMENTO A posizione.html TRAMITE SALVATAGGIO MANUALE ---
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
