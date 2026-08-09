@@ -139,7 +139,6 @@
             z-index: 10;
         }
         
-        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -164,7 +163,6 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -173,7 +171,6 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -274,17 +271,6 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        .timezone-link {
-            display: block;
-            text-align: center;
-            margin-top: 8px;
-            color: #38bdf8;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .timezone-link:hover {
-            text-decoration: underline;
-        }
         .action-btn {
             background: #38bdf8; color: #0f172a; border: none; padding: 6px 12px; font-weight: bold; border-radius: 6px; cursor: pointer;
         }
@@ -320,7 +306,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -329,7 +314,6 @@
             </div>
         </div>
 
-        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -559,19 +543,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
-
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon);
-                        toggleSettingsModal(false);
+                        autoSelectTimezone(cachedLat, cachedLon);
                     },
                     (error) => {
                         updateTimeForLocation();
@@ -583,6 +555,53 @@
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
             }
+        }
+
+        // Funzione intelligente per ricavare l'offset reale in base a coordinate tramite TimeAPI gratuito
+        async function autoSelectTimezone(lat, lon) {
+            const statusEl = document.getElementById('search-status');
+            try {
+                const response = await fetch(`https://timeapi.io/api/TimeZone/coordinate?latitude=${lat}&longitude=${lon}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const totalOffsetMinutes = data.currentUtcOffset.seconds / 60;
+                    const offsetHours = totalOffsetMinutes / 60;
+
+                    // Imposta il menu a tendina sul valore esatto trovato dall'API
+                    let selectEl = document.getElementById('timezone-preset');
+                    let found = false;
+                    for (let opt of selectEl.options) {
+                        if (Math.abs(parseFloat(opt.value) - offsetHours) < 0.1) {
+                            selectEl.value = opt.value;
+                            localStorage.setItem('sunclock_tz', opt.value);
+                            found = true;
+                            break;
+                        }
+                    }
+                    // Se l'offset ha decimali particolari non presenti nei preset standard, lo gestisce comunque
+                    if (!found) {
+                        selectEl.value = offsetHours;
+                        localStorage.setItem('sunclock_tz', offsetHours);
+                    }
+
+                    // Determina automaticamente se c'è l'ora legale attiva in base alla risposta dell'API
+                    isDstActive = data.isDayLightSavingActive ? true : false;
+                    document.getElementById('chk-dst').checked = isDstActive;
+                    localStorage.setItem('sunclock_dst', isDstActive);
+
+                    if (statusEl) statusEl.innerHTML += `<br>Fuso: ${data.timeZone} (UTC ${offsetHours >= '+0' ? '+' : ''}${offsetHours})`;
+                }
+            } catch (e) {
+                // Fallback robusto via longitudine se la richiesta di rete fallisce
+                let approxOffset = Math.round(lon / 15);
+                let selectEl = document.getElementById('timezone-preset');
+                selectEl.value = approxOffset;
+                localStorage.setItem('sunclock_tz', approxOffset);
+            }
+
+            updateTimeForLocation();
+            updateSunClock(cachedLat, cachedLon);
+            toggleSettingsModal(false);
         }
 
         async function searchCity() {
@@ -602,22 +621,11 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    let approxOffset = Math.round(cachedLon / 15);
-                    let selectEl = document.getElementById('timezone-preset');
-                    for(let opt of selectEl.options) {
-                        if(parseFloat(opt.value) === approxOffset) {
-                            selectEl.value = opt.value;
-                            localStorage.setItem('sunclock_tz', opt.value);
-                            break;
-                        }
-                    }
-
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
 
-                    setTimeout(() => {
-                        applyManualLocation();
-                    }, 1200);
+                    // Interroga il fuso orario reale della città trovata e sincronizza l'orologio
+                    await autoSelectTimezone(cachedLat, cachedLon);
                 } else {
                     statusEl.innerText = "Località non trovata.";
                 }
@@ -633,9 +641,8 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
-                updateTimeForLocation();
-                updateSunClock(cachedLat, cachedLon);
-                toggleSettingsModal(false);
+                
+                autoSelectTimezone(cachedLat, cachedLon);
             }
         }
 
@@ -692,7 +699,13 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+
+            const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            let localHours = utcHours + targetTotalOffsetHours;
+            return (localHours + 24) % 24;
         }
 
         function hoursToAngle(h) {
@@ -701,6 +714,16 @@
 
         function isValidDate(d) {
             return d instanceof Date && !isNaN(d);
+        }
+
+        function formatTime(date) {
+            if (!isValidDate(date)) return "--:--";
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+
+            const shiftedDate = new Date(date.getTime() + (targetTotalOffsetHours * 3600000));
+            return shiftedDate.toISOString().substr(11, 8);
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
@@ -956,7 +979,12 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const dstOffset = isDstActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+
+            const shiftedDate = new Date(date.getTime() + (targetTotalOffsetHours * 3600000));
+            return shiftedDate.toISOString().substr(11, 8);
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
