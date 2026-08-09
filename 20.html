@@ -469,20 +469,21 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        // Funzione avanzata per trovare il fuso orario esatto in base alla longitudine reale e alle regioni globali
-        function autoSelectTimezoneByLon(lon) {
+        // Funzione potenziata per mappare con precisione i fusi orari globali e americani in base a latitudine e longitudine
+        function autoSelectTimezoneAccurate(lat, lon) {
             let selectEl = document.getElementById('timezone-preset');
             let approxOffset = lon / 15;
-            
-            // Correzioni mirate per le macro-aree americane e mondiali critiche
-            if (lon >= -175 && lon < -155) approxOffset = -10; // Hawaii
-            else if (lon >= -155 && lon < -140) approxOffset = -9; // Alaska
-            else if (lon >= -140 && lon < -125) approxOffset = -8; // Pacific Time
-            else if (lon >= -125 && lon < -110) approxOffset = -7; // Mountain Time
-            else if (lon >= -110 && lon < -95) approxOffset = -6; // Central Time
-            else if (lon >= -95 && lon < -75) approxOffset = -5; // Eastern Time
-            else if (lon >= -75 && lon < -60) approxOffset = -4; // Atlantic / Caraibi
-            else if (lon >= -60 && lon < -35) approxOffset = -3; // Brasilia / Argentina
+
+            // Regole specifiche per coprire perfettamente l'America e aree particolari
+            if (lat >= 14 && lat <= 72 && lon >= -170 && lon <= -50) {
+                if (lon >= -161 && lon < -150) approxOffset = -10; // Hawaii
+                else if (lon >= -150 && lon < -130) approxOffset = -9; // Alaska
+                else if (lon >= -130 && lon < -115) approxOffset = -8; // Pacific (es. Los Angeles)
+                else if (lon >= -115 && lon < -102) approxOffset = -7; // Mountain (es. Denver)
+                else if (lon >= -102 && lon < -87) approxOffset = -6; // Central (es. Chicago)
+                else if (lon >= -87 && lon < -65) approxOffset = -5; // Eastern (es. New York)
+                else if (lon >= -65 && lon < -50) approxOffset = -4; // Atlantico / Caraibi
+            }
 
             let bestMatch = selectEl.options[0].value;
             let minDiff = 99;
@@ -516,7 +517,7 @@
                     localStorage.setItem('sunclock_lat', cachedLat);
                     localStorage.setItem('sunclock_lon', cachedLon);
                     
-                    autoSelectTimezoneByLon(cachedLon);
+                    autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>Trovata: ${cityName}</b><br>Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
@@ -544,7 +545,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        autoSelectTimezoneByLon(cachedLon);
+                        autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
