@@ -142,7 +142,6 @@
             z-index: 10;
         }
         
-        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -167,7 +166,6 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -176,7 +174,6 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -323,7 +320,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -332,7 +328,6 @@
             </div>
         </div>
 
-        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -558,7 +553,7 @@
             }
         }
 
-        // Reindirizza a posizione.html passando le coordinate GPS rilevate
+        // Reindirizza a posizione.html con il GPS
         function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -576,7 +571,7 @@
             }
         }
 
-        // Reindirizza a posizione.html passando la città cercata tramite Nominatim
+        // Reindirizza a posizione.html con la città cercata
         async function searchCity() {
             const query = document.getElementById('input-city').value.trim();
             const statusEl = document.getElementById('search-status');
@@ -637,11 +632,14 @@
             }
         }
 
+        // Reindirizza a posizione.html con le coordinate manuali o scelte tramite mappa
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
             if (!isNaN(lat) && !isNaN(lon)) {
                 window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Manuale`;
+            } else {
+                alert("Inserisci coordinate valide.");
             }
         }
 
