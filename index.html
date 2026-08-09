@@ -43,7 +43,7 @@
             align-items: center;
             width: min(98vw, 480px);
             margin-bottom: 8px;
-            gap: 8px;
+            gap: 6px;
         }
         h1 { 
             margin: 0; 
@@ -54,7 +54,7 @@
         }
 
         #digital-clock {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: bold;
             color: #facc15;
             background: rgba(0,0,0,0.3);
@@ -73,12 +73,12 @@
 
         .header-box {
             background: rgba(0,0,0,0.25);
-            padding: 6px 10px;
+            padding: 5px 8px;
             border-radius: 10px;
             border: none;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             box-sizing: border-box;
         }
 
@@ -86,7 +86,7 @@
             background: none;
             border: none;
             color: #39ff14;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: bold;
             cursor: pointer;
             padding: 0;
@@ -101,9 +101,9 @@
             background: rgba(57, 255, 20, 0.15);
             color: #39ff14;
             border: none;
-            padding: 3px 8px;
+            padding: 3px 6px;
             border-radius: 4px;
-            font-size: 1.15rem;
+            font-size: 1.05rem;
             font-weight: bold;
             cursor: pointer;
             white-space: nowrap;
@@ -113,14 +113,30 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        #btn-settings {
-            background: rgba(0,0,0,0.3); color: #facc15; border: 1px solid rgba(255,0,0,0.6);
+        .header-icons-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .header-btn {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 1px solid rgba(255,0,0,0.6);
             box-shadow: 0 0 6px rgba(255,0,0,0.4);
-            padding: 5px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        #btn-settings:hover { background: rgba(0,0,0,0.5); }
+        .header-btn:hover { background: rgba(0,0,0,0.5); }
 
         #clock-wrapper {
             position: relative;
@@ -142,7 +158,6 @@
             z-index: 10;
         }
         
-        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -167,7 +182,6 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -176,7 +190,6 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -285,17 +298,6 @@
             display: none;
             border: 1px solid #475569;
         }
-        .timezone-link {
-            display: block;
-            text-align: center;
-            margin-top: 8px;
-            color: #38bdf8;
-            font-size: 0.85rem;
-            text-decoration: none;
-        }
-        .timezone-link:hover {
-            text-decoration: underline;
-        }
     </style>
 </head>
 <body>
@@ -311,7 +313,10 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
-        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
+        <div class="header-icons-group">
+            <a href="world.html" class="header-btn" title="Mappa Mondiale">🌐</a>
+            <button class="header-btn" onclick="toggleSettingsModal(true)">⚙️</button>
+        </div>
     </header>
 
     <div id="clock-wrapper">
@@ -327,7 +332,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -336,7 +340,6 @@
             </div>
         </div>
 
-        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -472,11 +475,6 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            const savedTz = localStorage.getItem('sunclock_tz');
-            if (savedTz !== null) {
-                document.getElementById('timezone-preset').value = savedTz;
-            }
-
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
             if (savedLat && savedLon) {
@@ -486,9 +484,21 @@
                 document.getElementById('input-lon').value = cachedLon;
             }
 
+            syncTimezoneDropdownWithLon();
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
+        }
+
+        function syncTimezoneDropdownWithLon() {
+            let approxOffset = Math.round(cachedLon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    break;
+                }
+            }
         }
 
         function toggleDST() {
@@ -501,8 +511,12 @@
         }
 
         function applyTimezonePreset() {
-            const tzVal = document.getElementById('timezone-preset').value;
-            localStorage.setItem('sunclock_tz', tzVal);
+            // Se l'utente sceglie un fuso dal menu, forziamo la longitudine centrale di quel fuso per mantenere l'asse perfetto
+            const tzVal = parseFloat(document.getElementById('timezone-preset').value);
+            cachedLon = tzVal * 15;
+            document.getElementById('input-lon').value = cachedLon;
+            localStorage.setItem('sunclock_lon', cachedLon);
+
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -510,9 +524,8 @@
         }
 
         function getEffectiveDate() {
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            const dstOffset = isDstActive ? 1 : 0;
-            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+            // Sincronizzazione basata esclusivamente sulla longitudine corrente
+            const targetTotalOffsetHours = cachedLon / 15;
 
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -573,16 +586,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
-
+                        syncTimezoneDropdownWithLon();
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
@@ -616,15 +620,7 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    let approxOffset = Math.round(cachedLon / 15);
-                    let selectEl = document.getElementById('timezone-preset');
-                    for(let opt of selectEl.options) {
-                        if(parseFloat(opt.value) === approxOffset) {
-                            selectEl.value = opt.value;
-                            localStorage.setItem('sunclock_tz', opt.value);
-                            break;
-                        }
-                    }
+                    syncTimezoneDropdownWithLon();
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
@@ -667,12 +663,30 @@
                         const pos = marker.getLatLng();
                         document.getElementById('input-lat').value = pos.lat.toFixed(4);
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
+                        
+                        cachedLat = pos.lat;
+                        cachedLon = pos.lng;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        syncTimezoneDropdownWithLon();
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
                     });
 
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
                         document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
+                        
+                        cachedLat = e.latlng.lat;
+                        cachedLon = e.latlng.lng;
+                        localStorage.setItem('sunclock_lat', cachedLat);
+                        localStorage.setItem('sunclock_lon', cachedLon);
+                        
+                        syncTimezoneDropdownWithLon();
+                        updateTimeForLocation();
+                        updateSunClock(cachedLat, cachedLon);
                     });
                 } else {
                     map.invalidateSize();
@@ -687,6 +701,8 @@
                 cachedLat = lat; cachedLon = lon;
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
+                
+                syncTimezoneDropdownWithLon();
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
@@ -746,7 +762,11 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            const targetTotalOffsetHours = cachedLon / 15;
+
+            const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            let localHours = utcHours + targetTotalOffsetHours;
+            return (localHours + 24) % 24;
         }
 
         function hoursToAngle(h) {
@@ -755,6 +775,14 @@
 
         function isValidDate(d) {
             return d instanceof Date && !isNaN(d);
+        }
+
+        function formatTime(date) {
+            if (!isValidDate(date)) return "--:--";
+            const targetTotalOffsetHours = cachedLon / 15;
+
+            const shiftedDate = new Date(date.getTime() + (targetTotalOffsetHours * 3600000));
+            return shiftedDate.toISOString().substr(11, 8);
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
@@ -1006,11 +1034,6 @@
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', finalBg);
             }
-        }
-
-        function formatTime(date) {
-            if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
