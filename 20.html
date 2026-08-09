@@ -475,11 +475,6 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            const savedTz = localStorage.getItem('sunclock_tz');
-            if (savedTz !== null) {
-                document.getElementById('timezone-preset').value = savedTz;
-            }
-
             const savedLat = localStorage.getItem('sunclock_lat');
             const savedLon = localStorage.getItem('sunclock_lon');
             if (savedLat && savedLon) {
@@ -489,9 +484,21 @@
                 document.getElementById('input-lon').value = cachedLon;
             }
 
+            syncTimezoneDropdownWithLon();
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
+        }
+
+        function syncTimezoneDropdownWithLon() {
+            let approxOffset = Math.round(cachedLon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    break;
+                }
+            }
         }
 
         function toggleDST() {
@@ -504,8 +511,12 @@
         }
 
         function applyTimezonePreset() {
-            const tzVal = document.getElementById('timezone-preset').value;
-            localStorage.setItem('sunclock_tz', tzVal);
+            // Se l'utente sceglie un fuso dal menu, forziamo la longitudine centrale di quel fuso per mantenere l'asse perfetto
+            const tzVal = parseFloat(document.getElementById('timezone-preset').value);
+            cachedLon = tzVal * 15;
+            document.getElementById('input-lon').value = cachedLon;
+            localStorage.setItem('sunclock_lon', cachedLon);
+
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -513,9 +524,8 @@
         }
 
         function getEffectiveDate() {
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            const dstOffset = isDstActive ? 1 : 0;
-            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+            // Sincronizzazione basata esclusivamente sulla longitudine corrente
+            const targetTotalOffsetHours = cachedLon / 15;
 
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -576,16 +586,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
-
+                        syncTimezoneDropdownWithLon();
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                         toggleSettingsModal(false);
@@ -619,15 +620,7 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    let approxOffset = Math.round(cachedLon / 15);
-                    let selectEl = document.getElementById('timezone-preset');
-                    for(let opt of selectEl.options) {
-                        if(parseFloat(opt.value) === approxOffset) {
-                            selectEl.value = opt.value;
-                            localStorage.setItem('sunclock_tz', opt.value);
-                            break;
-                        }
-                    }
+                    syncTimezoneDropdownWithLon();
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>${cityName}</b><br>Lat: ${cachedLat.toFixed(4)}, Lon: ${cachedLon.toFixed(4)}`;
@@ -676,15 +669,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
+                        syncTimezoneDropdownWithLon();
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                     });
@@ -699,15 +684,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
+                        syncTimezoneDropdownWithLon();
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
                     });
@@ -725,16 +702,7 @@
                 localStorage.setItem('sunclock_lat', lat);
                 localStorage.setItem('sunclock_lon', lon);
                 
-                let approxOffset = Math.round(cachedLon / 15);
-                let selectEl = document.getElementById('timezone-preset');
-                for(let opt of selectEl.options) {
-                    if(parseFloat(opt.value) === approxOffset) {
-                        selectEl.value = opt.value;
-                        localStorage.setItem('sunclock_tz', opt.value);
-                        break;
-                    }
-                }
-
+                syncTimezoneDropdownWithLon();
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon);
                 toggleSettingsModal(false);
@@ -794,9 +762,7 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            const dstOffset = isDstActive ? 1 : 0;
-            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+            const targetTotalOffsetHours = cachedLon / 15;
 
             const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
             let localHours = utcHours + targetTotalOffsetHours;
@@ -809,6 +775,14 @@
 
         function isValidDate(d) {
             return d instanceof Date && !isNaN(d);
+        }
+
+        function formatTime(date) {
+            if (!isValidDate(date)) return "--:--";
+            const targetTotalOffsetHours = cachedLon / 15;
+
+            const shiftedDate = new Date(date.getTime() + (targetTotalOffsetHours * 3600000));
+            return shiftedDate.toISOString().substr(11, 8);
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
@@ -1060,11 +1034,6 @@
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', finalBg);
             }
-        }
-
-        function formatTime(date) {
-            if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
