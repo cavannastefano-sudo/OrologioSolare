@@ -139,7 +139,6 @@
             z-index: 10;
         }
         
-        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -164,7 +163,6 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
-        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -173,7 +171,6 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
-        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -270,7 +267,7 @@
         table.times-table th { color: #38bdf8; }
         .form-group { margin-bottom: 12px; text-align: left; }
         .form-group label { display: block; font-size: 0.80rem; color: #94a3b8; margin-bottom: 4px; }
-        .form-group select {
+        .form-group select, .form-group input {
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
@@ -278,6 +275,9 @@
             background: #334155; color: #f8fafc; border: 1px solid #475569; padding: 8px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 0.9rem;
         }
         .action-btn:hover { background: #475569; }
+        .search-row {
+            display: flex; gap: 6px;
+        }
     </style>
 </head>
 <body>
@@ -389,6 +389,15 @@
                 <label for="chk-dst" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h)</label>
             </div>
 
+            <div class="form-group">
+                <label>🏙️ Cerca Località (es. Piacenza, Roma, Tokyo):</label>
+                <div class="search-row">
+                    <input type="text" id="input-city" placeholder="Nome città...">
+                    <button class="action-btn" onclick="searchCity()" style="width: auto; padding: 6px 12px; background: #38bdf8; color: #0f172a;">Cerca</button>
+                </div>
+                <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
+            </div>
+
             <div class="form-group" style="margin-top: 15px;">
                 <button class="action-btn" onclick="useGPSLocation()">📍 Usa GPS</button>
             </div>
@@ -462,6 +471,54 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        function autoSelectTimezone(lon) {
+            let approxOffset = Math.round(lon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(Math.abs(parseFloat(opt.value) - approxOffset) < 0.5) {
+                    selectEl.value = opt.value;
+                    localStorage.setItem('sunclock_tz', opt.value);
+                    break;
+                }
+            }
+        }
+
+        async function searchCity() {
+            const query = document.getElementById('input-city').value.trim();
+            const statusEl = document.getElementById('search-status');
+            if (!query) {
+                statusEl.innerText = "Inserisci il nome di una città.";
+                return;
+            }
+            statusEl.innerText = "Ricerca in corso...";
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    cachedLat = parseFloat(data[0].lat);
+                    cachedLon = parseFloat(data[0].lon);
+                    localStorage.setItem('sunclock_lat', cachedLat);
+                    localStorage.setItem('sunclock_lon', cachedLon);
+                    
+                    autoSelectTimezone(cachedLon);
+
+                    const cityName = data[0].display_name.split(',')[0];
+                    statusEl.innerHTML = `<b>Trovata: ${cityName}</b><br>Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
+
+                    updateTimeForLocation();
+                    updateSunClock(cachedLat, cachedLon);
+                    
+                    setTimeout(() => {
+                        toggleSettingsModal(false);
+                    }, 1500);
+                } else {
+                    statusEl.innerText = "Località non trovata.";
+                }
+            } catch (e) {
+                statusEl.innerText = "Errore di connessione.";
+            }
+        }
+
         function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -471,15 +528,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(Math.abs(parseFloat(opt.value) - approxOffset) < 0.5) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
+                        autoSelectTimezone(cachedLon);
 
                         updateTimeForLocation();
                         updateSunClock(cachedLat, cachedLon);
