@@ -142,6 +142,7 @@
             z-index: 10;
         }
         
+        /* Lancetta ore Rosa Fluorescente */
         #hand-hour { 
             width: 6px; height: 38%; 
             background: #ff007f; 
@@ -166,6 +167,7 @@
             box-shadow: 0 0 10px #ffcc00;
         }
 
+        /* Lancetta minuti Verde Fluo */
         #hand-minute { 
             width: 4px; height: 42%; 
             background: #39ff14; 
@@ -174,6 +176,7 @@
         } 
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
+        /* Lancetta luna corta */
         #hand-moon { 
             width: 4px; height: 25%; 
             background: #ffffff; 
@@ -282,13 +285,21 @@
             display: none;
             border: 1px solid #475569;
         }
+        .timezone-link {
+            display: block;
+            text-align: center;
+            margin-top: 8px;
+            color: #38bdf8;
+            font-size: 0.85rem;
+            text-decoration: none;
+        }
+        .timezone-link:hover {
+            text-decoration: underline;
+        }
         .action-btn {
             background: #334155; color: #f8fafc; border: 1px solid #475569; padding: 8px 12px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; font-size: 0.9rem;
         }
         .action-btn:hover { background: #475569; }
-        .search-row {
-            display: flex; gap: 6px;
-        }
     </style>
 </head>
 <body>
@@ -320,6 +331,7 @@
     </div>
 
     <div id="bottom-panels-container">
+        <!-- Riquadro Sole in basso a sinistra (2 colonne) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -328,6 +340,7 @@
             </div>
         </div>
 
+        <!-- Riquadro Luna in basso a destra -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                 <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
@@ -399,16 +412,16 @@
             </div>
 
             <div class="form-group">
-                <label>🏙️ Cerca Località (es. Piacenza, Roma, Tokyo):</label>
-                <div class="search-row">
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
+                <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
-                    <button class="action-btn" onclick="searchCity()" style="width: auto; padding: 6px 12px; background: #38bdf8; color: #0f172a;">Cerca</button>
+                    <button class="action-btn" onclick="searchCity()" style="width: auto; padding: 6px 10px; background: #38bdf8; color: #0f172a;">Cerca</button>
                 </div>
                 <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
             </div>
 
             <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
                 <div id="map-container"></div>
             </div>
 
@@ -424,7 +437,7 @@
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
                 <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
-                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">📍 Usa GPS</button>
+                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
             </div>
         </div>
     </div>
@@ -553,7 +566,7 @@
             }
         }
 
-        // Reindirizza a posizione.html con il GPS
+        // --- COLLEGAMENTO A posizione.html TRAMITE GPS ---
         function useGPSLocation() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -571,7 +584,7 @@
             }
         }
 
-        // Reindirizza a posizione.html con la città cercata
+        // --- COLLEGAMENTO A posizione.html TRAMITE RICERCA CITTÀ ---
         async function searchCity() {
             const query = document.getElementById('input-city').value.trim();
             const statusEl = document.getElementById('search-status');
@@ -621,10 +634,14 @@
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
                     });
 
+                    // --- CLIC SULLA MAPPA: AGGIORNA E REINDIRIZZA A posizione.html ---
                     map.on('click', function(e) {
                         marker.setLatLng(e.latlng);
                         document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
                         document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
+                        
+                        // Reindirizzamento immediato al click sulla mappa
+                        window.location.href = `posizione.html?lat=${e.latlng.lat}&lon=${e.latlng.lng}&city=Mappa`;
                     });
                 } else {
                     map.invalidateSize();
@@ -632,7 +649,7 @@
             }
         }
 
-        // Reindirizza a posizione.html con le coordinate manuali o scelte tramite mappa
+        // --- COLLEGAMENTO A posizione.html TRAMITE SALVATAGGIO MANUALE (o spostamento pin) ---
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
