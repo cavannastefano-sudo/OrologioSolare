@@ -515,13 +515,12 @@
                     localStorage.setItem('sunclock_lat', cachedLat);
                     localStorage.setItem('sunclock_lon', cachedLon);
                     
-                    // Fuso orario calcolato e impostato immediatamente
+                    // L'auto-rilevamento si attiva ESCLUSIVAMENTE qui durante la ricerca della città
                     autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>Trovata: ${cityName}</b><br>Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
 
-                    // Forza l'aggiornamento dell'orario e del quadrante allineato
                     isCustomTime = false;
                     updateTimeForLocation();
                     updateInputsVal();
@@ -547,6 +546,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
+                        // L'auto-rilevamento si attiva ESCLUSIVAMENTE qui con il GPS
                         autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                         isCustomTime = false;
