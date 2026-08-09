@@ -586,7 +586,6 @@
                     document.getElementById('input-lat').value = cachedLat;
                     document.getElementById('input-lon').value = cachedLon;
                     
-                    // Sincronizza automaticamente il fuso orario in base alla longitudine della città cercata
                     let approxOffset = Math.round(cachedLon / 15);
                     let selectEl = document.getElementById('timezone-preset');
                     for(let opt of selectEl.options) {
