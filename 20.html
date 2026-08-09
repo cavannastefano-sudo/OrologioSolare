@@ -426,7 +426,7 @@
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
-        let isManualTimezoneMode = false; // Flag per distinguere se l'utente ha usato il menu a tendina
+        let isManualTimezoneMode = false;
 
         function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -447,7 +447,7 @@
                 cachedLon = parseFloat(savedLon);
             }
 
-            isManualTimezoneMode = false; // All'avvio usa le coordinate geografiche
+            isManualTimezoneMode = false;
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -456,7 +456,7 @@
         function toggleDST() {
             isDstActive = document.getElementById('chk-dst').checked;
             localStorage.setItem('sunclock_dst', isDstActive);
-            isManualTimezoneMode = true; // Se modifica l'ora legale, attiva la modalità manuale
+            isManualTimezoneMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -466,40 +466,11 @@
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
             localStorage.setItem('sunclock_tz', tzVal);
-            isManualTimezoneMode = true; // Attiva la modalità manuale tramite menu a tendina
+            isManualTimezoneMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
             updateSunClock(cachedLat, cachedLon);
-        }
-
-        function autoSelectTimezoneAccurate(lat, lon) {
-            let selectEl = document.getElementById('timezone-preset');
-            let approxOffset = lon / 15;
-
-            if (lat >= 14 && lat <= 72 && lon >= -170 && lon <= -50) {
-                if (lon >= -161 && lon < -150) approxOffset = -10; // Hawaii
-                else if (lon >= -150 && lon < -130) approxOffset = -9; // Alaska
-                else if (lon >= -130 && lon < -115) approxOffset = -8; // Pacific
-                else if (lon >= -115 && lon < -102) approxOffset = -7; // Mountain
-                else if (lon >= -102 && lon < -87) approxOffset = -6; // Central
-                else if (lon >= -87 && lon < -65) approxOffset = -5; // Eastern
-                else if (lon >= -65 && lon < -50) approxOffset = -4; // Atlantic
-            }
-
-            let bestMatch = selectEl.options[0].value;
-            let minDiff = 99;
-
-            for(let opt of selectEl.options) {
-                let val = parseFloat(opt.value);
-                let diff = Math.abs(val - approxOffset);
-                if(diff < minDiff) {
-                    minDiff = diff;
-                    bestMatch = opt.value;
-                }
-            }
-            selectEl.value = bestMatch;
-            localStorage.setItem('sunclock_tz', bestMatch);
         }
 
         async function searchCity() {
@@ -518,13 +489,11 @@
                     cachedLon = parseFloat(data[0].lon);
                     localStorage.setItem('sunclock_lat', cachedLat);
                     localStorage.setItem('sunclock_lon', cachedLon);
-                    
-                    autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
                     statusEl.innerHTML = `<b>Trovata: ${cityName}</b><br>Lat: ${cachedLat.toFixed(2)}, Lon: ${cachedLon.toFixed(2)}`;
 
-                    isManualTimezoneMode = false; // Torna alla modalità basata sulle coordinate della città cercata
+                    isManualTimezoneMode = false;
                     isCustomTime = false;
                     updateTimeForLocation();
                     updateInputsVal();
@@ -549,10 +518,8 @@
                         cachedLon = position.coords.longitude;
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
-                        
-                        autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
-                        isManualTimezoneMode = false; // Torna alla modalità basata sulle coordinate GPS
+                        isManualTimezoneMode = false;
                         isCustomTime = false;
                         updateTimeForLocation();
                         updateInputsVal();
@@ -583,13 +550,15 @@
                 const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
                 const dstOffset = isDstActive ? 1 : 0;
                 const targetTotalOffsetHours = tzPresetVal + dstOffset;
-
                 const now = new Date();
                 const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
                 return new Date(utcTimeMs + (targetTotalOffsetHours * 3600000));
             } else {
-                // Se siamo in modalità città/GPS, usiamo l'ora locale reale del dispositivo
-                return new Date();
+                // Calcolo basato sulla longitudine della città (15 gradi = 1 ora) per allineare l'orario digitale e le lancette
+                const now = new Date();
+                const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+                const cityOffsetHours = cachedLon / 15;
+                return new Date(utcTimeMs + (cityOffsetHours * 3600000));
             }
         }
 
@@ -644,8 +613,8 @@
                 const targetTotalOffsetHours = tzPresetVal + dstOffset;
                 return new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (targetTotalOffsetHours * 3600000));
             } else {
-                // In modalità città/GPS, SunCalc restituisce già i tempi corretti locali
-                return date;
+                const cityOffsetHours = cachedLon / 15;
+                return new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (cityOffsetHours * 3600000));
             }
         }
 
