@@ -515,7 +515,7 @@
                     localStorage.setItem('sunclock_lat', cachedLat);
                     localStorage.setItem('sunclock_lon', cachedLon);
                     
-                    // L'auto-rilevamento si attiva ESCLUSIVAMENTE qui durante la ricerca della città
+                    // L'auto-rilevamento si attiva solo qui alla ricerca
                     autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                     const cityName = data[0].display_name.split(',')[0];
@@ -546,7 +546,7 @@
                         localStorage.setItem('sunclock_lat', cachedLat);
                         localStorage.setItem('sunclock_lon', cachedLon);
                         
-                        // L'auto-rilevamento si attiva ESCLUSIVAMENTE qui con il GPS
+                        // L'auto-rilevamento si attiva solo qui con il GPS
                         autoSelectTimezoneAccurate(cachedLat, cachedLon);
 
                         isCustomTime = false;
@@ -577,6 +577,7 @@
             const dstOffset = isDstActive ? 1 : 0;
             const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
+            // Ancoriamo correttamente l'ora solare locale rispetto al fuso scelto, senza sfasamenti rispetto al canvas
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
             return new Date(utcTimeMs + (targetTotalOffsetHours * 3600000));
@@ -627,10 +628,7 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            const dstOffset = isDstActive ? 1 : 0;
-            const targetTotalOffsetHours = tzPresetVal + dstOffset;
-            return new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (targetTotalOffsetHours * 3600000));
+            return date;
         }
 
         function getCompleteMoonTimes(date, lat, lon) {
@@ -679,14 +677,13 @@
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
-            document.getElementById('txt-sunrise').innerText = formatTime(toTargetTime(cachedTimes.sunrise));
-            document.getElementById('txt-sunset').innerText = formatTime(toTargetTime(cachedTimes.sunset));
+            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
         }
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            const targetDate = toTargetTime(date);
-            return targetDate.getHours() + targetDate.getMinutes() / 60 + targetDate.getSeconds() / 3600;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
         function hoursToAngle(h) {
@@ -698,8 +695,8 @@
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
-            let rise = toTargetTime(moonTimes.rise);
-            let set = toTargetTime(moonTimes.set);
+            let rise = moonTimes.rise;
+            let set = moonTimes.set;
 
             if (moonTimes.alwaysUp) {
                 rise = new Date(refDate); rise.setHours(0,0,0,0);
@@ -714,10 +711,10 @@
             let startH, endH;
 
             if (rise < startDayStart) startH = 0;
-            else startH = timeToHours(moonTimes.rise);
+            else startH = timeToHours(rise);
 
             if (set > startDayEnd) endH = 24;
-            else endH = timeToHours(moonTimes.set);
+            else endH = timeToHours(set);
 
             if (startH === null || endH === null) return;
 
@@ -974,8 +971,8 @@
 
             iconEl.innerText = iconSymbol;
             phaseNameEl.innerText = phaseName;
-            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(toTargetTime(moonTimes.rise)) : "--:--";
-            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(toTargetTime(moonTimes.set)) : "--:--";
+            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
         }
 
         function populateTable(times, moonTimes, illumination) {
@@ -985,24 +982,24 @@
             tbody.innerHTML = `
                 <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-                <tr><td>Sorge la Luna</td><td>${formatTime(toTargetTime(moonTimes.rise))}</td></tr>
-                <tr><td>Tramonta la Luna</td><td>${formatTime(toTargetTime(moonTimes.set))}</td></tr>
+                <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+                <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
                 
                 <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
-                <tr><td>Mezzanotte solare</td><td>${formatTime(toTargetTime(times.nadir))}</td></tr>
-                <tr><td>Alba astronomica</td><td>${formatTime(toTargetTime(times.astronomicalDawn))}</td></tr>
-                <tr><td>Alba Nautica</td><td>${formatTime(toTargetTime(times.nauticalDawn))}</td></tr>
-                <tr><td>Alba Civile</td><td>${formatTime(toTargetTime(times.dawn))}</td></tr>
-                <tr><td>Alba</td><td>${formatTime(toTargetTime(times.sunrise))}</td></tr>
-                <tr><td>Fine dell'alba</td><td>${formatTime(toTargetTime(times.sunriseEnd))}</td></tr>
-                <tr><td>Fine dell'ora d'oro</td><td>${formatTime(toTargetTime(times.goldenHourEnd))}</td></tr>
-                <tr><td>Mezzogiorno solare</td><td>${formatTime(toTargetTime(times.solarNoon))}</td></tr>
-                <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(toTargetTime(times.goldenHour))}</td></tr>
-                <tr><td>Inizio del tramonto</td><td>${formatTime(toTargetTime(times.sunsetStart))}</td></tr>
-                <tr><td>Tramonto</td><td>${formatTime(toTargetTime(times.sunset))}</td></tr>
-                <tr><td>Crepuscolo civile</td><td>${formatTime(toTargetTime(times.dusk))}</td></tr>
-                <tr><td>Crepuscolo nautico</td><td>${formatTime(toTargetTime(times.nauticalDusk))}</td></tr>
-                <tr><td>Crepuscolo astronomico</td><td>${formatTime(toTargetTime(times.astronomicalDusk))}</td></tr>
+                <tr><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
+                <tr><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
+                <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
+                <tr><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
+                <tr><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
+                <tr><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
+                <tr><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
+                <tr><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
+                <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
+                <tr><td>Inizio del tramonto</td><td>${formatTime(times.sunsetStart)}</td></tr>
+                <tr><td>Tramonto</td><td>${formatTime(times.sunset)}</td></tr>
+                <tr><td>Crepuscolo civile</td><td>${formatTime(times.dusk)}</td></tr>
+                <tr><td>Crepuscolo nautico</td><td>${formatTime(times.nauticalDusk)}</td></tr>
+                <tr><td>Crepuscolo astronomico</td><td>${formatTime(times.astronomicalDusk)}</td></tr>
             `;
         }
 
@@ -1036,8 +1033,8 @@
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
             if (cachedMoonTimes && (isValidDate(cachedMoonTimes.rise) || isValidDate(cachedMoonTimes.set) || cachedMoonTimes.alwaysUp)) {
-                let rise = toTargetTime(cachedMoonTimes.rise);
-                let set = toTargetTime(cachedMoonTimes.set);
+                let rise = cachedMoonTimes.rise;
+                let set = cachedMoonTimes.set;
 
                 if (cachedMoonTimes.alwaysUp) {
                     rise = new Date(selectedDate); rise.setHours(0,0,0,0);
@@ -1047,8 +1044,8 @@
                 let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
                 let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
 
-                let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(cachedMoonTimes.rise)) : 0;
-                let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(cachedMoonTimes.set)) : 24;
+                let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(rise)) : 0;
+                let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(set)) : 24;
 
                 const currentH = h;
                 let moonDeg = 0;
