@@ -811,7 +811,10 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                return PALETTE.day;
+                const testDate = new Date(selectedDate);
+                testDate.setHours(12, 0, 0, 0);
+                const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
+                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
             }
 
             const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
@@ -850,8 +853,15 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
+                const testDate = new Date(selectedDate);
+                testDate.setHours(12, 0, 0, 0);
+                const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
+                
+                const isPolarNight = sunPos.altitude < 0;
+                const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
+
                 for (let i = 0; i < 24; i += 0.25) {
-                    drawSector(i, i + 0.25, PALETTE.day, radius);
+                    drawSector(i, i + 0.25, fallbackColor, radius);
                 }
                 return;
             }
@@ -960,7 +970,6 @@
         }
 
         function drawClockNumbers() {
-            // Ore a 26px
             ctx.font = 'bold 26px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -979,7 +988,6 @@
                 ctx.fillText(i, hx, hy);
             }
 
-            // Minuti a 26px
             ctx.font = 'bold 26px sans-serif';
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
