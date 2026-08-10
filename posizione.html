@@ -587,7 +587,13 @@
                 let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
+                const alt = sunPos.altitude * (180 / Math.PI);
+                
+                if (alt >= 0) return PALETTE.day;
+                if (alt >= -6) return PALETTE.civil;
+                if (alt >= -12) return PALETTE.naut;
+                if (alt >= -18) return PALETTE.astro;
+                return PALETTE.night;
             }
 
             const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
@@ -631,8 +637,20 @@
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 
-                const isPolarNight = sunPos.altitude < 0;
-                const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
+                let fallbackColor = PALETTE.day;
+                const alt = sunPos.altitude * (180 / Math.PI);
+
+                if (alt >= 0) {
+                    fallbackColor = PALETTE.day;          
+                } else if (alt >= -6) {
+                    fallbackColor = PALETTE.civil;        
+                } else if (alt >= -12) {
+                    fallbackColor = PALETTE.naut;         
+                } else if (alt >= -18) {
+                    fallbackColor = PALETTE.astro;        
+                } else {
+                    fallbackColor = PALETTE.night;        
+                }
 
                 for (let i = 0; i < 24; i += 0.25) {
                     drawSector(i, i + 0.25, fallbackColor, radius);
