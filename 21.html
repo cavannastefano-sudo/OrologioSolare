@@ -56,7 +56,7 @@
         #digital-clock {
             font-size: 1.15rem;
             font-weight: bold;
-            color: #39ff14; /* Modificato in verde fluo */
+            color: #39ff14;
             background: rgba(0,0,0,0.3);
             padding: 3px 5px;
             border-radius: 6px;
@@ -183,7 +183,7 @@
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
         #hand-moon { 
-            width: 4px; height: 18%; /* Accorciata a 18% */
+            width: 4px; height: 18%; 
             background: #ffffff; 
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
@@ -960,8 +960,8 @@
         }
 
         function drawClockNumbers() {
-            // Ore più grandi
-            ctx.font = 'bold 32px sans-serif';
+            // Ore a 26px
+            ctx.font = 'bold 26px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
@@ -971,7 +971,7 @@
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
-                ctx.lineWidth = 5;
+                ctx.lineWidth = 4;
                 ctx.strokeStyle = '#ff0000';
                 ctx.strokeText(i, hx, hy);
 
@@ -979,7 +979,7 @@
                 ctx.fillText(i, hx, hy);
             }
 
-            // Minuti più grandi
+            // Minuti a 26px
             ctx.font = 'bold 26px sans-serif';
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
