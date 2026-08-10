@@ -54,7 +54,7 @@
         #digital-clock {
             font-size: 1.15rem;
             font-weight: bold;
-            color: #39ff14;
+            color: #facc15;
             background: rgba(0,0,0,0.3);
             padding: 3px 5px;
             border-radius: 6px;
@@ -201,7 +201,7 @@
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
         #hand-moon { 
-            width: 4px; height: 18%; 
+            width: 4px; height: 25%; 
             background: #ffffff; 
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
@@ -583,17 +583,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
-                utcCalculationDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-                const alt = sunPos.altitude * (180 / Math.PI);
-                
-                if (alt >= 0) return PALETTE.day;
-                if (alt >= -6) return PALETTE.civil;
-                if (alt >= -12) return PALETTE.naut;
-                if (alt >= -18) return PALETTE.astro;
-                return PALETTE.night;
+                return PALETTE.day;
             }
 
             const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
@@ -632,28 +622,8 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
-                utcCalculationDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-                
-                let fallbackColor = PALETTE.day;
-                const alt = sunPos.altitude * (180 / Math.PI);
-
-                if (alt >= 0) {
-                    fallbackColor = PALETTE.day;          
-                } else if (alt >= -6) {
-                    fallbackColor = PALETTE.civil;        
-                } else if (alt >= -12) {
-                    fallbackColor = PALETTE.naut;         
-                } else if (alt >= -18) {
-                    fallbackColor = PALETTE.astro;        
-                } else {
-                    fallbackColor = PALETTE.night;        
-                }
-
                 for (let i = 0; i < 24; i += 0.25) {
-                    drawSector(i, i + 0.25, fallbackColor, radius);
+                    drawSector(i, i + 0.25, PALETTE.day, radius);
                 }
                 return;
             }
@@ -762,11 +732,11 @@
         }
 
         function drawClockNumbers() {
-            ctx.font = 'bold 26px sans-serif';
+            ctx.font = 'bold 20px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
 
-            const hRadius = radius * 0.65;
+            const hRadius = radius * 0.68;
             for (let i = 1; i <= 24; i++) {
                 const angleRad = hoursToAngle(i);
                 const hx = cx + hRadius * Math.cos(angleRad);
@@ -776,12 +746,12 @@
                 ctx.strokeStyle = '#ff0000';
                 ctx.strokeText(i, hx, hy);
 
-                ctx.fillStyle = '#39ff14';
+                ctx.fillStyle = '#facc15';
                 ctx.fillText(i, hx, hy);
             }
 
-            ctx.font = 'bold 26px sans-serif';
-            const mRadius = radius * 0.86;
+            ctx.font = 'bold 20px sans-serif';
+            const mRadius = radius * 0.85;
             for (let m = 0; m < 60; m += 5) {
                 const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
                 const mx = cx + mRadius * Math.cos(angleRad);
@@ -793,7 +763,7 @@
                 ctx.strokeStyle = '#ff0000';
                 ctx.strokeText(minText, mx, my);
 
-                ctx.fillStyle = '#39ff14';
+                ctx.fillStyle = '#facc15';
                 ctx.fillText(minText, mx, my);
             }
         }
