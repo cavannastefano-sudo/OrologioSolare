@@ -54,7 +54,7 @@
         #digital-clock {
             font-size: 1.15rem;
             font-weight: bold;
-            color: #39ff14;
+            color: #39ff14; /* Modificato in verde fluo */
             background: rgba(0,0,0,0.3);
             padding: 3px 5px;
             border-radius: 6px;
@@ -201,7 +201,7 @@
         #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
         
         #hand-moon { 
-            width: 4px; height: 18%; 
+            width: 4px; height: 18%; /* Accorciata a 18% */
             background: #ffffff; 
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
@@ -583,11 +583,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
-                utcCalculationDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
+                return PALETTE.day;
             }
 
             const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
@@ -626,16 +622,8 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
-                utcCalculationDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-                
-                const isPolarNight = sunPos.altitude < 0;
-                const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
-
                 for (let i = 0; i < 24; i += 0.25) {
-                    drawSector(i, i + 0.25, fallbackColor, radius);
+                    drawSector(i, i + 0.25, PALETTE.day, radius);
                 }
                 return;
             }
@@ -744,6 +732,7 @@
         }
 
         function drawClockNumbers() {
+            // Ore a 26px in verde fluo
             ctx.font = 'bold 26px sans-serif';
             ctx.textBaseline = 'middle';
             ctx.textAlign = 'center';
@@ -762,6 +751,7 @@
                 ctx.fillText(i, hx, hy);
             }
 
+            // Minuti a 26px in verde fluo
             ctx.font = 'bold 26px sans-serif';
             const mRadius = radius * 0.86;
             for (let m = 0; m < 60; m += 5) {
