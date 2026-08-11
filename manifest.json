@@ -2,6 +2,7 @@
   "name": "SunClock24",
   "short_name": "Sunclock",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
