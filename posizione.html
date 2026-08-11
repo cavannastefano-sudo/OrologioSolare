@@ -418,7 +418,8 @@
         function getEffectiveDate() {
             const now = new Date();
             const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const cityOffsetHours = (cachedLon / 15) + (isDstActive ? 1 : 0);
+            const standardTz = Math.round(cachedLon / 15);
+            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
             return new Date(utcTimeMs + (cityOffsetHours * 3600000));
         }
 
@@ -467,7 +468,8 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const cityOffsetHours = (cachedLon / 15) + (isDstActive ? 1 : 0);
+            const standardTz = Math.round(cachedLon / 15);
+            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
@@ -498,8 +500,9 @@
         }
 
         function updateSunClock(lat, lon) {
-            const dstOffset = isDstActive ? 1 : 0;
-            let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+            const standardTz = Math.round(cachedLon / 15);
+            const dstOffset = standardTz + (isDstActive ? 1 : 0);
+            let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
             cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
@@ -584,8 +587,9 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+                const standardTz = Math.round(cachedLon / 15);
+                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -627,8 +631,9 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+                const standardTz = Math.round(cachedLon / 15);
+                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 
@@ -777,7 +782,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#39ff14';
-                ctx.fillText(minText, mx, my);
+                ctx.fillText(minText, mx, hy);
             }
         }
 
