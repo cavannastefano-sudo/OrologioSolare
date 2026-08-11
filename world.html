@@ -33,18 +33,18 @@
     <script>
         const map = L.map('map').setView([20, 0], 2);
 
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
-            attribution: '© OpenStreetMap, © CartoDB'
+        // Mappa scura con etichette di città, confini e strade integrate
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap, © CartoDB',
+            maxZoom: 19
         }).addTo(map);
 
-        // Funzione per generare colori diversi basati sul nome del paese
         function getColor(name) {
             let hash = 0;
             for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
             return `hsl(${hash % 360}, 50%, 40%)`;
         }
 
-        // Caricamento GeoJSON dei confini mondiali
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
@@ -53,8 +53,8 @@
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name),
                         weight: 1,
                         opacity: 1,
-                        color: 'white',
-                        fillOpacity: 0.6
+                        color: '#ffffff',
+                        fillOpacity: 0.35
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
