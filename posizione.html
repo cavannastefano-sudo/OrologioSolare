@@ -416,11 +416,9 @@
         }
 
         function getEffectiveDate() {
-            const now = new Date();
-            const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
             const standardTz = Math.round(cachedLon / 15);
             const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
-            return new Date(utcTimeMs + (cityOffsetHours * 3600000));
+            return new Date(Date.now() + (cityOffsetHours * 3600000));
         }
 
         function updateInputsVal() {
