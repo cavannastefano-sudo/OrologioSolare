@@ -376,7 +376,7 @@
     <div id="bottom-panels-container">
         <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div id="location-text">Caricamento posizione...</div>
+            <div id="location-text">Posizione...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
@@ -485,12 +485,12 @@
                     if (city) parts.push(city);
                     if (country && !parts.includes(country)) parts.push(country);
 
-                    return parts.join(' - ') || "Posizione Sconosciuta";
+                    return parts.join(' - ') || "Italia - Piacenza";
                 }
             } catch (err) {
                 console.error(err);
             }
-            return "Posizione Sconosciuta";
+            return "Italia - Piacenza";
         }
 
         function toggleDST() {
@@ -606,7 +606,7 @@
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             const latFmt = parseFloat(lat).toFixed(2);
-            const lonFmt = parseFloat(lon].toFixed(2);
+            const lonFmt = parseFloat(lon).toFixed(2);
 
             document.getElementById('location-text').innerHTML = `
                 <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
