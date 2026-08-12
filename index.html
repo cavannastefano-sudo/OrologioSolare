@@ -325,7 +325,7 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div id="location-text">Posizione...</div>
+            <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
@@ -452,46 +452,69 @@
         let cachedTimes = null;
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
-        let cachedLat = 45.05; // Piacenza
+        let cachedLat = 45.05; 
         let cachedLon = 9.69;
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
         let map = null;
         let marker = null;
-        let currentPlaceDisplayName = "Piacenza";
+        let currentPlaceDisplayName = "Ricerca in corso...";
 
-        function initClock() {
+        async function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            const savedTz = localStorage.getItem('sunclock_tz');
-            if (savedTz !== null) {
-                document.getElementById('timezone-preset').value = savedTz;
-                const tzVal = parseFloat(savedTz);
-                currentPlaceDisplayName = "Fuso UTC " + (tzVal >= 0 ? "+" : "") + tzVal;
-            }
-
-            const savedLat = localStorage.getItem('sunclock_lat');
-            const savedLon = localStorage.getItem('sunclock_lon');
-            if (savedLat && savedLon) {
-                cachedLat = parseFloat(savedLat);
-                cachedLon = parseFloat(savedLon);
+            // Nessun caricamento di posizione o città salvata: si fa sempre la ricerca all'apertura
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
+                    },
+                    async (error) => {
+                        // Fallback su coordinate di default (Piacenza) se il GPS non è disponibile o viene negato
+                        cachedLat = 45.05;
+                        cachedLon = 9.69;
+                        document.getElementById('input-lat').value = cachedLat;
+                        document.getElementById('input-lon').value = cachedLon;
+                        await fetchPlaceName(cachedLat, cachedLon);
+                        updateTimeForLocation();
+                        updateInputsVal();
+                        updateSunClock(cachedLat, cachedLon);
+                    },
+                    { timeout: 8000, enableHighAccuracy: true }
+                );
+            } else {
+                cachedLat = 45.05;
+                cachedLon = 9.69;
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
+                await fetchPlaceName(cachedLat, cachedLon);
+                updateTimeForLocation();
+                updateInputsVal();
+                updateSunClock(cachedLat, cachedLon);
             }
+        }
 
-            const savedPlace = localStorage.getItem('sunclock_place');
-            if (savedPlace && !savedTz) {
-                currentPlaceDisplayName = savedPlace;
+        async function fetchPlaceName(lat, lon) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        currentPlaceDisplayName = `${country} - ${city}`;
+                    } else {
+                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
+                    }
+                }
+            } catch (err) {
+                currentPlaceDisplayName = "Piacenza - Italia";
             }
-
-            updateTimeForLocation();
-            updateInputsVal();
-            updateSunClock(cachedLat, cachedLon);
         }
 
         function toggleDST() {
@@ -505,12 +528,6 @@
 
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
-            localStorage.setItem('sunclock_tz', tzVal);
-            
-            const tzFloat = parseFloat(tzVal);
-            currentPlaceDisplayName = "Fuso UTC " + (tzFloat >= 0 ? "+" : "") + tzFloat;
-            localStorage.removeItem('sunclock_place');
-
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -562,8 +579,6 @@
             cachedLon = lon;
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
-            localStorage.setItem('sunclock_lat', cachedLat);
-            localStorage.setItem('sunclock_lon', cachedLon);
 
             let placeName = fallbackName;
             try {
@@ -583,15 +598,12 @@
             }
 
             currentPlaceDisplayName = placeName;
-            localStorage.setItem('sunclock_place', currentPlaceDisplayName);
-            localStorage.removeItem('sunclock_tz');
 
             let approxOffset = Math.round(cachedLon / 15);
             let selectEl = document.getElementById('timezone-preset');
             for(let opt of selectEl.options) {
                 if(parseFloat(opt.value) === approxOffset) {
                     selectEl.value = opt.value;
-                    localStorage.setItem('sunclock_tz', opt.value);
                     break;
                 }
             }
@@ -789,7 +801,6 @@
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
-            // AGGIORNATO: Mostra Nome Luogo/Fuso + Lat/Lon + Fuso Orario UTC nel pannello
             const tz = document.getElementById('timezone-preset').value;
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
