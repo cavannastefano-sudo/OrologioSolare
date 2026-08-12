@@ -460,7 +460,7 @@
         let map = null;
         let marker = null;
         let currentPlaceDisplayName = "Ricerca in corso...";
-        let isTimezoneOnlyMode = false; // Flag per gestire la visualizzazione del fuso pulito
+        let isTimezoneOnlyMode = false;
 
         async function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -527,7 +527,7 @@
 
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
-            isTimezoneOnlyMode = true; // Attiva la visualizzazione pulita del fuso
+            isTimezoneOnlyMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -578,7 +578,7 @@
         async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             cachedLat = lat;
             cachedLon = lon;
-            isTimezoneOnlyMode = false; // Torna alla visualizzazione standard con il nome del luogo
+            isTimezoneOnlyMode = false;
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
 
@@ -810,9 +810,6 @@
             if (isTimezoneOnlyMode) {
                 document.getElementById('location-text').innerHTML = `
                     <div style="font-size: 0.9rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
-                    <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
-                        Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${tz >= 0 ? "+" : ""}${tz}
-                    </div>
                 `;
             } else {
                 document.getElementById('location-text').innerHTML = `
