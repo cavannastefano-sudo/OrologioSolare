@@ -234,27 +234,26 @@
 
         #bottom-panels-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             width: min(90vw, 480px);
             margin-top: 12px;
             box-sizing: border-box;
         }
 
         .info-panel-box {
-            flex: 1;
-            min-width: 200px;
+            width: 100%;
             background: rgba(0,0,0,0.25);
-            padding: 8px 10px;
+            padding: 10px 12px;
             border-radius: 10px;
-            font-size: 0.85rem;
+            font-size: 1.05rem;
             color: #39ff14;
             text-align: center;
             border: none;
             box-shadow: none;
             font-weight: bold;
             cursor: pointer;
-            line-height: 1.25;
+            line-height: 1.35;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             transition: background 0.2s ease;
             box-sizing: border-box;
@@ -269,14 +268,55 @@
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 4px;
-            margin-top: 6px;
-            font-size: 1.15rem;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 1.25rem;
         }
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        /* Sezione Tendina Luna */
+        .moon-dropdown-wrapper {
+            width: min(90vw, 480px);
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+        .dropdown-toggle-btn {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            border: none;
+            color: #facc15;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .dropdown-toggle-btn:hover {
+            background: rgba(0,0,0,0.4);
+        }
+        .dropdown-content {
+            display: none;
+            margin-top: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        .dropdown-content.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal {
@@ -334,6 +374,7 @@
     </div>
 
     <div id="bottom-panels-container">
+        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Caricamento posizione...</div>
             <div class="info-grid">
@@ -342,14 +383,23 @@
             </div>
         </div>
 
-        <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
-                <span id="moon-phase-name">Caricamento...</span>
-            </div>
-            <div class="info-grid" style="margin-top: 8px;">
-                <div>Sorge:<br><span id="moon-rise">--:--</span></div>
-                <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+        <!-- Sezione Tendina Luna -->
+        <div class="moon-dropdown-wrapper">
+            <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
+                <span>🌙 Mostra / Nascondi Dati Lunari</span>
+                <span id="dropdown-arrow">▼</span>
+            </button>
+            <div id="moon-dropdown-content" class="dropdown-content">
+                <div class="info-panel-box" onclick="toggleTimesModal(true)">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <span id="moon-digital-icon" style="font-size: 1.4rem;">🌕</span>
+                        <span id="moon-phase-name" style="font-size: 1.1rem;">Caricamento...</span>
+                    </div>
+                    <div class="info-grid" style="margin-top: 8px;">
+                        <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                        <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -403,7 +453,6 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            // Se il nome della città manca o è generico, esegue una geocodifica inversa robusta
             if (!cityName || cityName === 'Posizione' || cityName === 'undefined') {
                 cityName = await fetchCompletePlaceName(cachedLat, cachedLon);
             }
@@ -411,6 +460,17 @@
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
+        }
+
+        function toggleMoonDropdown() {
+            const content = document.getElementById('moon-dropdown-content');
+            const arrow = document.getElementById('dropdown-arrow');
+            content.classList.toggle('show');
+            if (content.classList.contains('show')) {
+                arrow.innerText = '▲';
+            } else {
+                arrow.innerText = '▼';
+            }
         }
 
         async function fetchCompletePlaceName(lat, lon) {
@@ -550,10 +610,14 @@
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
 
+            // Informazioni ingrandite e ben leggibili (Città/Stato, Lat, Lon, Fuso)
             document.getElementById('location-text').innerHTML = `
-                <div style="font-size: 0.9rem;">${cityName}</div>
-                <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
-                    Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${totalTzOffset >= 0 ? "+" : ""}${totalTzOffset}
+                <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
+                <div style="font-size: 0.95rem; opacity: 0.9;">
+                    Lat: ${latFmt} | Lon: ${lonFmt}
+                </div>
+                <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
+                    Fuso: UTC ${totalTzOffset >= 0 ? "+" : ""}${totalTzOffset}
                 </div>
             `;
 
