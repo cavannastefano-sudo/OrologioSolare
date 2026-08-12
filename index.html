@@ -470,6 +470,9 @@
             const savedTz = localStorage.getItem('sunclock_tz');
             if (savedTz !== null) {
                 document.getElementById('timezone-preset').value = savedTz;
+                // Se c'è un fuso salvato, impostiamo correttamente la visualizzazione iniziale del fuso anziché forzare il nome della città
+                const tzVal = parseFloat(savedTz);
+                currentPlaceDisplayName = "Fuso UTC " + (tzVal >= 0 ? "+" : "") + tzVal;
             }
 
             const savedLat = localStorage.getItem('sunclock_lat');
@@ -482,7 +485,7 @@
             }
 
             const savedPlace = localStorage.getItem('sunclock_place');
-            if (savedPlace) {
+            if (savedPlace && !savedTz) {
                 currentPlaceDisplayName = savedPlace;
             }
 
@@ -504,7 +507,11 @@
             const tzVal = document.getElementById('timezone-preset').value;
             localStorage.setItem('sunclock_tz', tzVal);
             
-            // Ripristinato: il fuso sposta solo l'ora e non altera le coordinate geografiche fisse della località
+            // Quando cambi il fuso, la scritta mostra il fuso scelto
+            const tzFloat = parseFloat(tzVal);
+            currentPlaceDisplayName = "Fuso UTC " + (tzFloat >= 0 ? "+" : "") + tzFloat;
+            localStorage.removeItem('sunclock_place'); // Rimuoviamo il salvataggio della città per dare priorità al fuso
+
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -578,6 +585,7 @@
 
             currentPlaceDisplayName = placeName;
             localStorage.setItem('sunclock_place', currentPlaceDisplayName);
+            localStorage.removeItem('sunclock_tz'); // Rimuoviamo il fuso fisso per dare priorità al luogo cercato
 
             let approxOffset = Math.round(cachedLon / 15);
             let selectEl = document.getElementById('timezone-preset');
