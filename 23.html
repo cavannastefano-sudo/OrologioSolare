@@ -273,7 +273,7 @@
             color: #facc15;
             padding: 8px 12px;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
             text-align: center;
@@ -282,7 +282,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
         }
         .dropdown-toggle-btn:hover {
             background: rgba(0,0,0,0.4);
@@ -376,16 +376,13 @@
         <!-- Sezione Tendina Luna -->
         <div class="moon-dropdown-wrapper">
             <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
-                <span>🌙 Mostra / Nascondi Dati Lunari</span>
-                <span id="dropdown-arrow">▼</span>
+                <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
+                <span id="moon-phase-name" style="font-size: 1rem;">Caricamento...</span>
+                <span id="dropdown-arrow" style="margin-left: auto; font-size: 0.8rem;">▼</span>
             </button>
             <div id="moon-dropdown-content" class="dropdown-content">
                 <div class="info-panel-box" onclick="toggleTimesModal(true)">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <span id="moon-digital-icon" style="font-size: 1.4rem;">🌕</span>
-                        <span id="moon-phase-name" style="font-size: 1.1rem;">Caricamento...</span>
-                    </div>
-                    <div class="info-grid" style="margin-top: 8px;">
+                    <div class="info-grid" style="margin-top: 0;">
                         <div>Sorge:<br><span id="moon-rise">--:--</span></div>
                         <div>Tramonta:<br><span id="moon-set">--:--</span></div>
                     </div>
