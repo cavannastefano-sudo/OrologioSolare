@@ -234,26 +234,27 @@
 
         #bottom-panels-container {
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
             width: min(90vw, 480px);
             margin-top: 12px;
             box-sizing: border-box;
         }
 
         .info-panel-box {
-            width: 100%;
+            flex: 1;
+            min-width: 200px;
             background: rgba(0,0,0,0.25);
-            padding: 10px 12px;
+            padding: 8px 10px;
             border-radius: 10px;
-            font-size: 1.05rem;
+            font-size: 0.85rem;
             color: #39ff14;
             text-align: center;
             border: none;
             box-shadow: none;
             font-weight: bold;
             cursor: pointer;
-            line-height: 1.35;
+            line-height: 1.25;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             transition: background 0.2s ease;
             box-sizing: border-box;
@@ -268,55 +269,14 @@
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
-            margin-top: 8px;
-            font-size: 1.25rem;
+            gap: 4px;
+            margin-top: 6px;
+            font-size: 1.15rem;
         }
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-        }
-
-        /* Sezione Tendina Luna */
-        .moon-dropdown-wrapper {
-            width: min(90vw, 480px);
-            margin-top: 4px;
-            box-sizing: border-box;
-        }
-        .dropdown-toggle-btn {
-            width: 100%;
-            background: rgba(0,0,0,0.25);
-            border: none;
-            color: #facc15;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            transition: background 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-        .dropdown-toggle-btn:hover {
-            background: rgba(0,0,0,0.4);
-        }
-        .dropdown-content {
-            display: none;
-            margin-top: 6px;
-            animation: fadeIn 0.3s ease;
-        }
-        .dropdown-content.show {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal {
@@ -374,7 +334,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Caricamento posizione...</div>
             <div class="info-grid">
@@ -383,23 +342,14 @@
             </div>
         </div>
 
-        <!-- Sezione Tendina Luna -->
-        <div class="moon-dropdown-wrapper">
-            <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
-                <span>🌙 Mostra / Nascondi Dati Lunari</span>
-                <span id="dropdown-arrow">▼</span>
-            </button>
-            <div id="moon-dropdown-content" class="dropdown-content">
-                <div class="info-panel-box" onclick="toggleTimesModal(true)">
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                        <span id="moon-digital-icon" style="font-size: 1.4rem;">🌕</span>
-                        <span id="moon-phase-name" style="font-size: 1.1rem;">Caricamento...</span>
-                    </div>
-                    <div class="info-grid" style="margin-top: 8px;">
-                        <div>Sorge:<br><span id="moon-rise">--:--</span></div>
-                        <div>Tramonta:<br><span id="moon-set">--:--</span></div>
-                    </div>
-                </div>
+        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
+                <span id="moon-phase-name">Caricamento...</span>
+            </div>
+            <div class="info-grid" style="margin-top: 8px;">
+                <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                <div>Tramonta:<br><span id="moon-set">--:--</span></div>
             </div>
         </div>
     </div>
@@ -461,17 +411,6 @@
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
-        }
-
-        function toggleMoonDropdown() {
-            const content = document.getElementById('moon-dropdown-content');
-            const arrow = document.getElementById('dropdown-arrow');
-            content.classList.toggle('show');
-            if (content.classList.contains('show')) {
-                arrow.innerText = '▲';
-            } else {
-                arrow.innerText = '▼';
-            }
         }
 
         async function fetchCompletePlaceName(lat, lon) {
@@ -594,446 +533,4 @@
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
             cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
-
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
-
-            ctx.clearRect(0, 0, 500, 500);
-
-            drawSunSlicesSafe(cachedTimes);
-            drawMoonVisibilityArc(cachedMoonTimes, utcCalculationDate);
-            drawSolarMeridianLines(cachedTimes);
-            drawMinuteRingSafe();
-            drawClockNumbers();
-            updatePageBackground(cachedTimes);
-            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
-
-            const latFmt = parseFloat(lat).toFixed(2);
-            const lonFmt = parseFloat(lon).toFixed(2);
-            
-            document.getElementById('location-text').innerHTML = `
-                <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
-                <div style="font-size: 0.95rem; opacity: 0.9;">
-                    Lat: ${latFmt} | Lon: ${lonFmt}
-                </div>
-                <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-                    Fuso: UTC ${standardTz >= 0 ? "+" : ""}${standardTz}
-                </div>
-            `;
-
-            document.getElementById('txt-sunrise').innerText = formatTime(toTargetTime(cachedTimes.sunrise));
-            document.getElementById('txt-sunset').innerText = formatTime(toTargetTime(cachedTimes.sunset));
-        }
-
-        function timeToHours(date) {
-            if (!date || !isValidDate(date)) return null;
-            return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-        }
-
-        function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
-        }
-
-        function isValidDate(d) {
-            return d instanceof Date && !isNaN(d);
-        }
-
-        function drawMoonVisibilityArc(moonTimes, refDate) {
-            let rise = moonTimes.rise;
-            let set = moonTimes.set;
-
-            if (moonTimes.alwaysUp) {
-                rise = new Date(refDate); rise.setUTCHours(0,0,0,0);
-                set = new Date(refDate); set.setUTCHours(23,59,59,999);
-            }
-
-            if (!isValidDate(rise) || !isValidDate(set)) return;
-
-            let startDayStart = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate()));
-            let startDayEnd = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate(), 23, 59, 59, 999));
-
-            let startH, endH;
-
-            if (rise < startDayStart) startH = 0;
-            else startH = timeToHours(rise);
-
-            if (set > startDayEnd) endH = 24;
-            else endH = timeToHours(set);
-
-            if (startH === null || endH === null) return;
-
-            ctx.save();
-            ctx.beginPath();
-            let arcRadius = radius - 7;
-            ctx.lineWidth = 8;
-            ctx.strokeStyle = '#64748b';
-
-            if (endH < startH) {
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(24));
-                ctx.stroke();
-                ctx.beginPath();
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(0), hoursToAngle(endH));
-                ctx.stroke();
-            } else {
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(endH));
-                ctx.stroke();
-            }
-            ctx.restore();
-        }
-
-        function getIntervalColorSafe(h, times) {
-            const hSunrise = timeToHours(times.sunrise);
-            const hSunset = timeToHours(times.sunset);
-
-            if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const testDate = new Date(selectedDate);
-                testDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
-                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
-            }
-
-            const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
-            const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
-            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hDusk + 0.8);
-            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
-            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
-
-            const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
-            const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
-            const hGoldenStartVal = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
-            const hSunsetStartVal = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
-
-            if (h >= hSunrise && h < hSunriseEndVal) return PALETTE.sunriseSunset;
-            if (h >= hSunriseEndVal && h < hGoldenEndVal) return PALETTE.golden;
-            if (h >= hGoldenEndVal && h < hGoldenStartVal) return PALETTE.day;
-            if (h >= hGoldenStartVal && h < hSunsetStartVal) return PALETTE.golden;
-            if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
-            if (h >= hSunset && h < hDusk) return PALETTE.civil;
-            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
-            
-            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
-            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
-
-            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
-            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
-
-            return PALETTE.night;
-        }
-
-        function drawSunSlicesSafe(times) {
-            let hSunrise = timeToHours(times.sunrise);
-            let hSunset = timeToHours(times.sunset);
-
-            let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
-            
-            if (!hasValidSunset) {
-                const testDate = new Date(selectedDate);
-                testDate.setUTCHours(12, 0, 0, 0);
-                const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
-                
-                const isPolarNight = sunPos.altitude < 0;
-                const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
-
-                for (let i = 0; i < 24; i += 0.25) {
-                    drawSector(i, i + 0.25, fallbackColor, radius);
-                }
-                return;
-            }
-
-            ctx.fillStyle = PALETTE.night;
-            ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
-            let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
-            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
-            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
-            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
-            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
-
-            let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
-            let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
-            let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
-            let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
-
-            drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
-            drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
-            drawSector(dawnH, hSunrise, PALETTE.civil, radius);
-            drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
-            drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
-            drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
-            
-            drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
-            drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
-            drawSector(hSunset, duskH, PALETTE.civil, radius);
-            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
-            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
-        }
-
-        function drawSector(startH, endH, color, r) {
-            if (startH === null || endH === null || isNaN(startH) || isNaN(endH)) return;
-            startH = (startH + 24) % 24;
-            endH = (endH + 24) % 24;
-
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            if (endH < startH) {
-                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
-                ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
-            } else {
-                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
-            }
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-        }
-
-        function drawSolarMeridianLines(times) {
-            if (isValidDate(times.solarNoon)) {
-                const noonHours = timeToHours(times.solarNoon);
-                if (noonHours !== null) {
-                    const noonAngle = hoursToAngle(noonHours);
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                }
-            }
-
-            if (isValidDate(times.nadir)) {
-                const nadirHours = timeToHours(times.nadir);
-                if (nadirHours !== null) {
-                    const nadirAngle = hoursToAngle(nadirHours);
-                    ctx.beginPath();
-                    ctx.moveTo(cx, cy);
-                    ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
-                    ctx.strokeStyle = '#ef4444';
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-                }
-            }
-        }
-
-        function drawMinuteRingSafe() {
-            for (let i = 0; i < 60; i++) {
-                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
-                const len = (i % 5 === 0) ? 18 : 10;
-
-                const x1 = cx + (radius - len) * Math.cos(angle);
-                const y1 = cy + (radius - len) * Math.sin(angle);
-                const x2 = cx + radius * Math.cos(angle);
-                const y2 = cy + radius * Math.sin(angle);
-
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = '#facc15';
-                ctx.lineWidth = (i % 5 === 0) ? 4.5 : 3;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.strokeStyle = '#ff0000';
-                ctx.lineWidth = (i % 5 === 0) ? 2 : 1.2;
-                ctx.stroke();
-            }
-        }
-
-        function drawClockNumbers() {
-            ctx.font = 'bold 26px sans-serif';
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-
-            const hRadius = radius * 0.65;
-            for (let i = 1; i <= 24; i++) {
-                const angleRad = hoursToAngle(i);
-                const hx = cx + hRadius * Math.cos(angleRad);
-                const hy = cy + hRadius * Math.sin(angleRad);
-
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#ff0000';
-                ctx.strokeText(i, hx, hy);
-
-                ctx.fillStyle = '#39ff14';
-                ctx.fillText(i, hx, hy);
-            }
-
-            ctx.font = 'bold 26px sans-serif';
-            const mRadius = radius * 0.86;
-            for (let m = 0; m < 60; m += 5) {
-                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
-                const mx = cx + mRadius * Math.cos(angleRad);
-                const my = cy + mRadius * Math.sin(angleRad);
-
-                const minText = String(m).padStart(2, '0');
-
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = '#ff0000';
-                ctx.strokeText(minText, mx, my);
-
-                ctx.fillStyle = '#39ff14';
-                ctx.fillText(minText, mx, my);
-            }
-        }
-
-        function updatePageBackground(times) {
-            if (!times) return;
-            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-            const currentColor = getIntervalColorSafe(h, times);
-            const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
-            
-            document.documentElement.style.backgroundColor = finalBg;
-            document.body.style.backgroundColor = finalBg;
-            
-            const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
-            document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-            
-            let metaThemeColor = document.querySelector('meta[name="theme-color"]');
-            if (metaThemeColor) {
-                metaThemeColor.setAttribute('content', finalBg);
-            }
-        }
-
-        function formatTime(date) {
-            if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
-
-        function updateMoonDigitalPanel(illumination, moonTimes) {
-            const iconEl = document.getElementById('moon-digital-icon');
-            const phaseNameEl = document.getElementById('moon-phase-name');
-            const riseEl = document.getElementById('moon-rise');
-            const setEl = document.getElementById('moon-set');
-            const phase = illumination.phase;
-
-            let phaseName = "";
-            let iconSymbol = "🌕";
-
-            if (phase < 0.03 || phase > 0.97) { iconSymbol = "🌑"; phaseName = "Luna Nuova"; }
-            else if (phase < 0.22) { iconSymbol = "🌒"; phaseName = "Crescente"; }
-            else if (phase < 0.28) { iconSymbol = "🌓"; phaseName = "Primo Quarto"; }
-            else if (phase < 0.47) { iconSymbol = "🌔"; phaseName = "Gibbosa Crescente"; }
-            else if (phase < 0.53) { iconSymbol = "🌕"; phaseName = "Luna Piena"; }
-            else if (phase < 0.72) { iconSymbol = "🌖"; phaseName = "Gibbosa Calante"; }
-            else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto"; }
-            else { iconSymbol = "🌘"; phaseName = "Calante"; }
-
-            iconEl.innerText = iconSymbol;
-            phaseNameEl.innerText = phaseName;
-            riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(toTargetTime(moonTimes.rise)) : "--:--";
-            setEl.innerText = isValidDate(moonTimes.set) ? formatTime(toTargetTime(moonTimes.set)) : "--:--";
-        }
-
-        function populateTable(times, moonTimes, illumination) {
-            const tbody = document.getElementById('times-table-body');
-            const phasePct = Math.round(illumination.fraction * 100);
-            
-            tbody.innerHTML = `
-                <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
-                <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-                <tr><td>Sorge la Luna</td><td>${formatTime(toTargetTime(moonTimes.rise))}</td></tr>
-                <tr><td>Tramonta la Luna</td><td>${formatTime(toTargetTime(moonTimes.set))}</td></tr>
-                
-                <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
-                <tr><td>Mezzanotte solare</td><td>${formatTime(toTargetTime(times.nadir))}</td></tr>
-                <tr><td>Alba astronomica</td><td>${formatTime(toTargetTime(times.astronomicalDawn))}</td></tr>
-                <tr><td>Alba Nautica</td><td>${formatTime(toTargetTime(times.nauticalDawn))}</td></tr>
-                <tr><td>Alba Civile</td><td>${formatTime(toTargetTime(times.dawn))}</td></tr>
-                <tr><td>Alba</td><td>${formatTime(toTargetTime(times.sunrise))}</td></tr>
-                <tr><td>Fine dell'alba</td><td>${formatTime(toTargetTime(times.sunriseEnd))}</td></tr>
-                <tr><td>Fine dell'ora d'oro</td><td>${formatTime(toTargetTime(times.goldenHourEnd))}</td></tr>
-                <tr><td>Mezzogiorno solare</td><td>${formatTime(toTargetTime(times.solarNoon))}</td></tr>
-                <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(toTargetTime(times.goldenHour))}</td></tr>
-                <tr><td>Inizio del tramonto</td><td>${formatTime(toTargetTime(times.sunsetStart))}</td></tr>
-                <tr><td>Tramonto</td><td>${formatTime(toTargetTime(times.sunset))}</td></tr>
-                <tr><td>Crepuscolo civile</td><td>${formatTime(toTargetTime(times.dusk))}</td></tr>
-                <tr><td>Crepuscolo nautico</td><td>${formatTime(toTargetTime(times.nauticalDusk))}</td></tr>
-                <tr><td>Crepuscolo astronomico</td><td>${formatTime(toTargetTime(times.astronomicalDusk))}</td></tr>
-            `;
-        }
-
-        function toggleTimesModal(show) {
-            document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
-        }
-
-        function updateHands() {
-            if (!isCustomTime) {
-                selectedDate = getEffectiveDate();
-                updateInputsVal();
-            }
-            
-            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
-
-            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-            const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
-            const s = selectedDate.getUTCSeconds() + selectedDate.getUTCMilliseconds() / 1000;
-
-            const hourDeg = (h / 24) * 360 - 180;
-            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
-
-            const minuteDeg = (m / 60) * 360;
-            document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
-
-            const secDeg = (s / 60) * 360;
-            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
-
-            if (cachedMoonTimes && (isValidDate(cachedMoonTimes.rise) || isValidDate(cachedMoonTimes.set) || cachedMoonTimes.alwaysUp)) {
-                let rise = cachedMoonTimes.rise;
-                let set = cachedMoonTimes.set;
-
-                if (cachedMoonTimes.alwaysUp) {
-                    rise = new Date(selectedDate); rise.setUTCHours(0,0,0,0);
-                    set = new Date(selectedDate); set.setUTCHours(23,59,59,999);
-                }
-
-                let startDayStart = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate()));
-                let startDayEnd = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), 23, 59, 59, 999));
-
-                let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(rise)) : 0;
-                let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(set)) : 24;
-
-                const currentH = h;
-                let moonDeg = 0;
-                
-                if (moonRiseH < moonSetH) {
-                    if (currentH >= moonRiseH && currentH <= moonSetH) {
-                        let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    } else {
-                        let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (offProgress * 24) / 24 * 360 - 180;
-                    }
-                } else {
-                    if (currentH >= moonRiseH || currentH <= moonSetH) {
-                        let totalVisible = (24 - moonRiseH) + moonSetH;
-                        let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
-                        let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    } else {
-                        let totalHidden = moonRiseH - moonSetH;
-                        let elapsed = currentH - moonSetH;
-                        let progress = elapsed / totalHidden;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    }
-                }
-                document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
-            } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
-                document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
-            }
-
-            if (cachedTimes) {
-                updatePageBackground(cachedTimes);
-            }
-        }
-
-        initClock();
-        setInterval(updateHands, 50);
-    </script>
-</body>
-</html>
+      
