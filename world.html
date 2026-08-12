@@ -16,7 +16,7 @@
         header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h1 { margin: 0; font-size: 1.2rem; text-shadow: 0 0 6px #ff0000; }
         .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; }
-        #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; }
+        #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; cursor: pointer; }
         #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; }
     </style>
 </head>
@@ -28,7 +28,7 @@
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Caricamento confini in corso...</div>
+    <div id="status-msg">Caricamento mappa in corso...</div>
 
     <script>
         const map = L.map('map').setView([20, 0], 2);
@@ -44,6 +44,7 @@
             return `hsl(${hash % 360}, 50%, 40%)`;
         }
 
+        // Manteniamo i confini colorati sullo sfondo per estetica
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
@@ -55,42 +56,34 @@
                         color: '#ffffff',
                         fillOpacity: 0.35
                     }),
-                    onEachFeature: (feature, layer) => {
-                        layer.on('click', (e) => {
-                            const lat = e.latlng.lat;
-                            const lon = e.latlng.lng;
-                            const countryName = feature.properties.ADMIN || feature.properties.name || 'Stato';
-                            
-                            document.getElementById('status-msg').innerText = "Rilevamento località in " + countryName + "...";
-
-                            // Cerca la città specifica basata sul punto esatto cliccato
-                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`)
-                                .then(res => res.json())
-                                .then(geoData => {
-                                    let cityName = '';
-                                    if (geoData && geoData.address) {
-                                        cityName = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                                    }
-                                    
-                                    // Se trova la città e non è identica al nome dello stato, unisci Stato e Città
-                                    let fullName = countryName;
-                                    if (cityName && cityName.toLowerCase() !== countryName.toLowerCase()) {
-                                        fullName = `${countryName} - ${cityName}`;
-                                    }
-
-                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
-                                })
-                                .catch(() => {
-                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(countryName)}`;
-                                });
-                        });
-                    }
+                    interactive: false // Permette al clic di passare direttamente alla mappa sottostante
                 }).addTo(map);
-                document.getElementById('status-msg').innerText = "Clicca su uno stato per selezionarlo.";
+                document.getElementById('status-msg').innerText = "Clicca su un punto qualsiasi della mappa per selezionare la località.";
             })
             .catch(() => {
-                document.getElementById('status-msg').innerText = "Errore nel caricamento confini.";
+                document.getElementById('status-msg').innerText = "Clicca su un punto qualsiasi della mappa.";
             });
+
+        // Quando clicchi sulla mappa, ricava la città o il luogo esatto tramite le coordinate
+        map.on('click', (e) => {
+            const lat = e.latlng.lat;
+            const lon = e.latlng.lng;
+
+            document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`)
+                .then(res => res.json())
+                .then(data => {
+                    let placeName = 'Posizione';
+                    if (data && data.address) {
+                        placeName = data.address.city || data.address.town || data.address.village || data.address.county || data.address.state || 'Posizione';
+                    }
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
+                })
+                .catch(() => {
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Posizione`;
+                });
+        });
     </script>
 </body>
 </html>
