@@ -12,12 +12,13 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        body { background-color: #000; font-family: sans-serif; color: #facc15; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { background-color: #000; font-family: sans-serif; color: #facc15; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
         header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h1 { margin: 0; font-size: 1.2rem; text-shadow: 0 0 6px #ff0000; }
-        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; }
+        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+        .back-btn:hover { background: rgba(0,0,0,0.5); }
         #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; }
-        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; }
+        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
@@ -44,6 +45,36 @@
             return `hsl(${hash % 360}, 50%, 40%)`;
         }
 
+        // Funzione per ricavare indirizzo e localita rigorosamente in italiano tramite Nominatim
+        function handleMapClick(lat, lon) {
+            document.getElementById('status-msg.innerText = "Rilevamento località in corso...";
+
+            // Aggiunto '&accept-language=it' per forzare la risposta in italiano
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
+                .then(res => res.json())
+                .then(geoData => {
+                    let country = '';
+                    let city = '';
+                    
+                    if (geoData && geoData.address) {
+                        country = geoData.address.country || '';
+                        city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    }
+                    
+                    let fullName = 'Posizione';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        fullName = `${country} - ${city}`;
+                    } else {
+                        fullName = city || country || 'Posizione';
+                    }
+
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
+                })
+                .catch(() => {
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}`;
+                });
+        }
+
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
@@ -57,41 +88,20 @@
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
-                            const lat = e.latlng.lat;
-                            const lon = e.latlng.lng;
-                            const countryName = feature.properties.ADMIN || feature.properties.name || 'Stato';
-                            
-                            document.getElementById('status-msg').innerText = "Rilevamento località in " + countryName + "...";
-
-                            // Cerca la città specifica del punto cliccato per unirla allo stato
-                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`)
-                                .then(res => res.json())
-                                .then(geoData => {
-                                    let cityName = '';
-                                    if (geoData && geoData.address) {
-                                        cityName = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                                    }
-                                    
-                                    // Se trova la città, unisce Stato e Città (es. Italia - Roma)
-                                    let fullName = countryName;
-                                    if (cityName && cityName.toLowerCase() !== countryName.toLowerCase()) {
-                                        fullName = `${countryName} - ${cityName}`;
-                                    }
-
-                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
-                                })
-                                .catch(() => {
-                                    // Se fallisce, usa comunque il nome dello stato
-                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(countryName)}`;
-                                });
+                            handleMapClick(e.latlng.lat, e.latlng.lng);
                         });
                     }
                 }).addTo(map);
                 document.getElementById('status-msg').innerText = "Clicca su uno stato per selezionarlo.";
             })
             .catch(() => {
-                document.getElementById('status-msg').innerText = "Errore nel caricamento confini.";
+                document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
             });
+
+        // Abilita il clic anche al di fuori dei confini geometrici precisi
+        map.on('click', (e) => {
+            handleMapClick(e.latlng.lat, e.latlng.lng);
+        });
     </script>
 </body>
 </html>
