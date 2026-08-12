@@ -376,7 +376,7 @@
     <div id="bottom-panels-container">
         <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div id="location-text">Posizione...</div>
+            <div id="location-text">Caricamento posizione...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
@@ -440,18 +440,23 @@
         const urlParams = new URLSearchParams(window.location.search);
         let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
         let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
+        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
 
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
 
-        function initClock() {
+        async function initClock() {
             const savedDst = localStorage.getItem('sunclock_pos_dst');
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
             }
+
+            if (!cityName || cityName === 'Posizione' || cityName === 'undefined') {
+                cityName = await fetchCompletePlaceName(cachedLat, cachedLon);
+            }
+
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -466,6 +471,26 @@
             } else {
                 arrow.innerText = '▼';
             }
+        }
+
+        async function fetchCompletePlaceName(lat, lon) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
+                    
+                    let parts = [];
+                    if (city) parts.push(city);
+                    if (country && !parts.includes(country)) parts.push(country);
+
+                    return parts.join(' - ') || "Posizione Sconosciuta";
+                }
+            } catch (err) {
+                console.error(err);
+            }
+            return "Posizione Sconosciuta";
         }
 
         function toggleDST() {
@@ -581,7 +606,7 @@
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
             const latFmt = parseFloat(lat).toFixed(2);
-            const lonFmt = parseFloat(lon).toFixed(2);
+            const lonFmt = parseFloat(lon].toFixed(2);
 
             document.getElementById('location-text').innerHTML = `
                 <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
