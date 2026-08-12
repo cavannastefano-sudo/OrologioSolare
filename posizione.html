@@ -453,6 +453,7 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
+            // Se il nome della città manca o è generico, esegue una geocodifica inversa robusta
             if (!cityName || cityName === 'Posizione' || cityName === 'undefined') {
                 cityName = await fetchCompletePlaceName(cachedLat, cachedLon);
             }
