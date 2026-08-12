@@ -45,11 +45,9 @@
             return `hsl(${hash % 360}, 50%, 40%)`;
         }
 
-        // Funzione per ricavare indirizzo e localita rigorosamente in italiano tramite Nominatim
         function handleMapClick(lat, lon) {
-            document.getElementById('status-msg.innerText = "Rilevamento località in corso...";
+            document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
 
-            // Aggiunto '&accept-language=it' per forzare la risposta in italiano
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
                 .then(res => res.json())
                 .then(geoData => {
@@ -98,7 +96,6 @@
                 document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
             });
 
-        // Abilita il clic anche al di fuori dei confini geometrici precisi
         map.on('click', (e) => {
             handleMapClick(e.latlng.lat, e.latlng.lng);
         });
