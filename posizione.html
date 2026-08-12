@@ -482,8 +482,8 @@
                     const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
                     
                     let parts = [];
-                    if (country) parts.push(country);
-                    if (city && !parts.includes(city)) parts.push(city);
+                    if (city) parts.push(city);
+                    if (country && !parts.includes(country)) parts.push(country);
 
                     return parts.join(' - ') || "Italia - Piacenza";
                 }
