@@ -460,7 +460,7 @@
         let map = null;
         let marker = null;
         let currentPlaceDisplayName = "Ricerca in corso...";
-        let isTimezoneMode = false; // Flag per capire se è attivo il fuso orario da menu
+        let isTimezoneOnlyMode = false; // Flag per gestire la visualizzazione del fuso pulito
 
         async function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -480,7 +480,6 @@
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         await fetchPlaceName(cachedLat, cachedLon);
-                        isTimezoneMode = false;
                         updateTimeForLocation();
                         updateInputsVal();
                         updateSunClock(cachedLat, cachedLon);
@@ -493,7 +492,6 @@
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
                 await fetchPlaceName(cachedLat, cachedLon);
-                isTimezoneMode = false;
                 updateTimeForLocation();
                 updateInputsVal();
                 updateSunClock(cachedLat, cachedLon);
@@ -529,15 +527,7 @@
 
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
-            const tzFloat = parseFloat(tzVal);
-            
-            // Attiva la modalità fuso orario puro: azzera il nome della località
-            isTimezoneMode = true;
-            cachedLon = tzFloat * 15; // Imposta la longitudine approssimativa in base al fuso
-            cachedLat = 0.0;          // Latitudine neutra
-            document.getElementById('input-lat').value = cachedLat;
-            document.getElementById('input-lon').value = cachedLon;
-
+            isTimezoneOnlyMode = true; // Attiva la visualizzazione pulita del fuso
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -588,7 +578,7 @@
         async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             cachedLat = lat;
             cachedLon = lon;
-            isTimezoneMode = false; // Disattiva la modalità solo fuso, ora c'è un luogo reale
+            isTimezoneOnlyMode = false; // Torna alla visualizzazione standard con il nome del luogo
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
 
@@ -817,8 +807,7 @@
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
             
-            // SE È ATTIVO IL FUSO ORARIO PURO, MOSTRA SOLO L'INDICAZIONE DEL FUSO SENZA NOME LUOGO
-            if (isTimezoneMode) {
+            if (isTimezoneOnlyMode) {
                 document.getElementById('location-text').innerHTML = `
                     <div style="font-size: 0.9rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
                     <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
