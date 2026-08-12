@@ -59,11 +59,30 @@
                         layer.on('click', (e) => {
                             const lat = e.latlng.lat;
                             const lon = e.latlng.lng;
-                            const placeName = feature.properties.ADMIN || feature.properties.name || 'Posizione';
+                            const countryName = feature.properties.ADMIN || feature.properties.name || 'Stato';
                             
-                            document.getElementById('status-msg').innerText = "Caricamento " + placeName + "...";
-                            
-                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
+                            document.getElementById('status-msg').innerText = "Rilevamento località in " + countryName + "...";
+
+                            // Cerca la città specifica basata sul punto esatto cliccato
+                            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`)
+                                .then(res => res.json())
+                                .then(geoData => {
+                                    let cityName = '';
+                                    if (geoData && geoData.address) {
+                                        cityName = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                                    }
+                                    
+                                    // Se trova la città e non è identica al nome dello stato, unisci Stato e Città
+                                    let fullName = countryName;
+                                    if (cityName && cityName.toLowerCase() !== countryName.toLowerCase()) {
+                                        fullName = `${countryName} - ${cityName}`;
+                                    }
+
+                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
+                                })
+                                .catch(() => {
+                                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(countryName)}`;
+                                });
                         });
                     }
                 }).addTo(map);
