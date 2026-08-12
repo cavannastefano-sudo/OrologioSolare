@@ -473,12 +473,42 @@
             }
         }
 
+        function translateCountryToItalian(countryName) {
+            if (!countryName) return '';
+            const translations = {
+                "United States": "Stati Uniti",
+                "United States of America": "Stati Uniti",
+                "United Kingdom": "Regno Unito",
+                "Germany": "Germania",
+                "France": "Francia",
+                "Spain": "Spagna",
+                "Switzerland": "Svizzera",
+                "Austria": "Austria",
+                "Greece": "Grecia",
+                "Netherlands": "Paesi Bassi",
+                "Belgium": "Belgio",
+                "Portugal": "Portogallo",
+                "Sweden": "Svezia",
+                "Norway": "Norvegia",
+                "Denmark": "Danimarca",
+                "Finland": "Finlandia",
+                "Poland": "Polonia",
+                "Czech Republic": "Repubblica Ceca",
+                "Hungary": "Ungheria",
+                "Romania": "Romania",
+                "Croatia": "Croazia"
+            };
+            return translations[countryName] || countryName;
+        }
+
         async function fetchCompletePlaceName(lat, lon) {
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
-                    const country = geoData.address.country || '';
+                    let country = geoData.address.country || '';
+                    country = translateCountryToItalian(country);
+                    
                     const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
                     
                     let parts = [];
