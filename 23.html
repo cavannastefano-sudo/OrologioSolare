@@ -460,6 +460,7 @@
         let map = null;
         let marker = null;
         let currentPlaceDisplayName = "Ricerca in corso...";
+        let isTimezoneMode = false; // Flag per capire se è attivo il fuso orario da menu
 
         async function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -468,19 +469,18 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            // Nessun caricamento di posizione o città salvata: si fa sempre la ricerca all'apertura
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
                     },
                     async (error) => {
-                        // Fallback su coordinate di default (Piacenza) se il GPS non è disponibile o viene negato
                         cachedLat = 45.05;
                         cachedLon = 9.69;
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
                         await fetchPlaceName(cachedLat, cachedLon);
+                        isTimezoneMode = false;
                         updateTimeForLocation();
                         updateInputsVal();
                         updateSunClock(cachedLat, cachedLon);
@@ -493,6 +493,7 @@
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
                 await fetchPlaceName(cachedLat, cachedLon);
+                isTimezoneMode = false;
                 updateTimeForLocation();
                 updateInputsVal();
                 updateSunClock(cachedLat, cachedLon);
@@ -528,10 +529,20 @@
 
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
+            const tzFloat = parseFloat(tzVal);
+            
+            // Attiva la modalità fuso orario puro: azzera il nome della località
+            isTimezoneMode = true;
+            cachedLon = tzFloat * 15; // Imposta la longitudine approssimativa in base al fuso
+            cachedLat = 0.0;          // Latitudine neutra
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
             updateSunClock(cachedLat, cachedLon);
+            toggleSettingsModal(false);
         }
 
         function getEffectiveDate() {
@@ -577,6 +588,7 @@
         async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             cachedLat = lat;
             cachedLon = lon;
+            isTimezoneMode = false; // Disattiva la modalità solo fuso, ora c'è un luogo reale
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
 
@@ -805,12 +817,22 @@
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
             
-            document.getElementById('location-text').innerHTML = `
-                <div style="font-size: 0.9rem;">${currentPlaceDisplayName}</div>
-                <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
-                    Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${tz >= 0 ? "+" : ""}${tz}
-                </div>
-            `;
+            // SE È ATTIVO IL FUSO ORARIO PURO, MOSTRA SOLO L'INDICAZIONE DEL FUSO SENZA NOME LUOGO
+            if (isTimezoneMode) {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 0.9rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
+                        Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${tz >= 0 ? "+" : ""}${tz}
+                    </div>
+                `;
+            } else {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 0.9rem;">${currentPlaceDisplayName}</div>
+                    <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
+                        Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${tz >= 0 ? "+" : ""}${tz}
+                    </div>
+                `;
+            }
 
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
