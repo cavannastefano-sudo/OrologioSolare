@@ -458,6 +458,7 @@
         let isDstActive = true;
         let map = null;
         let marker = null;
+        let currentPlaceDisplayName = "Piacenza";
 
         function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -478,6 +479,11 @@
                 cachedLon = parseFloat(savedLon);
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
+            }
+
+            const savedPlace = localStorage.getItem('sunclock_place');
+            if (savedPlace) {
+                currentPlaceDisplayName = savedPlace;
             }
 
             updateTimeForLocation();
@@ -543,34 +549,57 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
+        async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
+            cachedLat = lat;
+            cachedLon = lon;
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+            localStorage.setItem('sunclock_lat', cachedLat);
+            localStorage.setItem('sunclock_lon', cachedLon);
+
+            let placeName = fallbackName;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || fallbackName;
+                    }
+                }
+            } catch (err) {
+                placeName = fallbackName;
+            }
+
+            currentPlaceDisplayName = placeName;
+            localStorage.setItem('sunclock_place', currentPlaceDisplayName);
+
+            let approxOffset = Math.round(cachedLon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    localStorage.setItem('sunclock_tz', opt.value);
+                    break;
+                }
+            }
+
+            isCustomTime = false;
+            updateTimeForLocation();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+        }
+
         function resetToNow() {
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        cachedLat = position.coords.latitude;
-                        cachedLon = position.coords.longitude;
-                        document.getElementById('input-lat').value = cachedLat;
-                        document.getElementById('input-lon').value = cachedLon;
-                        localStorage.setItem('sunclock_lat', cachedLat);
-                        localStorage.setItem('sunclock_lon', cachedLon);
-                        
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
-
-                        isCustomTime = false;
-                        updateTimeForLocation();
-                        updateInputsVal();
-                        updateSunClock(cachedLat, cachedLon);
+                        fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
                     },
                     (error) => {
-                        isCustomTime = false;
                         updateTimeForLocation();
                         updateInputsVal();
                         updateSunClock(cachedLat, cachedLon);
@@ -578,16 +607,9 @@
                     { timeout: 10000, enableHighAccuracy: true }
                 );
             } else {
-                isCustomTime = false;
                 updateTimeForLocation();
                 updateInputsVal();
                 updateSunClock(cachedLat, cachedLon);
-            }
-        }
-
-        function updateTimeForLocation() {
-            if (!isCustomTime) {
-                selectedDate = getEffectiveDate();
             }
         }
 
@@ -595,36 +617,16 @@
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
-                        cachedLat = position.coords.latitude;
-                        cachedLon = position.coords.longitude;
-                        document.getElementById('input-lat').value = cachedLat;
-                        document.getElementById('input-lon').value = cachedLon;
-                        localStorage.setItem('sunclock_lat', cachedLat);
-                        localStorage.setItem('sunclock_lon', cachedLon);
-                        
-                        let approxOffset = Math.round(cachedLon / 15);
-                        let selectEl = document.getElementById('timezone-preset');
-                        for(let opt of selectEl.options) {
-                            if(parseFloat(opt.value) === approxOffset) {
-                                selectEl.value = opt.value;
-                                localStorage.setItem('sunclock_tz', opt.value);
-                                break;
-                            }
-                        }
-
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon);
+                        fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "GPS");
                         toggleSettingsModal(false);
                     },
                     (error) => {
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon); 
-                        document.getElementById('location-text').innerText = "GPS disattivato. Coordinate predefinite.";
-                    }
+                        document.getElementById('location-text').innerText = "GPS disattivato.";
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
                 );
             } else {
-                updateTimeForLocation();
-                updateSunClock(cachedLat, cachedLon);
+                alert("Geolocalizzazione non supportata.");
             }
         }
 
@@ -642,9 +644,10 @@
                 if (data && data.length > 0) {
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
-                    const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
-                    
-                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}`;
+                    const cityName = data[0].display_name.split(',')[0];
+                    statusEl.innerText = "";
+                    toggleSettingsModal(false);
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(cityName)}`;
                 } else {
                     statusEl.innerText = "Località non trovata.";
                 }
@@ -678,11 +681,13 @@
                     });
 
                     map.on('click', function(e) {
-                        marker.setLatLng(e.latlng);
-                        document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
-                        document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
+                        const lat = e.latlng.lat;
+                        const lon = e.latlng.lng;
+                        marker.setLatLng([lat, lon]);
+                        document.getElementById('input-lat').value = lat.toFixed(4);
+                        document.getElementById('input-lon').value = lon.toFixed(4);
                         
-                        window.location.href = `posizione.html?lat=${e.latlng.lat}&lon=${e.latlng.lng}&city=Mappa`;
+                        window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Mappa`;
                     });
                 } else {
                     map.invalidateSize();
@@ -746,7 +751,7 @@
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
-            document.getElementById('location-text').innerHTML = `Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+            document.getElementById('location-text').innerText = currentPlaceDisplayName;
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
         }
