@@ -376,7 +376,7 @@
     <div id="bottom-panels-container">
         <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div id="location-text">Caricamento posizione...</div>
+            <div id="location-text">Posizione...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
@@ -440,23 +440,18 @@
         const urlParams = new URLSearchParams(window.location.search);
         let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
         let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
+        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
 
         let selectedDate = new Date();
         let isCustomTime = false;
         let isDstActive = true;
 
-        async function initClock() {
+        function initClock() {
             const savedDst = localStorage.getItem('sunclock_pos_dst');
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
             }
-
-            if (!cityName || cityName === 'Posizione' || cityName === 'undefined') {
-                cityName = await fetchCompletePlaceName(cachedLat, cachedLon);
-            }
-
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -471,56 +466,6 @@
             } else {
                 arrow.innerText = '▼';
             }
-        }
-
-        function translateCountryToItalian(countryName) {
-            if (!countryName) return '';
-            const translations = {
-                "United States": "Stati Uniti",
-                "United States of America": "Stati Uniti",
-                "United Kingdom": "Regno Unito",
-                "Germany": "Germania",
-                "France": "Francia",
-                "Spain": "Spagna",
-                "Switzerland": "Svizzera",
-                "Austria": "Austria",
-                "Greece": "Grecia",
-                "Netherlands": "Paesi Bassi",
-                "Belgium": "Belgio",
-                "Portugal": "Portogallo",
-                "Sweden": "Svezia",
-                "Norway": "Norvegia",
-                "Denmark": "Danimarca",
-                "Finland": "Finlandia",
-                "Poland": "Polonia",
-                "Czech Republic": "Repubblica Ceca",
-                "Hungary": "Ungheria",
-                "Romania": "Romania",
-                "Croatia": "Croazia"
-            };
-            return translations[countryName] || countryName;
-        }
-
-        async function fetchCompletePlaceName(lat, lon) {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
-                const geoData = await res.json();
-                if (geoData && geoData.address) {
-                    let country = geoData.address.country || '';
-                    country = translateCountryToItalian(country);
-                    
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
-                    
-                    let parts = [];
-                    if (city) parts.push(city);
-                    if (country && !parts.includes(country)) parts.push(country);
-
-                    return parts.join(' - ') || "Italia - Piacenza";
-                }
-            } catch (err) {
-                console.error(err);
-            }
-            return "Italia - Piacenza";
         }
 
         function toggleDST() {
