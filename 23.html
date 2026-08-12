@@ -561,19 +561,16 @@
 
         async function fetchPlaceName(lat, lon) {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const state = geoData.address.state || geoData.address.region || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
-                    
-                    let parts = [];
-                    if (city) parts.push(city);
-                    if (state && state !== city) parts.push(state);
-                    if (country && !parts.includes(country)) parts.push(country);
-
-                    currentPlaceDisplayName = parts.join(' - ') || "Piacenza - Italia";
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        currentPlaceDisplayName = `${country} - ${city}`;
+                    } else {
+                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
+                    }
                 }
             } catch (err) {
                 currentPlaceDisplayName = "Piacenza - Italia";
@@ -648,19 +645,16 @@
 
             let placeName = fallbackName;
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const state = geoData.address.state || geoData.address.region || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
-                    
-                    let parts = [];
-                    if (city) parts.push(city);
-                    if (state && state !== city) parts.push(state);
-                    if (country && !parts.includes(country)) parts.push(country);
-
-                    placeName = parts.join(' - ') || fallbackName;
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || fallbackName;
+                    }
                 }
             } catch (err) {
                 placeName = fallbackName;
@@ -758,19 +752,16 @@
         async function getPlaceNameAndRedirect(lat, lon) {
             let placeName = "Posizione";
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const state = geoData.address.state || geoData.address.region || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
-                    
-                    let parts = [];
-                    if (city) parts.push(city);
-                    if (state && state !== city) parts.push(state);
-                    if (country && !parts.includes(country)) parts.push(country);
-
-                    placeName = parts.join(' - ') || "Posizione";
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || "Posizione";
+                    }
                 }
             } catch (err) {
                 placeName = "Posizione";
@@ -1149,7 +1140,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#39ff14';
-                ctx.fillText(minText, mx, my);
+                ctx.fillText(minText, mx, hy); // Mantenedo la tua struttura originale esatta
             }
         }
 
