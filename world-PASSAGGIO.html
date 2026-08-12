@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappa Mondiale - SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body { background-color: #000; font-family: sans-serif; color: #facc15; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 1.2rem; text-shadow: 0 0 6px #ff0000; }
+        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; }
+        #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; }
+        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌍 Mappa Mondiale</h1>
+        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
+    </header>
+
+    <div id="map"></div>
+    <div id="status-msg">Caricamento confini in corso...</div>
+
+    <script>
+        const map = L.map('map').setView([20, 0], 2);
+
+        // Mappa scura con etichette di città, confini e strade integrate
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap, © CartoDB',
+            maxZoom: 19
+        }).addTo(map);
+
+        function getColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${hash % 360}, 50%, 40%)`;
+        }
+
+        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+            .then(res => res.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: (feature) => ({
+                        fillColor: getColor(feature.properties.ADMIN || feature.properties.name),
+                        weight: 1,
+                        opacity: 1,
+                        color: '#ffffff',
+                        fillOpacity: 0.35
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            const lat = e.latlng.lat;
+                            const lon = e.latlng.lng;
+                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${feature.properties.ADMIN || 'Mappa'}`;
+                        });
+                    }
+                }).addTo(map);
+                document.getElementById('status-msg').innerText = "Clicca su uno stato per selezionarlo.";
+            })
+            .catch(() => {
+                document.getElementById('status-msg').innerText = "Errore nel caricamento confini.";
+            });
+    </script>
+</body>
+</html>
