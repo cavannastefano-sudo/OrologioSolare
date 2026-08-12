@@ -33,7 +33,6 @@
     <script>
         const map = L.map('map').setView([20, 0], 2);
 
-        // Mappa scura con etichette di città, confini e strade integrate
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
             attribution: '© OpenStreetMap, © CartoDB',
             maxZoom: 19
@@ -60,7 +59,13 @@
                         layer.on('click', (e) => {
                             const lat = e.latlng.lat;
                             const lon = e.latlng.lng;
-                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${feature.properties.ADMIN || 'Mappa'}`;
+                            // Recupera il nome dello stato direttamente dalle proprietà del GeoJSON
+                            const placeName = feature.properties.ADMIN || feature.properties.name || 'Posizione';
+                            
+                            document.getElementById('status-msginnerText = "Caricamento " + placeName + "...";
+                            
+                            // Reindirizza a posizione.html passando il nome corretto dello stato/luogo
+                            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
                         });
                     }
                 }).addTo(map);
