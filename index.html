@@ -216,27 +216,26 @@
 
         #bottom-panels-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
             width: min(90vw, 480px);
             margin-top: 12px;
             box-sizing: border-box;
         }
 
         .info-panel-box {
-            flex: 1;
-            min-width: 200px;
+            width: 100%;
             background: rgba(0,0,0,0.25);
-            padding: 8px 10px;
+            padding: 10px 12px;
             border-radius: 10px;
-            font-size: 0.85rem;
+            font-size: 1.05rem;
             color: #39ff14;
             text-align: center;
             border: none;
             box-shadow: none;
             font-weight: bold;
             cursor: pointer;
-            line-height: 1.25;
+            line-height: 1.35;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             transition: background 0.2s ease;
             box-sizing: border-box;
@@ -251,14 +250,55 @@
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 4px;
-            margin-top: 6px;
-            font-size: 1.15rem;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 1.25rem;
         }
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        /* Sezione Tendina Luna */
+        .moon-dropdown-wrapper {
+            width: min(90vw, 480px);
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+        .dropdown-toggle-btn {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            border: none;
+            color: #facc15;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .dropdown-toggle-btn:hover {
+            background: rgba(0,0,0,0.4);
+        }
+        .dropdown-content {
+            display: none;
+            margin-top: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        .dropdown-content.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal {
@@ -324,6 +364,7 @@
     </div>
 
     <div id="bottom-panels-container">
+        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
@@ -332,14 +373,23 @@
             </div>
         </div>
 
-        <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
-                <span id="moon-phase-name">Caricamento...</span>
-            </div>
-            <div class="info-grid" style="margin-top: 8px;">
-                <div>Sorge:<br><span id="moon-rise">--:--</span></div>
-                <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+        <!-- Sezione Tendina Luna -->
+        <div class="moon-dropdown-wrapper">
+            <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
+                <span>🌙 Mostra / Nascondi Dati Lunari</span>
+                <span id="dropdown-arrow">▼</span>
+            </button>
+            <div id="moon-dropdown-content" class="dropdown-content">
+                <div class="info-panel-box" onclick="toggleTimesModal(true)">
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <span id="moon-digital-icon" style="font-size: 1.4rem;">🌕</span>
+                        <span id="moon-phase-name" style="font-size: 1.1rem;">Caricamento...</span>
+                    </div>
+                    <div class="info-grid" style="margin-top: 8px;">
+                        <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                        <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -460,6 +510,7 @@
         let map = null;
         let marker = null;
         let currentPlaceDisplayName = "Ricerca in corso...";
+        let isTimezoneOnlyMode = false;
 
         async function initClock() {
             const savedDst = localStorage.getItem('sunclock_dst');
@@ -468,14 +519,12 @@
                 document.getElementById('chk-dst').checked = isDstActive;
             }
 
-            // Nessun caricamento di posizione o città salvata: si fa sempre la ricerca all'apertura
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
                     },
                     async (error) => {
-                        // Fallback su coordinate di default (Piacenza) se il GPS non è disponibile o viene negato
                         cachedLat = 45.05;
                         cachedLon = 9.69;
                         document.getElementById('input-lat').value = cachedLat;
@@ -499,18 +548,32 @@
             }
         }
 
+        function toggleMoonDropdown() {
+            const content = document.getElementById('moon-dropdown-content');
+            const arrow = document.getElementById('dropdown-arrow');
+            content.classList.toggle('show');
+            if (content.classList.contains('show')) {
+                arrow.innerText = '▲';
+            } else {
+                arrow.innerText = '▼';
+            }
+        }
+
         async function fetchPlaceName(lat, lon) {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        currentPlaceDisplayName = `${country} - ${city}`;
-                    } else {
-                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
-                    }
+                    const state = geoData.address.state || geoData.address.region || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
+                    
+                    let parts = [];
+                    if (city) parts.push(city);
+                    if (state && state !== city) parts.push(state);
+                    if (country && !parts.includes(country)) parts.push(country);
+
+                    currentPlaceDisplayName = parts.join(' - ') || "Piacenza - Italia";
                 }
             } catch (err) {
                 currentPlaceDisplayName = "Piacenza - Italia";
@@ -528,10 +591,12 @@
 
         function applyTimezonePreset() {
             const tzVal = document.getElementById('timezone-preset').value;
+            isTimezoneOnlyMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
             updateSunClock(cachedLat, cachedLon);
+            toggleSettingsModal(false);
         }
 
         function getEffectiveDate() {
@@ -577,21 +642,25 @@
         async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             cachedLat = lat;
             cachedLon = lon;
+            isTimezoneOnlyMode = false;
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
 
             let placeName = fallbackName;
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        placeName = `${country} - ${city}`;
-                    } else {
-                        placeName = city || country || fallbackName;
-                    }
+                    const state = geoData.address.state || geoData.address.region || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
+                    
+                    let parts = [];
+                    if (city) parts.push(city);
+                    if (state && state !== city) parts.push(state);
+                    if (country && !parts.includes(country)) parts.push(country);
+
+                    placeName = parts.join(' - ') || fallbackName;
                 }
             } catch (err) {
                 placeName = fallbackName;
@@ -689,16 +758,19 @@
         async function getPlaceNameAndRedirect(lat, lon) {
             let placeName = "Posizione";
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=6`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        placeName = `${country} - ${city}`;
-                    } else {
-                        placeName = city || country || "Posizione";
-                    }
+                    const state = geoData.address.state || geoData.address.region || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || geoData.address.county || '';
+                    
+                    let parts = [];
+                    if (city) parts.push(city);
+                    if (state && state !== city) parts.push(state);
+                    if (country && !parts.includes(country)) parts.push(country);
+
+                    placeName = parts.join(' - ') || "Posizione";
                 }
             } catch (err) {
                 placeName = "Posizione";
@@ -805,12 +877,21 @@
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
             
-            document.getElementById('location-text').innerHTML = `
-                <div style="font-size: 0.9rem;">${currentPlaceDisplayName}</div>
-                <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
-                    Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${tz >= 0 ? "+" : ""}${tz}
-                </div>
-            `;
+            if (isTimezoneOnlyMode) {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
+                `;
+            } else {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9;">
+                        Lat: ${latFmt} | Lon: ${lonFmt}
+                    </div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
+                        Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}
+                    </div>
+                `;
+            }
 
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
