@@ -665,6 +665,26 @@
             }
         }
 
+        async function getPlaceNameAndRedirect(lat, lon) {
+            let placeName = "Posizione";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || "Posizione";
+                    }
+                }
+            } catch (err) {
+                placeName = "Posizione";
+            }
+            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
+        }
+
         function toggleMap() {
             const mapContainer = document.getElementById('map-container');
             if (mapContainer.style.display === 'block') {
@@ -690,11 +710,13 @@
                     });
 
                     map.on('click', function(e) {
-                        marker.setLatLng(e.latlng);
-                        document.getElementById('input-lat').value = e.latlng.lat.toFixed(4);
-                        document.getElementById('input-lon').value = e.latlng.lng.toFixed(4);
+                        const lat = e.latlng.lat;
+                        const lon = e.latlng.lng;
+                        marker.setLatLng([lat, lon]);
+                        document.getElementById('input-lat').value = lat.toFixed(4);
+                        document.getElementById('input-lon').value = lon.toFixed(4);
                         
-                        window.location.href = `posizione.html?lat=${e.latlng.lat}&lon=${e.latlng.lng}&city=Mappa`;
+                        getPlaceNameAndRedirect(lat, lon);
                     });
                 } else {
                     map.invalidateSize();
@@ -706,7 +728,7 @@
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
             if (!isNaN(lat) && !isNaN(lon)) {
-                window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=Manuale`;
+                getPlaceNameAndRedirect(lat, lon);
             } else {
                 alert("Inserisci coordinate valide.");
             }
