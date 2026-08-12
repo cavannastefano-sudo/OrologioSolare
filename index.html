@@ -504,18 +504,7 @@
             const tzVal = document.getElementById('timezone-preset').value;
             localStorage.setItem('sunclock_tz', tzVal);
             
-            const tzFloat = parseFloat(tzVal);
-            cachedLon = tzFloat * 15;
-            cachedLat = 0;
-            
-            document.getElementById('input-lat').value = cachedLat;
-            document.getElementById('input-lon').value = cachedLon;
-            
-            currentPlaceDisplayName = "Fuso UTC " + (tzFloat >= 0 ? "+" : "") + tzFloat;
-            localStorage.setItem('sunclock_lat', cachedLat);
-            localStorage.setItem('sunclock_lon', cachedLon);
-            localStorage.setItem('sunclock_place', currentPlaceDisplayName);
-
+            // Ripristinato: il fuso sposta solo l'ora e non altera le coordinate geografiche fisse della località
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
