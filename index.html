@@ -1180,7 +1180,7 @@
             else if (phase < 0.47) { iconSymbol = "🌔"; phaseName = "Gibbosa Crescente"; }
             else if (phase < 0.53) { iconSymbol = "🌕"; phaseName = "Luna Piena"; }
             else if (phase < 0.72) { iconSymbol = "🌖"; phaseName = "Gibbosa Calante"; }
-            else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto"; }
+            else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto";}
             else { iconSymbol = "🌘"; phaseName = "Calante"; }
 
             iconEl.innerText = iconSymbol;
@@ -1246,50 +1246,22 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            if (cachedMoonTimes && (isValidDate(cachedMoonTimes.rise) || isValidDate(cachedMoonTimes.set) || cachedMoonTimes.alwaysUp)) {
-                let rise = cachedMoonTimes.rise;
-                let set = cachedMoonTimes.set;
+            // CALCOLO ASTRONOMICO CORRETTO DELLA POSIZIONE DELLA LUNA
+            const moonPos = SunCalc.getMoonPosition(selectedDate, cachedLat, cachedLon);
+            const sunPos = SunCalc.getPosition(selectedDate, cachedLat, cachedLon);
+            
+            // Differenza di azimut tra sole e luna per mappare correttamente la luna sul quadrante a 24 ore
+            const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
+            
+            // Convertiamo lo scostamento in ore (24 ore = 2 * PI radianti)
+            let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
+            
+            // Sommiamo l'offset all'ora attuale del sole per posizionare la lancetta della luna
+            let moonEquivalentHour = (h + moonHourOffset) % 24;
+            if (moonEquivalentHour < 0) moonEquivalentHour += 24;
 
-                if (cachedMoonTimes.alwaysUp) {
-                    rise = new Date(selectedDate); rise.setHours(0,0,0,0);
-                    set = new Date(selectedDate); set.setHours(23,59,59,999);
-                }
-
-                let startDayStart = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate());
-                let startDayEnd = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate(), 23, 59, 59, 999);
-
-                let moonRiseH = isValidDate(rise) ? (rise < startDayStart ? 0 : timeToHours(rise)) : 0;
-                let moonSetH = isValidDate(set) ? (set > startDayEnd ? 24 : timeToHours(set)) : 24;
-
-                const currentH = h;
-                let moonDeg = 0;
-                
-                if (moonRiseH < moonSetH) {
-                    if (currentH >= moonRiseH && currentH <= moonSetH) {
-                        let progress = (currentH - moonRiseH) / (moonSetH - moonRiseH);
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    } else {
-                        let offProgress = currentH > moonSetH ? (currentH - moonSetH) / (24 - moonSetH + moonRiseH) : (currentH + (24 - moonSetH)) / (24 - moonSetH + moonRiseH);
-                        moonDeg = (offProgress * 24) / 24 * 360 - 180;
-                    }
-                } else {
-                    if (currentH >= moonRiseH || currentH <= moonSetH) {
-                        let totalVisible = (24 - moonRiseH) + moonSetH;
-                        let elapsed = currentH >= moonRiseH ? (currentH - moonRiseH) : (24 - moonRiseH + currentH);
-                        let progress = elapsed / totalVisible;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    } else {
-                        let totalHidden = moonRiseH - moonSetH;
-                        let elapsed = currentH - moonSetH;
-                        let progress = elapsed / totalHidden;
-                        moonDeg = (progress * 24) / 24 * 360 - 180;
-                    }
-                }
-                document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
-            } else {
-                const fallbackMoonDeg = ((h * 0.965) / 24) * 360 - 180;
-                document.getElementById('hand-moon').style.transform = `rotate(${fallbackMoonDeg}deg)`;
-            }
+            const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
+            document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
             if (cachedTimes) {
                 updatePageBackground(cachedTimes);
