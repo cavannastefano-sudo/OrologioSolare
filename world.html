@@ -57,10 +57,12 @@
         };
         L.control.layers(baseMaps).addTo(map);
 
+        // Genera un colore HSL luminoso basato sul nome del paese
         function getColor(name) {
             let hash = 0;
             for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${hash % 360}, 50%, 40%)`;
+            // Saturazione 70%, Luminosità 55% per colori accesi
+            return `hsl(${hash % 360}, 70%, 55%)`;
         }
 
         function handleMapClick(lat, lon) {
@@ -91,19 +93,22 @@
                 });
         }
 
+        // Carica i confini dei paesi e applica lo stile luminoso
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
                 L.geoJSON(data, {
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name),
-                        weight: 1,
-                        opacity: 0.8,
-                        color: '#333',
-                        fillOpacity: 0.2
+                        weight: 1.5,          // Bordi più spessi
+                        opacity: 1,           // Bordi non trasparenti
+                        color: '#ffffff',     // Bordi BIANCHI e luminosi
+                        fillOpacity: 0.4      // Riempimento più colorato (40%)
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
+                            // Previene il trigger del click sulla mappa sottostante
+                            L.DomEvent.stopPropagation(e); 
                             handleMapClick(e.latlng.lat, e.latlng.lng);
                         });
                     }
@@ -114,6 +119,7 @@
                 document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
             });
 
+        // Click sulla mappa (aree marine o dove non ci sono stati caricati)
         map.on('click', (e) => {
             handleMapClick(e.latlng.lat, e.latlng.lng);
         });
