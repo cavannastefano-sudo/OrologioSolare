@@ -32,23 +32,27 @@
     <div id="status-msg">Caricamento confini in corso...</div>
 
     <script>
-        // Mappa chiara standard
+        // Definiamo i layer
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         });
 
-        // Mappa topografica
         const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
             maxZoom: 17,
-            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+            attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Creiamo la mappa impostando il layer topografico come predefinito
+        // Controlla se hai salvato una preferenza precedente nel browser
+        const savedLayerName = localStorage.getItem('sunclock_map_layer');
+        // Se c'è "Mappa Chiara" salvato usa quella, altrimenti usa "Topografica" di base
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+
+        // Creiamo la mappa impostando il layer corretto
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
-            layers: [topo] 
+            layers: [initialLayer] 
         });
 
         const baseMaps = {
@@ -59,17 +63,12 @@
 
         let geojsonLayer = null;
 
-        // Nuova formula garantita: 360 colori unici e vivaci
         function getColor(name) {
             let hash = 0;
             for (let i = 0; i < name.length; i++) {
-                // Algoritmo più complesso per evitare che stati vicini abbiano hash simili
                 hash = (hash * 31) + name.charCodeAt(i); 
             }
-            // Usa l'angolo aureo (137.5) per distanziare cromaticamente i risultati
             const hue = Math.abs(hash * 137.5) % 360; 
-            
-            // Saturazione 85% e luminosità 55% per renderli "forti" e non pastello
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
@@ -101,17 +100,16 @@
                 });
         }
 
-        // Caricamento dei confini degli stati
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
                 geojsonLayer = L.geoJSON(data, {
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
-                        weight: 1.5,          // Bordo leggermente più spesso e visibile
-                        opacity: 1,           
-                        color: '#ffffff',     // Bordo BIANCO per staccare nettamente gli stati
-                        fillOpacity: 0.55     // Aumentato da 0.4 a 0.55 per colori molto più vivi
+                        weight: 1,            // Bordo più fine
+                        opacity: 0.8,           
+                        color: '#333',        // Bordi tornati scuri
+                        fillOpacity: 0.55     
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
@@ -121,6 +119,7 @@
                     }
                 });
 
+                // Aggiungiamo i confini solo se il layer attuale è la Mappa Chiara
                 if (map.hasLayer(chiara)) {
                     geojsonLayer.addTo(map);
                 }
@@ -131,7 +130,11 @@
                 document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
             });
 
+        // Evento cambio mappa
         map.on('baselayerchange', function(e) {
+            // Salva la scelta dell'utente ogni volta che cambia livello
+            localStorage.setItem('sunclock_map_layer', e.name);
+
             if (e.name === "Topografica") {
                 if (geojsonLayer && map.hasLayer(geojsonLayer)) {
                     map.removeLayer(geojsonLayer); 
