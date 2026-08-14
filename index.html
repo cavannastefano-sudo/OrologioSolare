@@ -521,9 +521,17 @@
         let currentPlaceDisplayName = "Ricerca in corso...";
         let isTimezoneOnlyMode = false;
 
+        // Funzione per ricavare se l'ora legale è attiva (automatica o manuale)
+        function getCurrentDstState() {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, new Date());
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
         async function initClock() {
-            // Inizializza UI per l'Ora Legale
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false'; // Default a true se non settato
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
             
             document.getElementById('auto-dst-toggle').checked = isAuto;
@@ -559,7 +567,6 @@
             }
         }
 
-        // Funzioni per la gestione della UI dell'ora legale
         function toggleAutoDST(checked) {
             localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
             updateDstUI(checked);
@@ -633,14 +640,7 @@
             const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
             const now = new Date();
             
-            // Calcola la DST usando il nostro nuovo timezone-manager.js
-            let isDstNowActive = false;
-            if (typeof getEffectiveDST === 'function') {
-                isDstNowActive = getEffectiveDST(cachedLat, cachedLon, now);
-            } else {
-                isDstNowActive = localStorage.getItem('sunclock_dst') === 'true'; // Fallback di sicurezza
-            }
-
+            const isDstNowActive = getCurrentDstState();
             const dstOffset = isDstNowActive ? 1 : 0;
             const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
@@ -951,8 +951,10 @@
             return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
+        // Ruota la grafica di 1 ora SOLO quando il flag dell'ora legale è attivo
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            const dstShift = getCurrentDstState() ? 1 : 0;
+            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
