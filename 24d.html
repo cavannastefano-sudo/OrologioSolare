@@ -1240,20 +1240,12 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            
-            // Fuso orario base selezionato nel menu a tendina
             const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            
-            // Verifica se l'ora legale è attiva (automatica o manuale)
             let isDstNowActive = getCurrentDstState();
             const dstOffset = isDstNowActive ? 1 : 0;
-            
-            // Offset totale (Fuso + eventuale ora legale)
             const totalOffsetHours = tzPresetVal + dstOffset;
             
-            // Converte l'orario UTC di SunCalc applicando il fuso e l'ora legale corretti
             const shifted = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (totalOffsetHours * 3600000));
-            
             return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCSeconds()).padStart(2, '0');
