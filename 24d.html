@@ -639,8 +639,16 @@
         }
 
         function applyTimezonePreset() {
-            const tzVal = document.getElementById('timezone-preset').value;
+            const tzVal = parseFloat(document.getElementById('timezone-preset').value);
             isTimezoneOnlyMode = true;
+            
+            // Database approssimativo delle coordinate centrali tipiche per ogni fuso orario UTC (Lon = Fuso * 15)
+            // In questo modo SunCalc calcola gli orari REALI di alba/tramonto di quel fuso orario mondiale!
+            cachedLon = tzVal * 15;
+            cachedLat = 0.0; // Equatore come riferimento neutro per il fuso puro, o latitudine adattata
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -926,22 +934,18 @@
         }
 
         function updateSunClock(lat, lon) {
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            let isDstNowActive = getCurrentDstState();
-            const dstOffset = isDstNowActive ? 1 : 0;
-            const totalOffsetHours = tzPresetVal + dstOffset;
-            const utcDateForCalc = new Date(selectedDate.getTime() - (totalOffsetHours * 3600000));
+            const refDate = selectedDate;
 
-            cachedTimes = SunCalc.getTimes(utcDateForCalc, lat, lon);
-            cachedMoonTimes = getCompleteMoonTimes(utcDateForCalc, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(utcDateForCalc);
+            cachedTimes = SunCalc.getTimes(refDate, lat, lon);
+            cachedMoonTimes = getCompleteMoonTimes(refDate, lat, lon);
+            cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
             ctx.clearRect(0, 0, 500, 500);
 
             drawSunSlicesSafe(cachedTimes);
-            drawMoonVisibilityArc(cachedMoonTimes, selectedDate);
+            drawMoonVisibilityArc(cachedMoonTimes, refDate);
             drawSolarMeridianLines(cachedTimes);
             drawMinuteRingSafe();
             drawClockNumbers();
@@ -974,13 +978,7 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            let isDstNowActive = getCurrentDstState();
-            const dstOffset = isDstNowActive ? 1 : 0;
-            const totalOffsetHours = tzPresetVal + dstOffset;
-            const localDate = new Date(date.getTime() + (totalOffsetHours * 3600000));
-            let hours = localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
-            return (hours + 24) % 24;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
         function isValidDate(d) {
@@ -1037,12 +1035,8 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-                let isDstNowActive = getCurrentDstState();
-                const dstOffset = isDstNowActive ? 1 : 0;
-                const totalOffsetHours = tzPresetVal + dstOffset;
-                const testDate = new Date(selectedDate.getTime() - (totalOffsetHours * 3600000));
-                testDate.setUTCHours(12, 0, 0, 0);
+                const testDate = new Date(selectedDate);
+                testDate.setHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
                 
                 const isPolarNight = sunPos.altitude < 0;
@@ -1217,12 +1211,8 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-                let isDstNowActive = getCurrentDstState();
-                const dstOffset = isDstNowActive ? 1 : 0;
-                const totalOffsetHours = tzPresetVal + dstOffset;
-                const testDate = new Date(selectedDate.getTime() - (totalOffsetHours * 3600000));
-                testDate.setUTCHours(12, 0, 0, 0);
+                const testDate = new Date(selectedDate);
+                testDate.setHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
                 return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
             }
@@ -1258,15 +1248,7 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            let isDstNowActive = getCurrentDstState();
-            const dstOffset = isDstNowActive ? 1 : 0;
-            const totalOffsetHours = tzPresetVal + dstOffset;
-            
-            const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
-            return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
-                   String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
-                   String(shifted.getUTCSeconds()).padStart(2, '0');
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -1371,7 +1353,7 @@
         initClock();
         setInterval(updateHands, 50);
 
-        if ('serviceWorker' in navigator) {
+        if ('serviceServiceWorker' in navigator) {
             navigator.serviceWorker.register('sw.service.worker.js');
         }
     </script>
