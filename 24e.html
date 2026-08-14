@@ -549,6 +549,7 @@
         let cachedLon = 9.69;
         let selectedDate = new Date();
         let isCustomTime = false;
+        let lastDayChecked = -1;
         let map = null;
         let marker = null;
         let currentPlaceDisplayName = "Ricerca in corso...";
@@ -1014,7 +1015,8 @@
                 return;
             }
 
-            ctx.fillStyle = PALETTE.night;
+            // Sfondo predefinito impostato a giorno (ore solari), poi vengono sovrapposti i settori di luce e notte corretti
+            ctx.fillStyle = PALETTE.day;
             ctx.beginPath();
             ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
@@ -1031,18 +1033,19 @@
             let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
             let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
 
+            // Disegno dei settori solari e della notte invertiti correttamente
+            drawSector(hSunset, duskH, PALETTE.civil, radius);
+            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
+            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
+            drawSector(astroDuskH, astroDawnH, PALETTE.night, radius);
             drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
             drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
             drawSector(dawnH, hSunrise, PALETTE.civil, radius);
             drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
             drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
-            drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
             
             drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
             drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
-            drawSector(hSunset, duskH, PALETTE.civil, radius);
-            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
-            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
         }
 
         function drawSector(startH, endH, color, r) {
@@ -1296,6 +1299,12 @@
                 updateInputsVal();
             }
             
+            const currentDay = selectedDate.getDate();
+            if (lastDayChecked !== currentDay && !isCustomTime) {
+                lastDayChecked = currentDay;
+                updateSunClock(cachedLat, cachedLon);
+            }
+
             document.getElementById('digital-clock').innerText = 
                 String(selectedDate.getHours()).padStart(2, '0') + ":" + 
                 String(selectedDate.getMinutes()).padStart(2, '0') + ":" + 
