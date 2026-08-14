@@ -906,7 +906,7 @@
         }
 
         function updateSunClock(lat, lon) {
-            // Sfondo fisso: i calcoli solari si basano SEMPRE e SOLO sull'ora UTC pura del giorno selezionato
+            // Sfondo fisso: calcoli basati rigorosamente sull'ora UTC grezza (senza sbalzi di fuso o DST)
             let utcCalculationDate = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth(), selectedDate.getUTCDate(), 12, 0, 0));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -954,7 +954,7 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            // Restituisce le ore UTC pure affinché le fette colorate rimangano fisse nella loro posizione geografica esatta
+            // Ritorna le ore UTC fisse per mantenere il quadrante solare sempre allineato alla geografia locale
             return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
         }
 
@@ -1211,6 +1211,7 @@
 
         function updatePageBackground(times) {
             if (!times) return;
+            // Sfondo pagina basato sull'ora UTC pura per rispecchiare correttamente lo stato solare reale
             const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
             const currentColor = getIntervalColorSafe(h, times);
             const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
@@ -1306,10 +1307,18 @@
             
             document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 
-            // Le lancette ruotano in base all'orario effettivo del fuso/ora legale selezionato
-            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-            const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
-            const s = selectedDate.getUTCSeconds() + selectedDate.getUTCMilliseconds() / 1000;
+            // Le lancette si spostano in avanti del fuso/ora legale rispetto allo sfondo fisso
+            const isDstActive = getCurrentDstState();
+            const dstOffset = isDstActive ? 1 : 0;
+            let totalTzOffset = isTimezoneOnlyMode ? parseFloat(document.getElementById('timezone-preset').value) + dstOffset : Math.round(cachedLon / 15) + dstOffset;
+
+            // Calcoliamo l'ora locale effettiva per la rotazione delle lancette
+            let localTimeMs = selectedDate.getTime() + (totalTzOffset * 3600000);
+            let localDate = new Date(localTimeMs);
+
+            const h = localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+            const m = localDate.getUTCMinutes() + localDate.getUTCSeconds() / 60;
+            const s = localDate.getUTCSeconds() + localDate.getUTCMilliseconds() / 1000;
 
             const hourDeg = (h / 24) * 360 - 180;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
@@ -1320,13 +1329,10 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const isDstActive = getCurrentDstState();
-            const dstOffset = isDstActive ? 1 : 0;
-            let totalTzOffset = isTimezoneOnlyMode ? parseFloat(document.getElementById('timezone-preset').value) + dstOffset : Math.round(cachedLon / 15) + dstOffset;
-            let localCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
+            let utcCalculationDate = new Date(selectedDate.getTime());
 
-            const moonPos = SunCalc.getMoonPosition(localCalculationDate, cachedLat, cachedLon);
-            const sunPos = SunCalc.getPosition(localCalculationDate, cachedLat, cachedLon);
+            const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
+            const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
             
             const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
             let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
