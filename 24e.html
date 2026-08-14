@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Nuove Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
+    <!-- Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
 
@@ -267,7 +267,6 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Sezione Tendina Luna */
         .moon-dropdown-wrapper {
             width: min(90vw, 480px);
             margin-top: 4px;
@@ -372,7 +371,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
@@ -381,7 +379,6 @@
             </div>
         </div>
 
-        <!-- Sezione Tendina Luna -->
         <div class="moon-dropdown-wrapper">
             <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
                 <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
@@ -452,7 +449,6 @@
                 </select>
             </div>
 
-            <!-- Pannello Ora Legale Auto/Manuale -->
             <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
                 <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
                     <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
@@ -489,7 +485,7 @@
                 <input type="number" step="any" id="input-lon" value="9.69">
             </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
-                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</td>
+                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
                 <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
             </div>
         </div>
@@ -514,13 +510,10 @@
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
-        // Funzione per ricavare l'ora civile corretta applicando l'offset del fuso e dell'ora legale/solaria
         function getEffectiveDate() {
             const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
             const now = new Date();
-            
             let isDstActive = getCurrentDstState();
-            // Se l'ora legale è attiva aggiungiamo +1h rispetto all'ora solare di base del fuso
             const dstOffset = isDstActive ? 1 : 0;
             const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
@@ -528,13 +521,10 @@
             return new Date(utcTimeMs + (targetTotalOffsetHours * 3600000));
         }
 
-        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
-        // Conversione corretta: SunCalc calcola in base al tempo solare/UTC effettivo della coordinata.
-        // Convertiamo l'orario UTC dell'evento solare nell'ora civile locale visualizzata sul quadrante.
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
             const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
@@ -542,7 +532,6 @@
             const dstOffset = isDstActive ? 1 : 0;
             const totalOffsetHours = tzPresetVal + dstOffset;
 
-            // Sposta il timestamp UTC dell'evento solare sull'orario civile locale
             const localDate = new Date(date.getTime() + (totalOffsetHours * 3600000));
             let hours = localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
             return (hours + 24) % 24;
@@ -622,7 +611,6 @@
         function updateDstUI(isAuto) {
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('manual-dst-toggle');
-            
             if (isAuto) {
                 manualBox.style.opacity = "0.4";
                 manualInput.disabled = true;
@@ -636,11 +624,7 @@
             const content = document.getElementById('moon-dropdown-content');
             const arrow = document.getElementById('dropdown-arrow');
             content.classList.toggle('show');
-            if (content.classList.contains('show')) {
-                arrow.innerText = '▲';
-            } else {
-                arrow.innerText = '▼';
-            }
+            arrow.innerText = content.classList.contains('show') ? '▲' : '▼';
         }
 
         async function fetchPlaceName(lat, lon) {
@@ -803,7 +787,6 @@
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
                     const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
-                    
                     window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}`;
                 } else {
                     statusEl.innerText = "Località non trovata.";
@@ -843,40 +826,19 @@
                     const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
                     const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
                     
-                    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                        maxZoom: 17,
-                        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-                    });
-
-                    const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                        maxZoom: 19,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    });
+                    const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
+                    const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
 
                     let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
 
-                    map = L.map('map-container', {
-                        center: [currentLat, currentLon],
-                        zoom: 6,
-                        layers: [savedLayer]
-                    });
-
-                    const baseMaps = {
-                        "Topografica": topo,
-                        "Politica": political
-                    };
-                    L.control.layers(baseMaps).addTo(map);
+                    map = L.map('map-container', { center: [currentLat, currentLon], zoom: 6, layers: [savedLayer] });
+                    L.control.layers({"Topografica": topo, "Politica": political}).addTo(map);
 
                     map.on('baselayerchange', function (e) {
-                        if (e.name === 'Politica') {
-                            localStorage.setItem('sunclock_map_layer', 'political');
-                        } else {
-                            localStorage.setItem('sunclock_map_layer', 'topo');
-                        }
+                        localStorage.setItem('sunclock_map_layer', e.name === 'Politica' ? 'political' : 'topo');
                     });
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
-
                     marker.on('dragend', function(e) {
                         const pos = marker.getLatLng();
                         document.getElementById('input-lat').value = pos.lat.toFixed(4);
@@ -889,7 +851,6 @@
                         marker.setLatLng([lat, lon]);
                         document.getElementById('input-lat').value = lat.toFixed(4);
                         document.getElementById('input-lon').value = lon.toFixed(4);
-                        
                         getPlaceNameAndRedirect(lat, lon);
                     });
                 } else {
@@ -910,7 +871,6 @@
 
         function getCompleteMoonTimes(date, lat, lon) {
             let times = SunCalc.getMoonTimes(date, lat, lon);
-            
             let rise = times.rise;
             let set = times.set;
 
@@ -941,7 +901,6 @@
             const dstOffset = isDstActive ? 1 : 0;
             const totalOffsetHours = tzPresetVal + dstOffset;
 
-            // Ricaviamo il momento UTC puro partendo dall'ora scelta e sottraendo l'offset totale attivo
             const utcDateForCalc = new Date(selectedDate.getTime() - (totalOffsetHours * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcDateForCalc, lat, lon);
