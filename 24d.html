@@ -520,7 +520,6 @@
             return tzPresetVal + dstShift;
         }
 
-        // Entrambi puntano alla stessa funzione per mantenere le fasce e i numeri rigorosamente fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
@@ -970,12 +969,13 @@
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
             const totalOffsetHours = getTotalOffsetHours();
-            const targetDate = new Date(date.getTime() + (totalOffsetHours * 3600000));
+            const localTimeMs = date.getTime() + (totalOffsetHours * 3600000);
+            const targetDate = new Date(localTimeMs);
             return targetDate.getUTCHours() + targetDate.getUTCMinutes() / 60 + targetDate.getUTCSeconds() / 3600;
         }
 
         function isValidDate(d) {
-            return d instanceof Date && !isNaN(d);
+            return d instanceof Date && !isNaN(d.getTime());
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
@@ -1200,10 +1200,52 @@
             }
         }
 
+        function getIntervalColorSafe(h, times) {
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+
+            if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
+                const totalOffsetHours = getTotalOffsetHours();
+                let utcCalculationDate = new Date(selectedDate.getTime() - (totalOffsetHours * 3600000));
+                utcCalculationDate.setUTCHours(12, 0, 0, 0);
+                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
+            }
+
+            const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
+            const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
+
+            const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            const hGoldenStartVal = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            const hSunsetStartVal = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
+            if (h >= hSunrise && h < hSunriseEndVal) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEndVal && h < hGoldenEndVal) return PALETTE.golden;
+            if (h >= hGoldenEndVal && h < hGoldenStartVal) return PALETTE.day;
+            if (h >= hGoldenStartVal && h < hSunsetStartVal) return PALETTE.golden;
+            if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hNautDusk && h < hAstroDusk) return PALETTE.astro;
+
+            return PALETTE.night;
+        }
+
         function formatTime(date) {
+            if (!isValidDate(date)) return "--:--";
             const totalOffsetHours = getTotalOffsetHours();
-            const targetDate = new Date(date.getTime() + (totalOffsetHours * 3600000));
-            if (!isValidDate(targetDate)) return "--:--";
+            const localTimeMs = date.getTime() + (totalOffsetHours * 3600000);
+            const targetDate = new Date(localTimeMs);
             return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
         }
 
