@@ -959,13 +959,14 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+            const targetDate = toTargetTime(date);
+            return targetDate.getUTCHours() + targetDate.getUTCMinutes() / 60 + targetDate.getUTCSeconds() / 3600;
         }
 
-        // INTEGRAZIONE TOTALE FUSO + ORA LEGALE SULLA GRAFICA
+        // CORRETTO: Sposta la grafica di 1 ora solo quando attivi il flag dell'ora legale
         function hoursToAngle(h) {
-            const totalOffset = getTotalOffsetHours();
-            return ((h + totalOffset) / 24) * Math.PI * 2 + Math.PI / 2;
+            const dstShift = getCurrentDstState() ? 1 : 0;
+            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         function isValidDate(d) {
@@ -1213,7 +1214,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#39ff14';
-                ctx.fillText(minText, mx, hy);
+                ctx.fillText(minText, mx, my);
             }
         }
 
