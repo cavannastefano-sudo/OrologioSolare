@@ -504,15 +504,23 @@
         const cy = 250;
         const radius = 248;
 
-        // Offset opzionale in ore per spostare SOLO le fasce colorate e gli archi solari/lunari
-        let sunOffsetHours = 0; 
+        function getCurrentDstState() {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, new Date());
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
 
+        // Numeri e tacche fissi
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
+        // Fasce colorate e archi mobili con l'ora legale
         function sunHoursToAngle(h) {
-            return ((h + sunOffsetHours) / 24) * Math.PI * 2 + Math.PI / 2;
+            const dstShift = getCurrentDstState() ? 1 : 0;
+            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         const PALETTE = {
@@ -642,13 +650,7 @@
             const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
             const now = new Date();
             
-            let isDstNowActive = false;
-            if (typeof getEffectiveDST === 'function') {
-                isDstNowActive = getEffectiveDST(cachedLat, cachedLon, now);
-            } else {
-                isDstNowActive = localStorage.getItem('sunclock_dst') === 'true';
-            }
-
+            let isDstNowActive = getCurrentDstState();
             const dstOffset = isDstNowActive ? 1 : 0;
             const targetTotalOffsetHours = tzPresetVal + dstOffset;
 
@@ -1136,7 +1138,7 @@
 
             const hRadius = radius * 0.65;
             for (let i = 1; i <= 24; i++) {
-                const angleRad = hoursToAngle(i); // Fisso, usa hoursToAngle standard
+                const angleRad = hoursToAngle(i); // Usa hoursToAngle per rimanere fisso
                 const hx = cx + hRadius * Math.cos(angleRad);
                 const hy = cy + hRadius * Math.sin(angleRad);
 
