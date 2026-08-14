@@ -639,16 +639,8 @@
         }
 
         function applyTimezonePreset() {
-            const tzVal = parseFloat(document.getElementById('timezone-preset').value);
+            const tzVal = document.getElementById('timezone-preset').value;
             isTimezoneOnlyMode = true;
-            
-            // Database approssimativo delle coordinate centrali tipiche per ogni fuso orario UTC (Lon = Fuso * 15)
-            // In questo modo SunCalc calcola gli orari REALI di alba/tramonto di quel fuso orario mondiale!
-            cachedLon = tzVal * 15;
-            cachedLat = 0.0; // Equatore come riferimento neutro per il fuso puro, o latitudine adattata
-            document.getElementById('input-lat').value = cachedLat;
-            document.getElementById('input-lon').value = cachedLon;
-
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -1248,7 +1240,23 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            // Fuso orario base selezionato nel menu a tendina
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            
+            // Verifica se l'ora legale è attiva (automatica o manuale)
+            let isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            
+            // Offset totale (Fuso + eventuale ora legale)
+            const totalOffsetHours = tzPresetVal + dstOffset;
+            
+            // Converte l'orario UTC di SunCalc applicando il fuso e l'ora legale corretti
+            const shifted = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (totalOffsetHours * 3600000));
+            
+            return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
+                   String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
+                   String(shifted.getUTCSeconds()).padStart(2, '0');
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -1353,7 +1361,7 @@
         initClock();
         setInterval(updateHands, 50);
 
-        if ('serviceServiceWorker' in navigator) {
+        if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.service.worker.js');
         }
     </script>
