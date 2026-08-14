@@ -509,7 +509,7 @@
         function getCurrentDstState() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (isAuto && typeof getEffectiveDST === 'function') {
-                return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+                return getEffectiveDST(cachedLat, cachedLon, new Date());
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
@@ -974,7 +974,13 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            let isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const totalOffsetHours = tzPresetVal + dstOffset;
+            const localDate = new Date(date.getTime() + (totalOffsetHours * 3600000));
+            let hours = localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+            return (hours + 24) % 24;
         }
 
         function isValidDate(d) {
@@ -1252,7 +1258,15 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            let isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const totalOffsetHours = tzPresetVal + dstOffset;
+            
+            const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
+            return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
+                   String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
+                   String(shifted.getUTCSeconds()).padStart(2, '0');
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
