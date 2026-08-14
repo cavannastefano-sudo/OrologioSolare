@@ -519,11 +519,11 @@
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
-        // Calcolo degli angoli per le fasce solari: aggiunge 1 ora se l'ora legale è attiva, 
-        // così le fasce slittano in avanti insieme all'orario.
+        // Calcolo degli angoli per le fasce solari: sottrae 1 ora se l'ora legale è attiva, 
+        // così le fasce slittano indietro (verso l'ora solare) quando si disattiva il flag.
         function sunHoursToAngle(h) {
             const dstShift = getCurrentDstState() ? 1 : 0;
-            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+            return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         const PALETTE = {
@@ -1177,7 +1177,7 @@
                 ctx.strokeText(minText, mx, my);
 
                 ctx.fillStyle = '#39ff14';
-                ctx.fillText(minText, mx, hy);
+                ctx.fillText(minText, mx, my);
             }
         }
 
