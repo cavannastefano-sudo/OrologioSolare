@@ -514,9 +514,16 @@
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
-        // Funzione unificata per calcolare gli angoli sul quadrante
+        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
+        }
+
+        // Calcolo degli angoli per le fasce solari: aggiunge 1 ora se l'ora legale è attiva (+ dstShift)
+        // così le fasce slittano in avanti insieme all'orario e agli orari di alba/tramonto.
+        function sunHoursToAngle(h) {
+            const dstShift = getCurrentDstState() ? 1 : 0;
+            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         const PALETTE = {
@@ -1005,13 +1012,13 @@
             ctx.strokeStyle = '#64748b';
 
             if (endH < startH) {
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(24));
+                ctx.arc(cx, cy, arcRadius, sunHoursToAngle(startH), sunHoursToAngle(24));
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(0), hoursToAngle(endH));
+                ctx.arc(cx, cy, arcRadius, sunHoursToAngle(0), sunHoursToAngle(endH));
                 ctx.stroke();
             } else {
-                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(endH));
+                ctx.arc(cx, cy, arcRadius, sunHoursToAngle(startH), sunHoursToAngle(endH));
                 ctx.stroke();
             }
             ctx.restore();
@@ -1076,10 +1083,10 @@
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             if (endH < startH) {
-                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
-                ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
+                ctx.arc(cx, cy, r, sunHoursToAngle(startH), sunHoursToAngle(24));
+                ctx.arc(cx, cy, r, sunHoursToAngle(0), sunHoursToAngle(endH));
             } else {
-                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+                ctx.arc(cx, cy, r, sunHoursToAngle(startH), sunHoursToAngle(endH));
             }
             ctx.closePath();
             ctx.fillStyle = color;
@@ -1090,7 +1097,7 @@
             if (isValidDate(times.solarNoon)) {
                 const noonHours = timeToHours(times.solarNoon);
                 if (noonHours !== null) {
-                    const noonAngle = hoursToAngle(noonHours);
+                    const noonAngle = sunHoursToAngle(noonHours);
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
@@ -1103,7 +1110,7 @@
             if (isValidDate(times.nadir)) {
                 const nadirHours = timeToHours(times.nadir);
                 if (nadirHours !== null) {
-                    const nadirAngle = hoursToAngle(nadirHours);
+                    const nadirAngle = sunHoursToAngle(nadirHours);
                     ctx.beginPath();
                     ctx.moveTo(cx, cy);
                     ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
