@@ -444,7 +444,8 @@
         let isDstActive = true;
 
         function initClock() {
-            const savedDst = localStorage.getItem('sunclock_pos_dst');
+            // CORRETTO: Modificato per usare 'sunclock_dst' al posto di 'sunclock_pos_dst'
+            const savedDst = localStorage.getItem('sunclock_dst');
             if (savedDst !== null) {
                 isDstActive = (savedDst === 'true');
                 document.getElementById('chk-dst').checked = isDstActive;
@@ -467,7 +468,8 @@
 
         function toggleDST() {
             isDstActive = document.getElementById('chk-dst').checked;
-            localStorage.setItem('sunclock_pos_dst', isDstActive);
+            // CORRETTO: Modificato per usare 'sunclock_dst' al posto di 'sunclock_pos_dst'
+            localStorage.setItem('sunclock_dst', isDstActive);
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
