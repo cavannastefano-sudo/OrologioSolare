@@ -60,15 +60,30 @@
 
         let geojsonLayer = null;
 
-        // Nuova funzione per generare colori molto più vari e sparsi
-        function getColor(name) {
+        // Tavolozza di colori forti e ben distinti
+        const colorPalette = [
+            '#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', 
+            '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16',
+            '#06b6d4', '#d946ef', '#eab308', '#22c55e', '#a855f7'
+        ];
+
+        // Genera il colore basandosi su nome e geometria dello stato
+        function getColor(feature) {
+            const name = feature.properties.ADMIN || feature.properties.name || "Stato";
             let hash = 0;
+            
             for (let i = 0; i < name.length; i++) {
                 hash = name.charCodeAt(i) + ((hash << 5) - hash);
             }
-            // Math.abs previene i numeri negativi, il moltiplicatore (137) sparge i colori su tutto lo spettro HSL
-            const hue = Math.abs(hash * 137) % 360; 
-            return `hsl(${hue}, 70%, 55%)`;
+            
+            // Aggiungiamo un po' di "caos" usando i dati geometrici per variare ancora di più
+            let geomFactor = 0;
+            if (feature.geometry && feature.geometry.coordinates) {
+                geomFactor = feature.geometry.coordinates.length * 13;
+            }
+            
+            const index = Math.abs(hash + geomFactor) % colorPalette.length;
+            return colorPalette[index];
         }
 
         function handleMapClick(lat, lon) {
@@ -105,7 +120,7 @@
             .then(data => {
                 geojsonLayer = L.geoJSON(data, {
                     style: (feature) => ({
-                        fillColor: getColor(feature.properties.ADMIN || feature.properties.name),
+                        fillColor: getColor(feature), // Modificato per passare l'intero oggetto feature
                         weight: 1,
                         opacity: 0.8,
                         color: '#333', // Bordo scuro perché lo sfondo ora è chiaro
