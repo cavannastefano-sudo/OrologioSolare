@@ -15,6 +15,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+    <script src="timezone-manager.js"></script>
+
     <style>
         :root { 
             --bg-color: #000000; 
@@ -46,7 +50,7 @@
             align-items: center;
             width: min(98vw, 480px);
             margin-bottom: 8px;
-            gap: 8px;
+            gap: 6px;
         }
         h1 { 
             margin: 0; 
@@ -54,7 +58,6 @@
             font-size: 1.15rem; 
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            cursor: pointer;
         }
 
         #digital-clock {
@@ -64,8 +67,8 @@
             background: rgba(0,0,0,0.3);
             padding: 3px 5px;
             border-radius: 6px;
-            border: 1px solid rgba(255,0,0,0.6);
-            box-shadow: 0 0 6px rgba(255,0,0,0.4);
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             letter-spacing: 0.5px;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
@@ -78,12 +81,13 @@
         .header-box {
             background: rgba(0,0,0,0.25);
             padding: 6px 10px;
-            border-radius: 10px;
-            border: none;
+            border-radius: 6px;
+            border: 2px solid #334155;
             display: flex;
             align-items: center;
             gap: 8px;
             box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
         }
 
         #date-display-btn {
@@ -117,42 +121,21 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        .top-action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: min(90vw, 480px);
-            margin-bottom: 8px;
-            box-sizing: border-box;
-        }
-
-        .action-icon-btn {
+        #btn-world, #btn-settings {
             background: rgba(0,0,0,0.3); 
             color: #facc15; 
-            border: 1px solid rgba(250, 204, 21, 0.4);
-            padding: 5px 10px; 
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 5px 8px; 
             border-radius: 6px; 
             cursor: pointer; 
-            font-size: 0.85rem; 
+            font-size: 0.8rem; 
             font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
-        .action-icon-btn:hover { 
+        #btn-world:hover, #btn-settings:hover { 
             background: rgba(0,0,0,0.5); 
-        }
-
-        .dst-container {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            background: rgba(0,0,0,0.3);
-            padding: 4px 8px;
-            border-radius: 6px;
-            border: 1px solid rgba(250, 204, 21, 0.4);
-            font-size: 0.85rem;
-            color: #facc15;
-            cursor: pointer;
         }
 
         #clock-wrapper {
@@ -251,12 +234,12 @@
             width: 100%;
             background: rgba(0,0,0,0.25);
             padding: 10px 12px;
-            border-radius: 10px;
+            border-radius: 6px;
             font-size: 1.05rem;
             color: #39ff14;
             text-align: center;
-            border: none;
-            box-shadow: none;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             font-weight: bold;
             cursor: pointer;
             line-height: 1.35;
@@ -293,10 +276,11 @@
         .dropdown-toggle-btn {
             width: 100%;
             background: rgba(0,0,0,0.25);
-            border: none;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             color: #facc15;
             padding: 8px 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 1rem;
             font-weight: bold;
             cursor: pointer;
@@ -360,15 +344,6 @@
 </head>
 <body>
 
-    <div class="top-action-bar">
-        <button class="action-icon-btn" onclick="window.location.href='world.html'">🌍 World</button>
-        <label class="dst-container">
-            <input type="checkbox" id="chk-dst" checked onchange="toggleDST()" style="width: 16px; height: 16px; cursor: pointer;">
-            <span>☀️ Ora Legale (+1h)</span>
-        </label>
-        <button class="action-icon-btn" onclick="toggleSettingsModal(true)">⚙️ Imposta</button>
-    </div>
-
     <header>
         <h1>SunClock24</h1>
         <div style="display: flex; align-items: center; gap: 4px;">
@@ -380,6 +355,8 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
+        <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
 
     <div id="clock-wrapper">
@@ -438,21 +415,66 @@
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <strong>Imposta Posizione</strong>
+                <strong>Imposta Fuso e Posizione</strong>
                 <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
             </div>
             
             <div class="form-group">
+                <label>🌍 Fuso Orario Solare Base (UTC):</label>
+                <select id="timezone-preset" onchange="applyTimezonePreset()">
+                    <option value="-12">(UTC-12:00) Isola Baker</option>
+                    <option value="-11">(UTC-11:00) Niue, Samoa</option>
+                    <option value="-10">(UTC-10:00) Hawaii, Tahiti</option>
+                    <option value="-9">(UTC-09:00) Alaska</option>
+                    <option value="-8">(UTC-08:00) Pacific Time (USA / Canada)</option>
+                    <option value="-7">(UTC-07:00) Mountain Time (USA / Canada)</option>
+                    <option value="-6">(UTC-06:00) Central Time (USA / Canada)</option>
+                    <option value="-5">(UTC-05:00) Eastern Time (USA / Canada)</option>
+                    <option value="-4">(UTC-04:00) Caraibi, Santiago</option>
+                    <option value="-3">(UTC-03:00) Buenos Aires, Brasilia</option>
+                    <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
+                    <option value="-1">(UTC-01:00) Azzorre</option>
+                    <option value="0">(UTC+00:00) Londra, Lisbona</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Piacenza, Parigi</option>
+                    <option value="2">(UTC+02:00) Il Cairo, Atene</option>
+                    <option value="3">(UTC+03:00) Mosca, Istanbul</option>
+                    <option value="4">(UTC+04:00) Dubai</option>
+                    <option value="5">(UTC+05:00) Islamabad</option>
+                    <option value="5.5">(UTC+05:30) Nuova Delhi</option>
+                    <option value="6">(UTC+06:00) Almaty</option>
+                    <option value="7">(UTC+07:00) Bangkok</option>
+                    <option value="8">(UTC+08:00) Pechino, Singapore</option>
+                    <option value="9">(UTC+09:00) Tokyo, Seul</option>
+                    <option value="9.5">(UTC+09:30) Darwin</option>
+                    <option value="10">(UTC+10:00) Sydney</option>
+                    <option value="11">(UTC+11:00) Isole Salomone</option>
+                    <option value="12">(UTC+12:00) Auckland</option>
+                </select>
+            </div>
+
+            <!-- Pannello Ora Legale Auto/Manuale -->
+            <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
+                <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
+                    <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    🤖 Ora Legale Automatica (Mondo)
+                </label>
+                <div id="manual-dst-box" style="display: flex; align-items: center; gap: 8px; margin-left: 5px; transition: opacity 0.3s ease;">
+                    <input type="checkbox" id="manual-dst-toggle" onchange="toggleManualDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="manual-dst-toggle" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h) Manuale</label>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
-                    <button class="action-icon-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
+                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
                 </div>
                 <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
             </div>
 
             <div class="form-group" style="margin-top: 8px;">
-                <button class="action-icon-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
                 <div id="map-container"></div>
             </div>
 
@@ -466,39 +488,9 @@
                 <label>Longitudine:</label>
                 <input type="number" step="any" id="input-lon" value="9.69">
             </div>
-            <div class="form-group">
-                <label>Fuso Orario (UTC Offset):</label>
-                <select id="input-tz">
-                    <option value="-12">UTC -12:00</option>
-                    <option value="-11">UTC -11:00</option>
-                    <option value="-10">UTC -10:00</option>
-                    <option value="-9">UTC -09:00</option>
-                    <option value="-8">UTC -08:00</option>
-                    <option value="-7">UTC -07:00</option>
-                    <option value="-6">UTC -06:00</option>
-                    <option value="-5">UTC -05:00</option>
-                    <option value="-4">UTC -04:00</option>
-                    <option value="-3">UTC -03:00</option>
-                    <option value="-2">UTC -02:00</option>
-                    <option value="-1">UTC -01:00</option>
-                    <option value="0" selected>UTC 00:00</option>
-                    <option value="1">UTC +01:00</option>
-                    <option value="2">UTC +02:00</option>
-                    <option value="3">UTC +03:00</option>
-                    <option value="4">UTC +04:00</option>
-                    <option value="5">UTC +05:00</option>
-                    <option value="6">UTC +06:00</option>
-                    <option value="7">UTC +07:00</option>
-                    <option value="8">UTC +08:00</option>
-                    <option value="9">UTC +09:00</option>
-                    <option value="10">UTC +10:00</option>
-                    <option value="11">UTC +11:00</option>
-                    <option value="12">UTC +12:00</option>
-                </select>
-            </div>
             <div style="display: flex; gap: 8px; margin-top: 15px;">
-                <button class="action-icon-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
-                <button class="action-icon-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
+                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
+                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
             </div>
         </div>
     </div>
@@ -524,20 +516,28 @@
         let cachedMoonIllumination = null;
         let cachedLat = 45.05; 
         let cachedLon = 9.69;
-        let manualTzOffset = null; // Gestione fuso orario globale
-        let cityName = "Piacenza - Italia";
         let selectedDate = new Date();
         let isCustomTime = false;
-        let isDstActive = true;
         let map = null;
         let marker = null;
+        let currentPlaceDisplayName = "Ricerca in corso...";
+        let isTimezoneOnlyMode = false;
+
+        function getCurrentDstState() {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
 
         async function initClock() {
-            const savedDst = localStorage.getItem('sunclock_dst');
-            if (savedDst !== null) {
-                isDstActive = (savedDst === 'true');
-                document.getElementById('chk-dst').checked = isDstActive;
-            }
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
+            
+            document.getElementById('auto-dst-toggle').checked = isAuto;
+            document.getElementById('manual-dst-toggle').checked = isManualDst;
+            updateDstUI(isAuto);
 
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
@@ -549,7 +549,6 @@
                         cachedLon = 9.69;
                         document.getElementById('input-lat').value = cachedLat;
                         document.getElementById('input-lon').value = cachedLon;
-                        document.getElementById('input-tz').value = Math.round(cachedLon / 15);
                         await fetchPlaceName(cachedLat, cachedLon);
                         updateTimeForLocation();
                         updateInputsVal();
@@ -562,7 +561,6 @@
                 cachedLon = 9.69;
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
-                document.getElementById('input-tz').value = Math.round(cachedLon / 15);
                 await fetchPlaceName(cachedLat, cachedLon);
                 updateTimeForLocation();
                 updateInputsVal();
@@ -570,13 +568,34 @@
             }
         }
 
-        function toggleDST() {
-            isDstActive = document.getElementById('chk-dst').checked;
-            localStorage.setItem('sunclock_dst', isDstActive);
+        function toggleAutoDST(checked) {
+            localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
+            updateDstUI(checked);
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
             updateSunClock(cachedLat, cachedLon);
+        }
+
+        function toggleManualDST(checked) {
+            localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
+            if (!isCustomTime) {
+                updateTimeForLocation();
+            }
+            updateSunClock(cachedLat, cachedLon);
+        }
+
+        function updateDstUI(isAuto) {
+            const manualBox = document.getElementById('manual-dst-box');
+            const manualInput = document.getElementById('manual-dst-toggle');
+            
+            if (isAuto) {
+                manualBox.style.opacity = "0.4";
+                manualInput.disabled = true;
+            } else {
+                manualBox.style.opacity = "1.0";
+                manualInput.disabled = false;
+            }
         }
 
         function toggleMoonDropdown() {
@@ -598,27 +617,34 @@
                     const country = geoData.address.country || '';
                     const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
                     if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        cityName = `${country} - ${city}`;
+                        currentPlaceDisplayName = `${country} - ${city}`;
                     } else {
-                        cityName = city || country || "Piacenza - Italia";
+                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
                     }
                 }
             } catch (err) {
-                cityName = "Piacenza - Italia";
+                currentPlaceDisplayName = "Piacenza - Italia";
             }
         }
 
-        function getCurrentOffset() {
-            if (manualTzOffset !== null) {
-                return manualTzOffset + (isDstActive ? 1 : 0);
+        function applyTimezonePreset() {
+            const tzVal = document.getElementById('timezone-preset').value;
+            isTimezoneOnlyMode = true;
+            if (!isCustomTime) {
+                updateTimeForLocation();
             }
-            const standardTz = Math.round(cachedLon / 15);
-            return standardTz + (isDstActive ? 1 : 0);
+            updateSunClock(cachedLat, cachedLon);
+            toggleSettingsModal(false);
         }
 
+        // --- Logica allineata a posizione.html per i fusi e il tempo corretto ---
         function getEffectiveDate() {
-            const cityOffsetHours = getCurrentOffset();
-            return new Date(Date.now() + (cityOffsetHours * 3600000));
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const targetTotalOffsetHours = tzPresetVal + dstOffset;
+
+            return new Date(Date.now() + (targetTotalOffsetHours * 3600000));
         }
 
         function updateInputsVal() {
@@ -651,35 +677,41 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione", customTz = null) {
+        async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             cachedLat = lat;
             cachedLon = lon;
-            manualTzOffset = customTz;
-            
+            isTimezoneOnlyMode = false;
             document.getElementById('input-lat').value = cachedLat;
             document.getElementById('input-lon').value = cachedLon;
-            document.getElementById('input-tz').value = (customTz !== null) ? customTz : Math.round(cachedLon / 15);
 
             let placeName = fallbackName;
-            if (fallbackName === "Posizione Corrente" || fallbackName === "GPS" || fallbackName === "Posizione") {
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
-                    const geoData = await res.json();
-                    if (geoData && geoData.address) {
-                        const country = geoData.address.country || '';
-                        const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                        if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                            placeName = `${country} - ${city}`;
-                        } else {
-                            placeName = city || country || fallbackName;
-                        }
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || fallbackName;
                     }
-                } catch (err) {
-                    placeName = fallbackName;
+                }
+            } catch (err) {
+                placeName = fallbackName;
+            }
+
+            currentPlaceDisplayName = placeName;
+
+            let approxOffset = Math.round(cachedLon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    break;
                 }
             }
 
-            cityName = placeName;
             isCustomTime = false;
             updateTimeForLocation();
             updateInputsVal();
@@ -687,7 +719,7 @@
         }
 
         function resetToNow() {
-            if (navigator.geolocation && manualTzOffset === null) {
+            if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
@@ -715,7 +747,6 @@
         }
 
         function useGPSLocation() {
-            manualTzOffset = null;
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
@@ -748,16 +779,35 @@
                 if (data && data.length > 0) {
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
-                    manualTzOffset = null; // ricalcola da longitudine/fuso automatico
-                    fetchAndUpdateLocation(lat, lon, data[0].display_name.split(',')[0]);
-                    statusEl.innerText = "";
-                    toggleSettingsModal(false);
+                    const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
+                    
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}`;
                 } else {
                     statusEl.innerText = "Località non trovata.";
                 }
             } catch (e) {
                 statusEl.innerText = "Errore di connessione.";
             }
+        }
+
+        async function getPlaceNameAndRedirect(lat, lon) {
+            let placeName = "Posizione";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${city}`;
+                    } else {
+                        placeName = city || country || "Posizione";
+                    }
+                }
+            } catch (err) {
+                placeName = "Posizione";
+            }
+            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
         }
 
         function toggleMap() {
@@ -780,13 +830,19 @@
                         attribution: '&copy; CARTO'
                     });
 
+                    let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
+
                     map = L.map('map-container', {
                         center: [currentLat, currentLon],
                         zoom: 6,
-                        layers: [topo]
+                        layers: [savedLayer]
                     });
 
                     L.control.layers({"Topografica": topo, "Politica": political}).addTo(map);
+
+                    map.on('baselayerchange', function (e) {
+                        localStorage.setItem('sunclock_map_layer', e.name === 'Politica' ? 'political' : 'topo');
+                    });
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -794,7 +850,6 @@
                         const pos = marker.getLatLng();
                         document.getElementById('input-lat').value = pos.lat.toFixed(4);
                         document.getElementById('input-lon').value = pos.lng.toFixed(4);
-                        document.getElementById('input-tz').value = Math.round(pos.lng / 15);
                     });
 
                     map.on('click', function(e) {
@@ -803,9 +858,7 @@
                         marker.setLatLng([lat, lon]);
                         document.getElementById('input-lat').value = lat.toFixed(4);
                         document.getElementById('input-lon').value = lon.toFixed(4);
-                        document.getElementById('input-tz').value = Math.round(lon / 15);
-                        fetchAndUpdateLocation(lat, lon);
-                        toggleSettingsModal(false);
+                        getPlaceNameAndRedirect(lat, lon);
                     });
                 } else {
                     map.invalidateSize();
@@ -816,10 +869,8 @@
         function applyManualLocation() {
             const lat = parseFloat(document.getElementById('input-lat').value);
             const lon = parseFloat(document.getElementById('input-lon').value);
-            const tz = parseInt(document.getElementById('input-tz').value, 10);
             if (!isNaN(lat) && !isNaN(lon)) {
-                fetchAndUpdateLocation(lat, lon, cityName, tz);
-                toggleSettingsModal(false);
+                getPlaceNameAndRedirect(lat, lon);
             } else {
                 alert("Inserisci coordinate valide.");
             }
@@ -827,7 +878,10 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const cityOffsetHours = getCurrentOffset();
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const cityOffsetHours = tzPresetVal + dstOffset;
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
@@ -858,7 +912,10 @@
         }
 
         function updateSunClock(lat, lon) {
-            const totalTzOffset = getCurrentOffset();
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = tzPresetVal + (isDstNowActive ? 1 : 0);
+            
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -877,18 +934,25 @@
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
+            const tz = document.getElementById('timezone-preset').value;
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
-
-            document.getElementById('location-text').innerHTML = `
-                <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
-                <div style="font-size: 0.95rem; opacity: 0.9;">
-                    Lat: ${latFmt} | Lon: ${lonFmt}
-                </div>
-                <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-                    Fuso: UTC ${totalTzOffset >= 0 ? "+" : ""}${totalTzOffset}
-                </div>
-            `;
+            
+            if (isTimezoneOnlyMode) {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
+                `;
+            } else {
+                document.getElementById('location-text').innerHTML = `
+                    <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9;">
+                        Lat: ${latFmt} | Lon: ${lonFmt}
+                    </div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
+                        Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}
+                    </div>
+                `;
+            }
 
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
@@ -956,8 +1020,10 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = getCurrentOffset();
-                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
+                const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = isDstNowActive ? 1 : 0;
+                let utcCalculationDate = new Date(selectedDate.getTime() - ((tzPresetVal + dstOffset) * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -999,8 +1065,10 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = getCurrentOffset();
-                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
+                const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = isDstNowActive ? 1 : 0;
+                let utcCalculationDate = new Date(selectedDate.getTime() - ((tzPresetVal + dstOffset) * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 
@@ -1259,7 +1327,10 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const totalTzOffset = getCurrentOffset();
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = tzPresetVal + (isDstNowActive ? 1 : 0);
+            
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
