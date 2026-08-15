@@ -509,15 +509,10 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Sincronizza le ore solari con il fuso orario selezionato
+// CORRETTO: Legge direttamente l'ora locale corretta della selectedDate
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-    let isDstNowActive = getCurrentDstState();
-    const dstOffset = isDstNowActive ? 1 : 0;
-    const totalOffsetHours = tzPresetVal + dstOffset;
-    const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
-    return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
+    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -868,10 +863,9 @@ function updateHands() {
     
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
 
-    // CORRETTO: Usa le ore UTC di selectedDate (già regolate sul fuso) per allineare le lancette e lo sfondo
-    const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-    const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
-    const s = selectedDate.getUTCSeconds() + selectedDate.getUTCMilliseconds() / 1000;
+    const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+    const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+    const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
     const hourDeg = (h / 24) * 360 - 180;
     document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
