@@ -21,8 +21,8 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    // Sincronizzato con la data selezionata: sposta correttamente le fette del sole sul quadrante
     const isDstActive = getCurrentDstState();
+    // Se l'ora legale è attiva, sottraiamo 1 ora per allineare correttamente le fette sul quadrante 24h
     const dstShift = isDstActive ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
@@ -792,8 +792,9 @@ function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     
-    let isDstNowActive = getCurrentDstState();
-    const dstOffset = isDstNowActive ? 1 : 0;
+    // Calcolo dinamico dello stato DST basato sulla data selezionata
+    let isDstActiveForSelectedDate = getCurrentDstState();
+    const dstOffset = isDstActiveForSelectedDate ? 1 : 0;
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
