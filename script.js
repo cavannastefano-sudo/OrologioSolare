@@ -3,7 +3,7 @@ SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
 SunCalc.addTime(-6, 'dawn', 'dusk');
 
 const canvas = document.getElementById('clockCanvas');
-const ctx = canvas.getContext('2d');
+const ctx = canvas ? canvas.getContext('2d') : null;
 const cx = 250;
 const cy = 250;
 const radius = 248;
@@ -16,12 +16,10 @@ function getCurrentDstState() {
     return localStorage.getItem('sunclock_dst') === 'true';
 }
 
-// Numeri e tacche fissi sul quadrante
 function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Calcolo degli angoli per le fasce solari: invertito per scambiare ora solare e ora legale
 function sunHoursToAngle(h) {
     const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
@@ -337,12 +335,12 @@ function toggleMap() {
             
             const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                 maxZoom: 17,
-                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM'
             });
 
             const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a>'
             });
 
             let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
@@ -353,19 +351,8 @@ function toggleMap() {
                 layers: [savedLayer]
             });
 
-            const baseMaps = {
-                "Topografica": topo,
-                "Politica": political
-            };
+            const baseMaps = { "Topografica": topo, "Politica": political };
             L.control.layers(baseMaps).addTo(map);
-
-            map.on('baselayerchange', function (e) {
-                if (e.name === 'Politica') {
-                    localStorage.setItem('sunclock_map_layer', 'political');
-                } else {
-                    localStorage.setItem('sunclock_map_layer', 'topo');
-                }
-            });
 
             marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -381,7 +368,6 @@ function toggleMap() {
                 marker.setLatLng([lat, lon]);
                 document.getElementById('input-lat').value = lat.toFixed(4);
                 document.getElementById('input-lon').value = lon.toFixed(4);
-                
                 getPlaceNameAndRedirect(lat, lon);
             });
         } else {
@@ -401,18 +387,19 @@ function applyManualLocation() {
 }
 
 function getCompleteMoonTimes(date, lat, lon) {
-    let times = SunCalc.getMoonTimes(date, lat, lon);
+    let baseDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    let times = SunCalc.getMoonTimes(baseDate, lat, lon);
     
     let rise = times.rise;
     let set = times.set;
 
     if (!rise || !set || times.alwaysUp || times.alwaysDown) {
-        let dPrev = new Date(date);
-        dPrev.setDate(date.getDate() - 1);
+        let dPrev = new Date(baseDate);
+        dPrev.setDate(baseDate.getDate() - 1);
         let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
 
-        let dNext = new Date(date);
-        dNext.setDate(date.getDate() + 1);
+        let dNext = new Date(baseDate);
+        dNext.setDate(baseDate.getDate() + 1);
         let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
 
         if (!rise) {
@@ -429,20 +416,23 @@ function getCompleteMoonTimes(date, lat, lon) {
 
 function updateSunClock(lat, lon) {
     const refDate = selectedDate;
+    let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    cachedTimes = SunCalc.getTimes(refDate, lat, lon);
-    cachedMoonTimes = getCompleteMoonTimes(refDate, lat, lon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(refDate);
+    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
+    cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
-    ctx.clearRect(0, 0, 500, 500);
-
-    drawSunSlicesSafe(cachedTimes);
-    drawMoonVisibilityArc(cachedMoonTimes, refDate);
-    drawSolarMeridianLines(cachedTimes);
-    drawMinuteRingSafe();
-    drawClockNumbers();
+    if (ctx) {
+        ctx.clearRect(0, 0, 500, 500);
+        drawSunSlicesSafe(cachedTimes);
+        drawMoonVisibilityArc(cachedMoonTimes, refDate);
+        drawSolarMeridianLines(cachedTimes);
+        drawMinuteRingSafe();
+        drawClockNumbers();
+    }
+    
     updatePageBackground(cachedTimes);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
