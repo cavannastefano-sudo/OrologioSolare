@@ -11,7 +11,6 @@ const radius = 248;
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
-        // Valuta l'ora legale in base alla data selezionata (es. dicembre = solare, agosto = legale)
         return getEffectiveDST(cachedLat, cachedLon, selectedDate);
     }
     return localStorage.getItem('sunclock_dst') === 'true';
@@ -800,7 +799,17 @@ function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     
-    const totalOffsetHours = tzPresetVal;
+    let isDstActiveForSelectedDate = false;
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    
+    if (isAuto && typeof getEffectiveDST === 'function') {
+        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
+    } else {
+        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst') === 'true';
+    }
+
+    const dstOffset = isDstActiveForSelectedDate ? 1 : 0;
+    const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
     return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
