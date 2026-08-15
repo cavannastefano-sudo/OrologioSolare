@@ -140,7 +140,7 @@ async function fetchPlaceName(lat, lon) {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = true; // Attiva la modalità solo fuso orario
+    isTimezoneOnlyMode = true;
     if (!isCustomTime) {
         updateTimeForLocation();
     }
@@ -193,7 +193,7 @@ function onTimeChanged(val) {
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
-    isTimezoneOnlyMode = false; // Disattiva la modalità solo fuso perché abbiamo coordinate reali
+    isTimezoneOnlyMode = false;
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
 
@@ -387,8 +387,6 @@ function applyManualLocation() {
 }
 
 function getCompleteMoonTimes(date, lat, lon) {
-    if (isTimezoneOnlyMode) return { rise: null, set: null, alwaysUp: false, alwaysDown: false };
-    
     let baseDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
     let times = SunCalc.getMoonTimes(baseDate, lat, lon);
     
@@ -420,49 +418,33 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    if (isTimezoneOnlyMode) {
-        cachedTimes = {};
-        cachedMoonTimes = { rise: null, set: null };
-        cachedMoonIllumination = { fraction: 0, phase: 0 };
-    } else {
-        cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
-        cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
-        cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
-    }
+    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
+    cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
     if (ctx) {
         ctx.clearRect(0, 0, 500, 500);
-        if (!isTimezoneOnlyMode) {
-            drawSunSlicesSafe(cachedTimes);
-            drawMoonVisibilityArc(cachedMoonTimes, refDate);
-            drawSolarMeridianLines(cachedTimes);
-        } else {
-            // Sfondo neutro se siamo in sola modalità fuso orario senza coordinate
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 500, 500);
-        }
+        drawSunSlicesSafe(cachedTimes);
+        drawMoonVisibilityArc(cachedMoonTimes, refDate);
+        drawSolarMeridianLines(cachedTimes);
         drawMinuteRingSafe();
         drawClockNumbers();
     }
     
-    if (!isTimezoneOnlyMode) {
-        updatePageBackground(cachedTimes);
-    }
+    updatePageBackground(cachedTimes);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const tz = document.getElementById('timezone-preset').value;
+    const latFmt = parseFloat(lat).toFixed(2);
+    const lonFmt = parseFloat(lon).toFixed(2);
     
     if (isTimezoneOnlyMode) {
         document.getElementById('location-text').innerHTML = `
             <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
         `;
-        document.getElementById('txt-sunrise').innerText = "--:--";
-        document.getElementById('txt-sunset').innerText = "--:--";
     } else {
-        const latFmt = parseFloat(lat).toFixed(2);
-        const lonFmt = parseFloat(lon).toFixed(2);
         document.getElementById('location-text').innerHTML = `
             <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
             <div style="font-size: 0.95rem; opacity: 0.9;">
@@ -472,9 +454,10 @@ function updateSunClock(lat, lon) {
                 Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}
             </div>
         `;
-        document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-        document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
     }
+
+    document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+    document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
 }
 
 function timeToHours(date) {
@@ -487,7 +470,6 @@ function isValidDate(d) {
 }
 
 function drawMoonVisibilityArc(moonTimes, refDate) {
-    if (isTimezoneOnlyMode) return;
     let rise = moonTimes.rise;
     let set = moonTimes.set;
 
@@ -531,7 +513,6 @@ function drawMoonVisibilityArc(moonTimes, refDate) {
 }
 
 function drawSunSlicesSafe(times) {
-    if (isTimezoneOnlyMode) return;
     let hSunrise = timeToHours(times.sunrise);
     let hSunset = timeToHours(times.sunset);
 
@@ -601,7 +582,6 @@ function drawSector(startH, endH, color, r) {
 }
 
 function drawSolarMeridianLines(times) {
-    if (isTimezoneOnlyMode || !times) return;
     if (isValidDate(times.solarNoon)) {
         const noonHours = timeToHours(times.solarNoon);
         if (noonHours !== null) {
@@ -688,12 +668,12 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, hy);
+        ctx.fillText(minText, mx, my);
     }
 }
 
 function updatePageBackground(times) {
-    if (isTimezoneOnlyMode || !times) return;
+    if (!times) return;
     const h = timeToHours(selectedDate);
     const currentColor = getIntervalColorSafe(h, times);
     const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
@@ -751,7 +731,7 @@ function getIntervalColorSafe(h, times) {
 }
 
 function formatTime(date) {
-    if (isTimezoneOnlyMode || !isValidDate(date)) return "--:--";
+    if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     let isDstNowActive = getCurrentDstState();
     const dstOffset = isDstNowActive ? 1 : 0;
@@ -768,16 +748,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
     const setEl = document.getElementById('moon-set');
-
-    if (isTimezoneOnlyMode) {
-        iconEl.innerText = "🌕";
-        phaseNameEl.innerText = "Fuso Orario";
-        riseEl.innerText = "--:--";
-        setEl.innerText = "--:--";
-        return;
-    }
-
     const phase = illumination.phase;
+
     let phaseName = "";
     let iconSymbol = "🌕";
 
@@ -798,15 +770,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
 
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
-    
-    if (isTimezoneOnlyMode) {
-        tbody.innerHTML = `
-            <tr><td colspan="2" style="text-align: center; color: #38bdf8;">Modalità fuso orario: dati astronomici non disponibili.</td></tr>
-        `;
-        return;
-    }
-
     const phasePct = Math.round(illumination.fraction * 100);
+    
     tbody.innerHTML = `
         <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
@@ -860,26 +825,20 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-    if (!isTimezoneOnlyMode) {
-        const moonPos = SunCalc.getMoonPosition(selectedDate, cachedLat, cachedLon);
-        const sunPos = SunCalc.getPosition(selectedDate, cachedLat, cachedLon);
-        
-        const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
-        let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
-        
-        let moonEquivalentHour = (h + moonHourOffset) % 24;
-        if (moonEquivalentHour < 0) moonEquivalentHour += 24;
+    const moonPos = SunCalc.getMoonPosition(selectedDate, cachedLat, cachedLon);
+    const sunPos = SunCalc.getPosition(selectedDate, cachedLat, cachedLon);
+    
+    const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
+    let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
+    
+    let moonEquivalentHour = (h + moonHourOffset) % 24;
+    if (moonEquivalentHour < 0) moonEquivalentHour += 24;
 
-        const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
-        document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+    const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
+    document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-        if (cachedTimes) {
-            updatePageBackground(cachedTimes);
-        }
-    } else {
-        // Se siamo in sola modalità fuso orario, posizioniamo la luna in modo neutro
-        const moonDeg = (h / 24) * 360 - 180;
-        document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+    if (cachedTimes) {
+        updatePageBackground(cachedTimes);
     }
 }
 
