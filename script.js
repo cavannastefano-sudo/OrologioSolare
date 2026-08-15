@@ -13,7 +13,7 @@ function getCurrentDstState() {
     if (isAuto && typeof getEffectiveDST === 'function') {
         return getEffectiveDST(cachedLat, cachedLon, selectedDate);
     }
-    return localStorage.getItem('sunclock_dst') === 'true';
+    return localStorage.getItem('sunclock_dst'] === 'true';
 }
 
 function hoursToAngle(h) {
@@ -21,10 +21,17 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const isDstActive = getCurrentDstState();
-    // Invertito il segno: se c'è l'ora legale applichiamo il movimento corretto delle fette
-    const dstShift = isDstActive ? -1 : 0;
-    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    let isDstActiveForSelectedDate = false;
+    
+    if (isAuto && typeof getEffectiveDST === 'function') {
+        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
+    } else {
+        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
+    }
+
+    const dstShift = isDstActiveForSelectedDate ? 1 : 0;
+    return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
@@ -46,7 +53,7 @@ let isTimezoneOnlyMode = false;
 
 async function initClock() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
+    const isManualDst = localStorage.getItem('sunclock_dst'] === 'true';
     
     document.getElementById('auto-dst-toggle').checked = isAuto;
     document.getElementById('manual-dst-toggle').checked = isManualDst;
@@ -793,8 +800,7 @@ function formatTime(date) {
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     
     let isDstNowActive = getCurrentDstState();
-    // Invertito il segno dell'offset per allineare correttamente l'orario formattato
-    const dstOffset = isDstNowActive ? -1 : 0;
+    const dstOffset = isDstNowActive ? 1 : 0;
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
