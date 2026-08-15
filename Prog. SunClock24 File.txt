@@ -5,3 +5,4 @@
 - script.js
 - manifest.json
 - sunclock.js
+- IMG_20260808_102945.jpg
