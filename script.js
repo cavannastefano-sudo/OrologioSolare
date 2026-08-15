@@ -11,8 +11,7 @@ const radius = 248;
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
-        // Valuta l'ora legale in base alla data selezionata (es. dicembre = solare, agosto = legale)
-        return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+        return getEffectiveDST(cachedLat, cachedLon, new Date());
     }
     return localStorage.getItem('sunclock_dst') === 'true';
 }
@@ -22,16 +21,7 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    let isDstActiveForSelectedDate = false;
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst') === 'true';
-    }
-
-    const dstShift = isDstActiveForSelectedDate ? 1 : 0;
+    const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -92,6 +82,7 @@ async function initClock() {
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
     
+    // Se attiviamo l'automatico, disattiva e spegne automaticamente il manuale
     if (checked) {
         localStorage.setItem('sunclock_dst', 'false');
         document.getElementById('manual-dst-toggle').checked = false;
@@ -800,6 +791,7 @@ function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     
+    // Usa solo il fuso base per evitare doppi offset sull'ora legale
     const totalOffsetHours = tzPresetVal;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
