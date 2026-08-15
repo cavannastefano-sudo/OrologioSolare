@@ -11,9 +11,9 @@ const radius = 248;
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
-        return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+        return getEffectiveDST(cachedLat, cachedLon, new Date());
     }
-    return localStorage.getItem('sunclock_dst'] === 'true';
+    return localStorage.getItem('sunclock_dst') === 'true';
 }
 
 function hoursToAngle(h) {
@@ -21,18 +21,8 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    let isDstActiveForSelectedDate = false;
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
-    }
-
-    // Corretto il verso dello shift per allineare le fette del sole alle ore corrette
-    const dstShift = isDstActiveForSelectedDate ? 1 : 0;
-    return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    const dstShift = !getCurrentDstState() ? 1 : 0;
+    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
@@ -54,7 +44,7 @@ let isTimezoneOnlyMode = false;
 
 async function initClock() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    const isManualDst = localStorage.getItem('sunclock_dst'] === 'true';
+    const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
     
     document.getElementById('auto-dst-toggle').checked = isAuto;
     document.getElementById('manual-dst-toggle').checked = isManualDst;
@@ -91,12 +81,6 @@ async function initClock() {
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
-    
-    if (checked) {
-        localStorage.setItem('sunclock_dst', 'false');
-        document.getElementById('manual-dst-toggle').checked = false;
-    }
-    
     updateDstUI(checked);
     if (!isCustomTime) {
         updateTimeForLocation();
@@ -799,18 +783,9 @@ function getIntervalColorSafe(h, times) {
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-    
-    let isDstActiveForSelectedDate = false;
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
-    }
-
-    const dstOffset = isDstActiveForSelectedDate ? 1 : 0;
-    const totalOffsetHours = tzPresetVal - dstOffset; // Invertito il segno per corrispondere all'ora solare corretta
+    let isDstNowActive = getCurrentDstState();
+    const dstOffset = isDstNowActive ? 1 : 0;
+    const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
     return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
