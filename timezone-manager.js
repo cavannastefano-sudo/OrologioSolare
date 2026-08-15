@@ -23,9 +23,12 @@ function isDSTInTimeZone(timeZone, date = new Date()) {
             const parts = new Intl.DateTimeFormat('en-US', formatOption).formatToParts(d);
             const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
             
-            const match = tzPart.match(/GMT([+-]\d+)?/);
-            if (!match || !match[1]) return 0;
-            return parseInt(match[1], 10);
+            // Supporta correttamente anche i fusi con i minuti (es. +05:30)
+            const match = tzPart.match(/GMT([+-]\d+)(?::(\d+))?/);
+            if (!match) return 0;
+            const hours = parseInt(match[1], 10);
+            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+            return hours >= 0 ? hours + minutes : hours - minutes;
         };
 
         const currentOffset = getOffset(date, timeZone);
