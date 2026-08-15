@@ -509,7 +509,6 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Legge direttamente l'ora locale corretta della selectedDate
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
