@@ -1,0 +1,7 @@
+- index.html
+- world.html
+- posizione.html
+- timezone-manager.js
+- script.js
+- manifest.json
+- sunclock.js
