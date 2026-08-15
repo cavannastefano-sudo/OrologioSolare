@@ -9,6 +9,7 @@
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="timezone-manager.js"></script>
 
     <style>
         :root { 
@@ -342,8 +343,8 @@
 
     <div class="top-action-bar">
         <button class="home-btn" onclick="window.location.href='index.html'">🏠 Home</button>
-        <label class="dst-container">
-            <input type="checkbox" id="chk-dst" checked onchange="toggleDST()" style="width: 16px; height: 16px; cursor: pointer;">
+        <label class="dst-container" id="manual-dst-box">
+            <input type="checkbox" id="chk-dst" onchange="toggleDST()" style="width: 16px; height: 16px; cursor: pointer;">
             <span>☀️ Ora Legale (+1h)</span>
         </label>
     </div>
@@ -441,15 +442,33 @@
 
         let selectedDate = new Date();
         let isCustomTime = false;
-        let isDstActive = true;
+
+        // Funzione unificata per determinare se la DST è attiva (automatica o manuale)
+        function getCurrentDstState() {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
 
         function initClock() {
-            // CORRETTO: Modificato per usare 'sunclock_dst' al posto di 'sunclock_pos_dst'
-            const savedDst = localStorage.getItem('sunclock_dst');
-            if (savedDst !== null) {
-                isDstActive = (savedDst === 'true');
-                document.getElementById('chk-dst').checked = isDstActive;
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const savedDst = getCurrentDstState();
+            
+            document.getElementById('chk-dst').checked = savedDst;
+            
+            // Se l'automatico è attivo, disabilitiamo il toggle manuale per coerenza con index.html
+            const manualBox = document.getElementById('manual-dst-box');
+            const manualInput = document.getElementById('chk-dst');
+            if (isAuto) {
+                manualBox.style.opacity = "0.4";
+                manualInput.disabled = true;
+            } else {
+                manualBox.style.opacity = "1.0";
+                manualInput.disabled = false;
             }
+
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -467,9 +486,8 @@
         }
 
         function toggleDST() {
-            isDstActive = document.getElementById('chk-dst').checked;
-            // CORRETTO: Modificato per usare 'sunclock_dst' al posto di 'sunclock_pos_dst'
-            localStorage.setItem('sunclock_dst', isDstActive);
+            const isChecked = document.getElementById('chk-dst').checked;
+            localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
@@ -478,7 +496,8 @@
 
         function getEffectiveDate() {
             const standardTz = Math.round(cachedLon / 15);
-            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
         }
 
@@ -528,7 +547,8 @@
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
             const standardTz = Math.round(cachedLon / 15);
-            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
@@ -560,7 +580,8 @@
 
         function updateSunClock(lat, lon) {
             const standardTz = Math.round(lon / 15);
-            const totalTzOffset = standardTz + (isDstActive ? 1 : 0);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -659,7 +680,8 @@
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
                 const standardTz = Math.round(cachedLon / 15);
-                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -703,7 +725,8 @@
             
             if (!hasValidSunset) {
                 const standardTz = Math.round(cachedLon / 15);
-                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -959,9 +982,9 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            // Calcolo astronomico della posizione della Luna basato sull'azimut (invariato rispetto a coordinate fisse/estere)
             const standardTz = Math.round(cachedLon / 15);
-            const totalTzOffset = standardTz + (isDstActive ? 1 : 0);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
