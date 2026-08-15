@@ -13,7 +13,7 @@ function getCurrentDstState() {
     if (isAuto && typeof getEffectiveDST === 'function') {
         return getEffectiveDST(cachedLat, cachedLon, selectedDate);
     }
-    return localStorage.getItem('sunclock_dst'] === 'true';
+    return localStorage.getItem('sunclock_dst') === 'true';
 }
 
 function hoursToAngle(h) {
@@ -21,17 +21,7 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    let isDstActiveForSelectedDate = false;
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
-    }
-
-    const dstShift = isDstActiveForSelectedDate ? 1 : 0;
-    return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
@@ -53,7 +43,7 @@ let isTimezoneOnlyMode = false;
 
 async function initClock() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    const isManualDst = localStorage.getItem('sunclock_dst'] === 'true';
+    const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
     
     document.getElementById('auto-dst-toggle').checked = isAuto;
     document.getElementById('manual-dst-toggle').checked = isManualDst;
