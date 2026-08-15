@@ -138,7 +138,6 @@ async function fetchPlaceName(lat, lon) {
     }
 }
 
-// QUANDO CAMBI FUSO DAL MENU: PAGINA VUOTA DI DATI E TUTTO A TRATTINI
 function applyTimezonePreset() {
     isTimezoneOnlyMode = true; 
     if (!isCustomTime) {
@@ -147,50 +146,40 @@ function applyTimezonePreset() {
     
     const tz = document.getElementById('timezone-preset').value;
     
-    // Mostriamo solo il fuso e azzeriamo i testi rapidi
+    // 1. Mostriamo solo il fuso nel box della località e spegniamo i dati rapidi
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Nessun dato astronomico locale</div>
     `;
-    document.getElementById('txt-sunrise').innerText = "--:--";
-    document.getElementById('txt-sunset').innerText = "--:--";
+    document.getElementById('txt-sunrise').innerText = "----";
+    document.getElementById('txt-sunset').innerText = "----";
     
+    // 2. Azzeriamo il pannello luna
     document.getElementById('moon-digital-icon').innerText = "🌕";
     document.getElementById('moon-phase-name').innerText = "----";
-    document.getElementById('moon-rise').innerText = "--:--";
-    document.getElementById('moon-set').innerText = "--:--";
+    document.getElementById('moon-rise').innerText = "----";
+    document.getElementById('moon-set').innerText = "----";
 
-    // Tabella completamente a trattini
+    // 3. Svuotiamo la tabella dei dettagli con tutti i trattini
     const tbody = document.getElementById('times-table-body');
     tbody.innerHTML = `
         <tr><td>Fase Lunare</td><td>----</td></tr>
-        <tr><td>Sorge la Luna</td><td>--:--</td></tr>
-        <tr><td>Tramonta la Luna</td><td>--:--</td></tr>
-        <tr><td>Mezzanotte solare</td><td>--:--</td></tr>
-        <tr><td>Alba astronomica</td><td>--:--</td></tr>
-        <tr><td>Alba Nautica</td><td>--:--</td></tr>
-        <tr><td>Alba Civile</td><td>--:--</td></tr>
-        <tr><td>Alba</td><td>--:--</td></tr>
-        <tr><td>Fine dell'alba</td><td>--:--</td></tr>
-        <tr><td>Fine dell'ora d'oro</td><td>--:--</td></tr>
-        <tr><td>Mezzogiorno solare</td><td>--:--</td></tr>
-        <tr><td>Inizio dell'ora d'oro</td><td>--:--</td></tr>
-        <tr><td>Inizio del tramonto</td><td>--:--</td></tr>
-        <tr><td>Tramonto</td><td>--:--</td></tr>
-        <tr><td>Crepuscolo civile</td><td>--:--</td></tr>
-        <tr><td>Crepuscolo nautico</td><td>--:--</td></tr>
-        <tr><td>Crepuscolo astronomico</td><td>--:--</td></tr>
+        <tr><td>Sorge la Luna</td><td>----</td></tr>
+        <tr><td>Tramonta la Luna</td><td>----</td></tr>
+        <tr><td>Mezzanotte solare</td><td>----</td></tr>
+        <tr><td>Alba astronomica</td><td>----</td></tr>
+        <tr><td>Alba Nautica</td><td>----</td></tr>
+        <tr><td>Alba Civile</td><td>----</td></tr>
+        <tr><td>Alba</td><td>----</td></tr>
+        <tr><td>Fine dell'alba</td><td>----</td></tr>
+        <tr><td>Fine dell'ora d'oro</td><td>----</td></tr>
+        <tr><td>Mezzogiorno solare</td><td>----</td></tr>
+        <tr><td>Inizio dell'ora d'oro</td><td>----</td></tr>
+        <tr><td>Inizio del tramonto</td><td>----</td></tr>
+        <tr><td>Tramonto</td><td>----</td></tr>
+        <tr><td>Crepuscolo civile</td><td>----</td></tr>
+        <tr><td>Crepuscolo nautico</td><td>----</td></tr>
+        <tr><td>Crepuscolo astronomico</td><td>----</td></tr>
     `;
-
-    // Manteniamo viva solo la grafica dell'orologio e delle lancette
-    if (ctx && cachedTimes) {
-        ctx.clearRect(0, 0, 500, 500);
-        drawSunSlicesSafe(cachedTimes);
-        drawMoonVisibilityArc(cachedMoonTimes, selectedDate);
-        drawSolarMeridianLines(cachedTimes);
-        drawMinuteRingSafe();
-        drawClockNumbers();
-    }
 
     toggleSettingsModal(false);
 }
