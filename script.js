@@ -138,7 +138,7 @@ async function fetchPlaceName(lat, lon) {
     }
 }
 
-// QUANDO CLICCHI SUL CAMBIO FUSO DAL MENU: ATTIVIAMO LA MODALITÀ SOLA GRAFICA/FUSO
+// QUANDO CAMBI FUSO DAL MENU: PAGINA VUOTA DI DATI E TUTTO A TRATTINI
 function applyTimezonePreset() {
     isTimezoneOnlyMode = true; 
     if (!isCustomTime) {
@@ -147,23 +147,23 @@ function applyTimezonePreset() {
     
     const tz = document.getElementById('timezone-preset').value;
     
-    // Aggiorniamo i testi della schermata principale con i trattini
+    // Mostriamo solo il fuso e azzeriamo i testi rapidi
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Dati solari nascosti (Fuso Orario Puro)</div>
+        <div style="font-size: 0.95rem; opacity: 0.9;">Nessun dato astronomico locale</div>
     `;
     document.getElementById('txt-sunrise').innerText = "--:--";
     document.getElementById('txt-sunset').innerText = "--:--";
     
     document.getElementById('moon-digital-icon').innerText = "🌕";
-    document.getElementById('moon-phase-name').innerText = "Fuso Orario";
+    document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "--:--";
     document.getElementById('moon-set').innerText = "--:--";
 
-    // Azzeriamo la tabella dei dettagli
+    // Tabella completamente a trattini
     const tbody = document.getElementById('times-table-body');
     tbody.innerHTML = `
-        <tr><td>Fase Lunare</td><td>--</td></tr>
+        <tr><td>Fase Lunare</td><td>----</td></tr>
         <tr><td>Sorge la Luna</td><td>--:--</td></tr>
         <tr><td>Tramonta la Luna</td><td>--:--</td></tr>
         <tr><td>Mezzanotte solare</td><td>--:--</td></tr>
@@ -182,7 +182,7 @@ function applyTimezonePreset() {
         <tr><td>Crepuscolo astronomico</td><td>--:--</td></tr>
     `;
 
-    // Manteniamo attiva la grafica dell'orologio e delle lancette con l'ultima posizione valida
+    // Manteniamo viva solo la grafica dell'orologio e delle lancette
     if (ctx && cachedTimes) {
         ctx.clearRect(0, 0, 500, 500);
         drawSunSlicesSafe(cachedTimes);
@@ -240,7 +240,7 @@ function onTimeChanged(val) {
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
-    isTimezoneOnlyMode = false; // Disattiviamo la modalità fuso puro perché abbiamo una posizione geografica
+    isTimezoneOnlyMode = false; 
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
 
