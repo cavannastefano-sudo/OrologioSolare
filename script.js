@@ -40,7 +40,7 @@ let isCustomTime = false;
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
-let isTimezoneOnlyMode = false;
+let isTimezoneOnlyMode = localStorage.getItem('sunclock_tz_only') === 'true';
 
 async function initClock() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -49,6 +49,12 @@ async function initClock() {
     document.getElementById('auto-dst-toggle').checked = isAuto;
     document.getElementById('manual-dst-toggle').checked = isManualDst;
     updateDstUI(isAuto);
+
+    // Se l'utente aveva scelto il fuso orario puro, non avviamo la geolocalizzazione ma applichiamo subito i trattini
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset(true);
+        return;
+    }
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -85,7 +91,7 @@ function toggleAutoDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(cachedLat, cachedLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 function toggleManualDST(checked) {
@@ -93,7 +99,7 @@ function toggleManualDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(cachedLat, cachedLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 function updateDstUI(isAuto) {
@@ -138,14 +144,14 @@ async function fetchPlaceName(lat, lon) {
     }
 }
 
-// OGNI VOLTA CHE CAMBI IL FUSO DAL MENU, FORZO I TRATTINI
-function applyTimezonePreset() {
+function applyTimezonePreset(skipModalClose = false) {
     isTimezoneOnlyMode = true; 
+    localStorage.setItem('sunclock_tz_only', 'true');
+
     if (!isCustomTime) {
         updateTimeForLocation();
     }
     
-    // Aggiorniamo direttamente l'interfaccia con i trattini senza ricalcolare i dati solari/ lunari
     const tz = document.getElementById('timezone-preset').value;
     document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>`;
     document.getElementById('txt-sunrise').innerText = "--:--";
@@ -169,7 +175,9 @@ function applyTimezonePreset() {
     document.documentElement.style.backgroundColor = '#000000';
     document.body.style.backgroundColor = '#000000';
 
-    toggleSettingsModal(false);
+    if (!skipModalClose) {
+        toggleSettingsModal(false);
+    }
 }
 
 function getEffectiveDate() {
@@ -217,7 +225,9 @@ function onTimeChanged(val) {
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
-    isTimezoneOnlyMode = false; // Disattiva i trattini perché abbiamo una posizione geografica reale
+    isTimezoneOnlyMode = false; 
+    localStorage.removeItem('sunclock_tz_only');
+
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
 
@@ -257,6 +267,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
 function resetToNow() {
     isTimezoneOnlyMode = false;
+    localStorage.removeItem('sunclock_tz_only');
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -286,6 +298,8 @@ function updateTimeForLocation() {
 
 function useGPSLocation() {
     isTimezoneOnlyMode = false;
+    localStorage.removeItem('sunclock_tz_only');
+
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -330,6 +344,9 @@ async function searchCity() {
 }
 
 async function getPlaceNameAndRedirect(lat, lon) {
+    isTimezoneOnlyMode = false;
+    localStorage.removeItem('sunclock_tz_only');
+
     let placeName = "Posizione";
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
@@ -404,6 +421,8 @@ function toggleMap() {
 
 function applyManualLocation() {
     isTimezoneOnlyMode = false;
+    localStorage.removeItem('sunclock_tz_only');
+
     const lat = parseFloat(document.getElementById('input-lat').value);
     const lon = parseFloat(document.getElementById('input-lon').value);
     if (!isNaN(lat) && !isNaN(lon)) {
