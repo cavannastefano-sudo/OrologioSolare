@@ -81,6 +81,13 @@ async function initClock() {
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
+    
+    // Se attiviamo l'automatico, disattiva e spegne automaticamente il manuale
+    if (checked) {
+        localStorage.setItem('sunclock_dst', 'false');
+        document.getElementById('manual-dst-toggle').checked = false;
+    }
+    
     updateDstUI(checked);
     if (!isCustomTime) {
         updateTimeForLocation();
@@ -783,9 +790,9 @@ function getIntervalColorSafe(h, times) {
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-    let isDstNowActive = getCurrentDstState();
-    const dstOffset = isDstNowActive ? 1 : 0;
-    const totalOffsetHours = tzPresetVal + dstOffset;
+    
+    // Usa solo il fuso base per evitare doppi offset sull'ora legale
+    const totalOffsetHours = tzPresetVal;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
     return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
