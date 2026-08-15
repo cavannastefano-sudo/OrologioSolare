@@ -50,12 +50,7 @@ async function initClock() {
     document.getElementById('manual-dst-toggle').checked = isManualDst;
     updateDstUI(isAuto);
 
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset(true);
-        return;
-    }
-
-    if (navigator.geolocation) {
+    if (navigator.geolocation && !isTimezoneOnlyMode) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
@@ -143,7 +138,7 @@ async function fetchPlaceName(lat, lon) {
     }
 }
 
-function applyTimezonePreset(skipModalClose = false) {
+function applyTimezonePreset() {
     isTimezoneOnlyMode = true; 
     localStorage.setItem('sunclock_tz_only', 'true');
 
@@ -151,28 +146,9 @@ function applyTimezonePreset(skipModalClose = false) {
         updateTimeForLocation();
     }
     
-    // Aggiorniamo i testi con i trattini, ma manteniamo i calcoli e la grafica del sole attiva basandoci su Piacenza (o coordinate correnti)
-    const tz = document.getElementById('timezone-preset').value;
-    document.getElementById('location-text').innerHTML = `
-        <div style="font-size: 1.15rem; margin-bottom: 4px;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Dati astronomici locali nascosti</div>
-    `;
-    document.getElementById('txt-sunrise').innerText = "--:--";
-    document.getElementById('txt-sunset').innerText = "--:--";
-    
-    document.getElementById('moon-digital-icon').innerText = "🌕";
-    document.getElementById('moon-phase-name').innerText = "Fuso Orario";
-    document.getElementById('moon-rise').innerText = "--:--";
-    document.getElementById('moon-set').innerText = "--:--";
-
-    populateTable(null, null, null);
-
-    // Eseguiamo il normale aggiornamento del sole/orologio per preservare tutta la grafica
+    // Aggiorniamo l'orologio mantenendo la grafica attiva ma mettendo i trattini nei dati
     updateSunClock(cachedLat, cachedLon);
-
-    if (!skipModalClose) {
-        toggleSettingsModal(false);
-    }
+    toggleSettingsModal(false);
 }
 
 function getEffectiveDate() {
@@ -480,6 +456,10 @@ function updateSunClock(lat, lon) {
     const tz = document.getElementById('timezone-preset').value;
     
     if (isTimezoneOnlyMode) {
+        document.getElementById('location-text').innerHTML = `
+            <div style="font-size: 1.15rem; margin-bottom: 4px;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
+            <div style="font-size: 0.95rem; opacity: 0.9;">Modalità Fuso Orario Puro</div>
+        `;
         document.getElementById('txt-sunrise').innerText = "--:--";
         document.getElementById('txt-sunset').innerText = "--:--";
     } else {
