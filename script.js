@@ -11,7 +11,7 @@ const radius = 248;
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
-        return getEffectiveDST(cachedLat, cachedLon, new Date());
+        return getEffectiveDST(cachedLat, cachedLon, selectedDate);
     }
     return localStorage.getItem('sunclock_dst') === 'true';
 }
@@ -21,7 +21,16 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const dstShift = !getCurrentDstState() ? 1 : 0;
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    let isDstActiveForSelectedDate = false;
+    
+    if (isAuto && typeof getEffectiveDST === 'function') {
+        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
+    } else {
+        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst') === 'true';
+    }
+
+    const dstShift = !isDstActiveForSelectedDate ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -81,6 +90,12 @@ async function initClock() {
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
+    
+    if (checked) {
+        localStorage.setItem('sunclock_dst', 'false');
+        document.getElementById('manual-dst-toggle').checked = false;
+    }
+    
     updateDstUI(checked);
     if (!isCustomTime) {
         updateTimeForLocation();
@@ -783,8 +798,18 @@ function getIntervalColorSafe(h, times) {
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-    let isDstNowActive = getCurrentDstState();
-    const dstOffset = isDstNowActive ? 1 : 0;
+    
+    // Calcola dinamicamente lo stato DST per la data selezionata (es. dicembre = solare/false, estate = legale/true)
+    let isDstActiveForSelectedDate = false;
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    
+    if (isAuto && typeof getEffectiveDST === 'function') {
+        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
+    } else {
+        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
+    }
+
+    const dstOffset = isDstActiveForSelectedDate ? 1 : 0;
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
