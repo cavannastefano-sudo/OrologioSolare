@@ -21,16 +21,9 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    let isDstActiveForSelectedDate = false;
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst') === 'true';
-    }
-
-    const dstShift = !isDstActiveForSelectedDate ? 1 : 0;
+    // Sincronizzato con la data selezionata: sposta correttamente le fette del sole sul quadrante
+    const isDstActive = getCurrentDstState();
+    const dstShift = isDstActive ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -799,17 +792,8 @@ function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     
-    // Calcola dinamicamente lo stato DST per la data selezionata (es. dicembre = solare/false, estate = legale/true)
-    let isDstActiveForSelectedDate = false;
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        isDstActiveForSelectedDate = getEffectiveDST(cachedLat, cachedLon, selectedDate);
-    } else {
-        isDstActiveForSelectedDate = localStorage.getItem('sunclock_dst'] === 'true';
-    }
-
-    const dstOffset = isDstActiveForSelectedDate ? 1 : 0;
+    let isDstNowActive = getCurrentDstState();
+    const dstOffset = isDstNowActive ? 1 : 0;
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
