@@ -591,7 +591,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, hy); // (o mx, my)
+        ctx.fillText(minText, mx, my); // Corretto da hy a my
     }
 }
 
