@@ -496,17 +496,29 @@ function updateSunClock(lat, lon) {
     
     if (!isTimezoneOnlyMode) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
-        const tz = document.getElementById('timezone-preset').value;
+        
+        const standardTz = Math.round(lon / 15);
+        const isDstNowActive = getCurrentDstState();
+        const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
+        
         const latFmt = parseFloat(lat).toFixed(2);
         const lonFmt = parseFloat(lon).toFixed(2);
+        
+        const stdSign = standardTz >= 0 ? "+" : "";
+        const totalSign = totalTzOffset >= 0 ? "+" : "";
+        
+        let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
+        if (isDstNowActive) {
+            fusoText += ` (Ora legale: UTC ${totalSign}${totalTzOffset})`;
+        }
         
         document.getElementById('location-text').innerHTML = `
             <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
             <div style="font-size: 0.95rem; opacity: 0.9;">
                 Lat: ${latFmt} | Lon: ${lonFmt}
             </div>
-            <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-                Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}
+            <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">
+                ${fusoText}
             </div>
         `;
         document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
