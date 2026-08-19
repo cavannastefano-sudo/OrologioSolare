@@ -447,10 +447,14 @@ function applyManualLocation() {
 
 function getCompleteMoonTimes(date, lat, lon) {
     let baseDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+    let tomorrow = new Date(baseDate);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
     let times = SunCalc.getMoonTimes(baseDate, lat, lon);
     
     let rise = times.rise;
     let set = times.set;
+    let riseArrow = "";
 
     if (!rise || !set || times.alwaysUp || times.alwaysDown) {
         let dPrev = new Date(baseDate);
@@ -470,7 +474,19 @@ function getCompleteMoonTimes(date, lat, lon) {
             else if (nTimes.set) set = nTimes.set;
         }
     }
-    return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
+
+    // Condizione: se la Luna sorge ma non tramonta nello stesso giorno solare
+    if (rise && (!set || set >= tomorrow)) {
+        riseArrow = " ◀";
+    }
+
+    return { 
+        rise: rise, 
+        set: set, 
+        riseArrow: riseArrow,
+        alwaysUp: times.alwaysUp, 
+        alwaysDown: times.alwaysDown 
+    };
 }
 
 function updateSunClock(lat, lon) {
@@ -832,7 +848,9 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
 
     iconEl.innerText = iconSymbol;
     phaseNameEl.innerText = phaseName;
-    riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+    
+    // Inserita la freccia accanto al sorgere se la condizione è attiva
+    riseEl.innerText = (isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--") + (moonTimes.riseArrow || "");
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 }
 
@@ -843,7 +861,7 @@ function populateTable(times, moonTimes, illumination) {
     tbody.innerHTML = `
         <tr style="background: rgba(56, 189, 248, 0.1);"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-        <tr><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
+        <tr><td>Sorge la Luna</td><td>${(isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--") + (moonTimes.riseArrow || "")}</td></tr>
         <tr><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
         
         <tr style="background: rgba(250, 204, 21, 0.1);"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
