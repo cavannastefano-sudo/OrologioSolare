@@ -447,14 +447,10 @@ function applyManualLocation() {
 
 function getCompleteMoonTimes(date, lat, lon) {
     let baseDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-    let tomorrow = new Date(baseDate);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     let times = SunCalc.getMoonTimes(baseDate, lat, lon);
     
     let rise = times.rise;
     let set = times.set;
-    let riseArrow = "";
 
     if (!rise || !set || times.alwaysUp || times.alwaysDown) {
         let dPrev = new Date(baseDate);
@@ -475,9 +471,21 @@ function getCompleteMoonTimes(date, lat, lon) {
         }
     }
 
-    // Condizione: se la Luna sorge ma non tramonta nello stesso giorno solare
-    if (rise && (!set || set >= tomorrow)) {
-        riseArrow = " ◀";
+    // REGOLA SCELTA DA TE:
+    // Confrontiamo il giorno del sorgere con il giorno del tramonto (usati come punti cardinali fissi).
+    let riseArrow = "";
+    if (rise) {
+        if (!set) {
+            riseArrow = " ◀";
+        } else {
+            let riseDay = new Date(rise.getFullYear(), rise.getMonth(), rise.getDate()).getTime();
+            let setDay = new Date(set.getFullYear(), set.getMonth(), set.getDate()).getTime();
+            
+            // Se il tramonto NON avviene nello stesso giorno in cui sorge, scatta la freccia sul sorgere
+            if (riseDay !== setDay) {
+                riseArrow = " ◀";
+            }
+        }
     }
 
     return { 
@@ -849,7 +857,6 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     iconEl.innerText = iconSymbol;
     phaseNameEl.innerText = phaseName;
     
-    // Inserita la freccia accanto al sorgere se la condizione è attiva
     riseEl.innerText = (isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--") + (moonTimes.riseArrow || "");
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 }
