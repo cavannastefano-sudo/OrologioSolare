@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Sicuro e con Ora Legale)
+ * SunClock24 - Core Script (Definitivo e Corretto)
  * =========================================================
  */
 
@@ -39,7 +39,7 @@ let selectedDate = new Date();
 let isCustomTime = false;
 let map = null;
 let marker = null;
-let currentPlaceDisplayName = "Piacenza - Italia";
+let currentPlaceDisplayName = "Piacenza, Italia";
 let isTimezoneOnlyMode = false;
 
 async function initClock() {
@@ -52,13 +52,13 @@ async function initClock() {
 
     let locationResolved = false;
 
-    // Timeout di sicurezza: se entro 3 secondi la geolocalizzazione non risponde, carica Piacenza
+    // Timeout di sicurezza immediato a 2 secondi per evitare il blocco sul GPS
     setTimeout(async () => {
         if (!locationResolved) {
             locationResolved = true;
             await setupDefaultLocation();
         }
-    }, 3000);
+    }, 2000);
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -74,7 +74,7 @@ async function initClock() {
                     await setupDefaultLocation();
                 }
             },
-            { timeout: 2500, enableHighAccuracy: false }
+            { timeout: 1500, enableHighAccuracy: false }
         );
     } else {
         if (!locationResolved) {
@@ -102,9 +102,9 @@ async function fetchPlaceName(lat, lon) {
             const addr = data.address;
             const city = addr.city || addr.town || addr.village || addr.hamlet || addr.suburb || addr.county || "";
             const country = addr.country || "";
-            currentPlaceDisplayName = (city && country) ? `${city}, ${country}` : (city || country || "Località");
+            currentPlaceDisplayName = (city && country) ? `${city}, ${country}` : (city || country || "Piacenza, Italia");
         }
-    } catch (err) { currentPlaceDisplayName = "Località"; }
+    } catch (err) { currentPlaceDisplayName = "Piacenza, Italia"; }
 }
 
 function toggleAutoDST(checked) {
@@ -238,7 +238,7 @@ function onTimeChanged(val) {
     if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
-async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
+async function fetchAndUpdateLocation(lat, lon, fallbackName = "Piacenza, Italia") {
     cachedLat = lat; cachedLon = lon;
     isTimezoneOnlyMode = false; 
     document.getElementById('input-lat').value = cachedLat;
@@ -264,7 +264,7 @@ function resetToNow() {
         navigator.geolocation.getCurrentPosition(
             (pos) => fetchAndUpdateLocation(pos.coords.latitude, pos.coords.longitude, "Posizione Corrente"),
             () => { updateTimeForLocation(); updateInputsVal(); updateSunClock(cachedLat, cachedLon); },
-            { timeout: 10000, enableHighAccuracy: true }
+            { timeout: 5000, enableHighAccuracy: true }
         );
     } else {
         updateTimeForLocation(); updateInputsVal(); updateSunClock(cachedLat, cachedLon);
@@ -414,13 +414,10 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: legge direttamente le ore locali della data shiftata senza duplicare l'offset
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
-    const dstOffset = getCurrentDstState() ? 1 : 0;
-    const totalOffset = tzPresetVal + dstOffset;
-    const shifted = new Date(date.getTime() + (totalOffset * 3600000));
-    return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
+    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -691,13 +688,9 @@ function getIntervalColorSafe(h, times) {
 
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
-    const dstOffset = getCurrentDstState() ? 1 : 0;
-    const totalOffset = tzPresetVal + dstOffset;
-    const shifted = new Date(date.getTime() + (totalOffset * 3600000));
-    return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
-           String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
-           String(shifted.getUTCSeconds()).padStart(2, '0');
+    return String(date.getHours()).padStart(2, '0') + ":" + 
+           String(date.getMinutes()).padStart(2, '0') + ":" + 
+           String(date.getSeconds()).padStart(2, '0');
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
