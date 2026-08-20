@@ -1,3 +1,9 @@
+/**
+ * =========================================================
+ * SunClock24 - Core Script (Aggiornato)
+ * =========================================================
+ */
+
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
 SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -384,7 +390,11 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+    const dstOffset = getCurrentDstState() ? 1 : 0;
+    const totalOffset = tzPresetVal + dstOffset;
+    const shifted = new Date(date.getTime() + (totalOffset * 3600000));
+    return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -504,7 +514,6 @@ function drawSector(startH, endH, color, r) {
 }
 
 function drawSolarMeridianLines(times) {
-    if (!times) return;
     if (isValidDate(times.solarNoon)) {
         const noonHours = timeToHours(times.solarNoon);
         if (noonHours !== null) {
@@ -591,7 +600,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, my); // Corretto da hy a my
+        ctx.fillText(minText, mx, my);
     }
 }
 
@@ -655,13 +664,10 @@ function getIntervalColorSafe(h, times) {
 
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-    
-    let isDstNowActive = getCurrentDstState();
-    const dstOffset = isDstNowActive ? 1 : 0;
-    const totalOffsetHours = tzPresetVal + dstOffset;
-    
-    const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+    const dstOffset = getCurrentDstState() ? 1 : 0;
+    const totalOffset = tzPresetVal + dstOffset;
+    const shifted = new Date(date.getTime() + (totalOffset * 3600000));
     return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
            String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
            String(shifted.getUTCSeconds()).padStart(2, '0');
@@ -672,8 +678,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
     const setEl = document.getElementById('moon-set');
-
     const phase = illumination.phase;
+
     let phaseName = "";
     let iconSymbol = "🌕";
 
