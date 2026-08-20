@@ -21,10 +21,10 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
-        // Calcolo degli angoli per le fasce solari: usa il segno + per muoversi in senso orario con l'ora legale
+        // Calcolo degli angoli per le fasce solari: usa il segno - per spostare le fasce indietro di un'ora con l'ora legale
         function sunHoursToAngle(h) {
             const dstShift = getCurrentDstState() ? 1 : 0;
-            return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+            return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         const PALETTE = {
