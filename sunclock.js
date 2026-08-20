@@ -1,4 +1,4 @@
-        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
 
@@ -16,15 +16,12 @@
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
-        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
-        // Calcolo degli angoli per le fasce solari: gestisce lo spostamento dell'ora legale/solare
         function sunHoursToAngle(h) {
-            const dstShift = !getCurrentDstState() ? 1 : 0;
-            return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+            return hoursToAngle(h);
         }
 
         const PALETTE = {
@@ -87,7 +84,7 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function toggleManualDST(checked) {
@@ -95,7 +92,7 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function updateDstUI(isAuto) {
@@ -472,7 +469,11 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+            const dstOffset = getCurrentDstState() ? 1 : 0;
+            const totalOffset = tzPresetVal + dstOffset;
+            const shifted = new Date(date.getTime() + (totalOffset * 3600000));
+            return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
         }
 
         function isValidDate(d) {
@@ -742,12 +743,10 @@
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
-            let isDstNowActive = getCurrentDstState();
-            const dstOffset = isDstNowActive ? 1 : 0;
-            const totalOffsetHours = tzPresetVal + dstOffset;
-            
-            const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+            const dstOffset = getCurrentDstState() ? 1 : 0;
+            const totalOffset = tzPresetVal + dstOffset;
+            const shifted = new Date(date.getTime() + (totalOffset * 3600000));
             return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCSeconds()).padStart(2, '0');
@@ -858,3 +857,5 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.service.worker.js');
         }
+
+Adesso ce l'ora legale Devi spostare la grafica di modo che quando fleggheró ora solare vada indietro
