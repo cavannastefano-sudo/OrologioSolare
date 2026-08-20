@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Corretto per Ora Legale e Solare)
+ * SunClock24 - Core Script (Definitivo e Corretto nei Tempi)
  * =========================================================
  */
 
@@ -184,20 +184,7 @@ function applyTimezonePreset() {
 
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
-    const rawTimes = SunCalc.getTimes(baseDate, cachedLat, cachedLon);
-    const standardTz = Math.round(cachedLon / 15);
-    const isDstNowActive = getCurrentDstState();
-    const totalOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
-    const offsetMs = totalOffsetHours * 3600000;
-
-    cachedTimes = {};
-    for (let key in rawTimes) {
-        if (isValidDate(rawTimes[key])) {
-            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
-        } else {
-            cachedTimes[key] = rawTimes[key];
-        }
-    }
+    cachedTimes = SunCalc.getTimes(baseDate, cachedLat, cachedLon);
     
     if (ctx && cachedTimes) {
         ctx.clearRect(0, 0, 500, 500);
@@ -387,21 +374,8 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
-    const standardTz = Math.round(lon / 15);
-    const isDstNowActive = getCurrentDstState();
-    const totalOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
-    const offsetMs = totalOffsetHours * 3600000;
-
-    cachedTimes = {};
-    for (let key in rawTimes) {
-        if (isValidDate(rawTimes[key])) {
-            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
-        } else {
-            cachedTimes[key] = rawTimes[key];
-        }
-    }
-
+    // Calcolo pulito dei tempi solari sul giorno civile base
+    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -421,7 +395,10 @@ function updateSunClock(lat, lon) {
     if (!isTimezoneOnlyMode) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
+        const standardTz = Math.round(lon / 15);
+        const isDstNowActive = getCurrentDstState();
         const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
+        
         const stdSign = standardTz >= 0 ? "+" : "";
         const totalSign = totalTzOffset >= 0 ? "+" : "";
         
