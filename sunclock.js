@@ -1,4 +1,4 @@
-SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
 
@@ -16,12 +16,15 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
+        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
+        // Calcolo degli angoli per le fasce solari: gestisce lo spostamento dell'ora legale/solare
         function sunHoursToAngle(h) {
-            return hoursToAngle(h);
+            const dstShift = !getCurrentDstState() ? 1 : 0;
+            return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
         const PALETTE = {
@@ -84,7 +87,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon);
+            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
         }
 
         function toggleManualDST(checked) {
@@ -92,7 +95,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon);
+            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
         }
 
         function updateDstUI(isAuto) {
@@ -469,11 +472,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
-            const dstOffset = getCurrentDstState() ? 1 : 0;
-            const totalOffset = tzPresetVal + dstOffset;
-            const shifted = new Date(date.getTime() + (totalOffset * 3600000));
-            return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
+            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
         }
 
         function isValidDate(d) {
@@ -743,10 +742,12 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 
         function formatTime(date) {
             if (!isValidDate(date)) return "--:--";
-            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
-            const dstOffset = getCurrentDstState() ? 1 : 0;
-            const totalOffset = tzPresetVal + dstOffset;
-            const shifted = new Date(date.getTime() + (totalOffset * 3600000));
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+            let isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const totalOffsetHours = tzPresetVal + dstOffset;
+            
+            const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
             return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
                    String(shifted.getUTCSeconds()).padStart(2, '0');
