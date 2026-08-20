@@ -21,8 +21,7 @@ function hoursToAngle(h) {
 }
 
 function sunHoursToAngle(h) {
-    const dstShift = getCurrentDstState() ? 1 : 0;
-    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
@@ -529,6 +528,8 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
+    
+    // Calcoliamo l'ora allineata al fuso e all'ora legale attiva
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
     let isDstNowActive = getCurrentDstState();
     const dstOffset = isDstNowActive ? 1 : 0;
