@@ -1,8 +1,6 @@
-Timezone manager 
-
 /**
  * =========================================================
- * SunClock24 - Timezone & DST Manager
+ * SunClock24 - Timezone & DST Manager (Protetto e Sicuro)
  * Gestisce la rilevazione automatica o manuale dell'ora legale
  * =========================================================
  */
@@ -20,28 +18,21 @@ if (localStorage.getItem('sunclock_auto_dst') === null) {
  */
 function isDSTInTimeZone(timeZone, date = new Date()) {
     try {
-        const getOffset = (d, tz) => {
-            const formatOption = { timeZone: tz, timeZoneName: 'shortOffset' };
-            const parts = new Intl.DateTimeFormat('en-US', formatOption).formatToParts(d);
-            const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
-            
-            // Supporta correttamente anche i fusi con i minuti (es. +05:30)
-            const match = tzPart.match(/GMT([+-]\d+)(?::(\d+))?/);
-            if (!match) return 0;
-            const hours = parseInt(match[1], 10);
-            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
-            return hours >= 0 ? hours + minutes : hours - minutes;
+        const getOffsetMinutes = (d, tz) => {
+            const utcDate = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+            const tzDate = new Date(d.toLocaleString('en-US', { timeZone: tz }));
+            return (tzDate - utcDate) / 60000;
         };
 
-        const currentOffset = getOffset(date, timeZone);
-        const janOffset = getOffset(new Date(date.getFullYear(), 0, 1), timeZone);
-        const julOffset = getOffset(new Date(date.getFullYear(), 6, 1), timeZone);
+        const currentOffset = getOffsetMinutes(date, timeZone);
+        const janOffset = getOffsetMinutes(new Date(date.getFullYear(), 0, 1), timeZone);
+        const julOffset = getOffsetMinutes(new Date(date.getFullYear(), 6, 1), timeZone);
 
         const maxOffset = Math.max(janOffset, julOffset);
         return currentOffset === maxOffset && janOffset !== julOffset;
     } catch (e) {
-        console.warn("Errore calcolo TimeZone, fallback a controllo standard:", e);
-        return false;
+        console.warn("Errore calcolo TimeZone DST, fallback a manuale:", e);
+        return localStorage.getItem('sunclock_dst') === 'true';
     }
 }
 
@@ -53,26 +44,31 @@ function isDSTInTimeZone(timeZone, date = new Date()) {
  * @returns {boolean} - True se bisogna aggiungere +1h
  */
 function getEffectiveDST(lat, lon, currentDate = new Date()) {
-    const isAuto = localStorage.getItem('sunclock_auto_dst') === 'true';
-
-    // Se l'utente ha scelto MANUAL, usa il valore del checkbox manuale
-    if (!isAuto) {
-        return localStorage.getItem('sunclock_dst') === 'true';
-    }
-
-    // Se è AUTOMATICO, calcola in base alle coordinate
     try {
+        const isAuto = localStorage.getItem('sunclock_auto_dst') === 'true';
+
+        // Se l'utente ha scelto MANUAL, usa il valore del checkbox manuale
+        if (!isAuto) {
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        // Validazione preventiva delle coordinate per evitare blocchi
+        if (lat === undefined || lon === undefined || isNaN(lat) || isNaN(lon)) {
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        // Se è AUTOMATICO, prova a calcolare in base alle coordinate
         const lookupFn = typeof tzlookup === 'function' ? tzlookup : (typeof tz === 'function' ? tz : null);
-        if (lookupFn && lat !== undefined && lon !== undefined) {
+        if (lookupFn) {
             const timeZone = lookupFn(lat, lon);
             if (timeZone) {
                 return isDSTInTimeZone(timeZone, currentDate);
             }
         }
     } catch (err) {
-        console.error("Impossibile determinare il fuso orario automatico:", err);
+        console.warn("Impossibile determinare il fuso orario automatico in sicurezza:", err);
     }
 
-    // Fallback di sicurezza: se la libreria non trova il fuso, usa il flag salvato
+    // Fallback di sicurezza definitivo: se qualcosa fallisce, usa il flag manuale salvato
     return localStorage.getItem('sunclock_dst') === 'true';
 }
