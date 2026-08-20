@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo e Corretto nei Tempi)
+ * SunClock24 - Core Script (Definitivo, Preciso e Corretto)
  * =========================================================
  */
 
@@ -374,7 +374,6 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    // Calcolo pulito dei tempi solari sul giorno civile base
     cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
@@ -417,9 +416,10 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: Usa getUTCHours per evitare il doppio offset dell'ora legale sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
