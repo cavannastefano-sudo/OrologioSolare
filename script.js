@@ -514,9 +514,8 @@
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
-        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
-            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+            return (h / 24) * Math.PI * 2 - Math.PI / 2;
         }
 
         function sunHoursToAngle(h) {
@@ -1324,7 +1323,7 @@
             const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
             const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
 
-            const hourDeg = (h / 24) * 360 - 180;
+            const hourDeg = (h / 24) * 360;
             document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
 
             const minuteDeg = (m / 60) * 360;
@@ -1342,7 +1341,7 @@
             let moonEquivalentHour = (h + moonHourOffset) % 24;
             if (moonEquivalentHour < 0) moonEquivalentHour += 24;
 
-            const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
+            const moonDeg = (moonEquivalentHour / 24) * 360;
             document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
             if (cachedTimes) {
