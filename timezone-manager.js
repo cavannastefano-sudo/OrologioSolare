@@ -1,6 +1,7 @@
 /**
  * =========================================================
- * SunClock24 - Timezone & DST Manager (Corretto)
+ * SunClock24 - Timezone & DST Manager
+ * Gestisce la rilevazione automatica o manuale dell'ora legale
  * =========================================================
  */
 
@@ -9,11 +10,13 @@ if (localStorage.getItem('sunclock_auto_dst') === null) {
 }
 
 /**
- * Rileva se un fuso orario ha l'ora legale attiva confrontando gli offset reali
+ * Rileva se un fuso orario specifico ha l'ora legale attiva in una determinata data
+ * @param {string} timeZone - Es: "Europe/Rome"
+ * @param {Date} date - La data da controllare
+ * @returns {boolean}
  */
 function isDSTInTimeZone(timeZone, date = new Date()) {
     try {
-        // Ottiene l'offset in minuti di una data rispetto a UTC per quella timezone
         const getOffsetMinutes = (d, tz) => {
             const utcDate = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
             const tzDate = new Date(d.toLocaleString('en-US', { timeZone: tz }));
@@ -24,7 +27,6 @@ function isDSTInTimeZone(timeZone, date = new Date()) {
         const janOffset = getOffsetMinutes(new Date(date.getFullYear(), 0, 1), timeZone);
         const julOffset = getOffsetMinutes(new Date(date.getFullYear(), 6, 1), timeZone);
 
-        // L'ora legale è attiva se l'offset attuale è il maggiore tra gennaio e luglio
         const maxOffset = Math.max(janOffset, julOffset);
         return currentOffset === maxOffset && janOffset !== julOffset;
     } catch (e) {
@@ -35,6 +37,10 @@ function isDSTInTimeZone(timeZone, date = new Date()) {
 
 /**
  * Calcola se l'ora legale (+1h) deve essere applicata
+ * @param {number} lat - Latitudine
+ * @param {number} lon - Longitudine
+ * @param {Date} currentDate - Data corrente per il calcolo
+ * @returns {boolean} - True se bisogna aggiungere +1h
  */
 function getEffectiveDST(lat, lon, currentDate = new Date()) {
     const isAuto = localStorage.getItem('sunclock_auto_dst') === 'true';
