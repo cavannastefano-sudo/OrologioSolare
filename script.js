@@ -374,7 +374,7 @@
     <div id="bottom-panels-container">
         <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div id="location-text">Ricerca posizione in corso...</div>
+            <div id="location-text">Piacenza - Italia</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
@@ -452,7 +452,6 @@
                 </select>
             </div>
 
-            <!-- Nuovo Pannello Ora Legale Auto/Manuale -->
             <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
                 <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
                     <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
@@ -536,7 +535,7 @@
         let isCustomTime = false;
         let map = null;
         let marker = null;
-        let currentPlaceDisplayName = "Ricerca in corso...";
+        let currentPlaceDisplayName = "Italia - Piacenza";
         let isTimezoneOnlyMode = false;
 
         async function initClock() {
@@ -547,32 +546,27 @@
             document.getElementById('manual-dst-toggle').checked = isManualDst;
             updateDstUI(isAuto);
 
+            // Avvio immediato con default di Piacenza per non bloccare mai l'interfaccia
+            cachedLat = 45.05;
+            cachedLon = 9.69;
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+            
+            updateTimeForLocation();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            // Tentativo GPS in background con timeout breve (4 secondi)
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
                     },
-                    async (error) => {
-                        cachedLat = 45.05;
-                        cachedLon = 9.69;
-                        document.getElementById('input-lat').value = cachedLat;
-                        document.getElementById('input-lon').value = cachedLon;
-                        await fetchPlaceName(cachedLat, cachedLon);
-                        updateTimeForLocation();
-                        updateInputsVal();
-                        updateSunClock(cachedLat, cachedLon);
+                    (error) => {
+                        console.log("GPS non disponibile, uso default.");
                     },
-                    { timeout: 8000, enableHighAccuracy: true }
+                    { timeout: 4000, enableHighAccuracy: false }
                 );
-            } else {
-                cachedLat = 45.05;
-                cachedLon = 9.69;
-                document.getElementById('input-lat').value = cachedLat;
-                document.getElementById('input-lon').value = cachedLon;
-                await fetchPlaceName(cachedLat, cachedLon);
-                updateTimeForLocation();
-                updateInputsVal();
-                updateSunClock(cachedLat, cachedLon);
             }
         }
 
@@ -617,7 +611,14 @@
             }
         }
 
-        async function fetchPlaceName(lat, lon) {
+        async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
+            cachedLat = lat;
+            cachedLon = lon;
+            isTimezoneOnlyMode = false;
+            document.getElementById('input-lat').value = cachedLat;
+            document.getElementById('input-lon').value = cachedLon;
+
+            let placeName = fallbackName;
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
                 const geoData = await res.json();
@@ -625,18 +626,33 @@
                     const country = geoData.address.country || '';
                     const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
                     if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        currentPlaceDisplayName = `${country} - ${city}`;
+                        placeName = `${country} - ${city}`;
                     } else {
-                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
+                        placeName = city || country || fallbackName;
                     }
                 }
             } catch (err) {
-                currentPlaceDisplayName = "Piacenza - Italia";
+                placeName = fallbackName;
             }
+
+            currentPlaceDisplayName = placeName;
+
+            let approxOffset = Math.round(cachedLon / 15);
+            let selectEl = document.getElementById('timezone-preset');
+            for(let opt of selectEl.options) {
+                if(parseFloat(opt.value) === approxOffset) {
+                    selectEl.value = opt.value;
+                    break;
+                }
+            }
+
+            isCustomTime = false;
+            updateTimeForLocation();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function applyTimezonePreset() {
-            const tzVal = document.getElementById('timezone-preset').value;
             isTimezoneOnlyMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
@@ -687,67 +703,11 @@
             updateSunClock(cachedLat, cachedLon);
         }
 
-        async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
-            cachedLat = lat;
-            cachedLon = lon;
-            isTimezoneOnlyMode = false;
-            document.getElementById('input-lat').value = cachedLat;
-            document.getElementById('input-lon').value = cachedLon;
-
-            let placeName = fallbackName;
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
-                const geoData = await res.json();
-                if (geoData && geoData.address) {
-                    const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        placeName = `${country} - ${city}`;
-                    } else {
-                        placeName = city || country || fallbackName;
-                    }
-                }
-            } catch (err) {
-                placeName = fallbackName;
-            }
-
-            currentPlaceDisplayName = placeName;
-
-            let approxOffset = Math.round(cachedLon / 15);
-            let selectEl = document.getElementById('timezone-preset');
-            for(let opt of selectEl.options) {
-                if(parseFloat(opt.value) === approxOffset) {
-                    selectEl.value = opt.value;
-                    break;
-                }
-            }
-
+        function resetToNow() {
             isCustomTime = false;
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
-        }
-
-        function resetToNow() {
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
-                    },
-                    (error) => {
-                        isCustomTime = false;
-                        updateTimeForLocation();
-                        updateInputsVal();
-                        updateSunClock(cachedLat, cachedLon);
-                    },
-                    { timeout: 10000, enableHighAccuracy: true }
-                );
-            } else {
-                isCustomTime = false;
-                updateTimeForLocation();
-                updateInputsVal();
-                updateSunClock(cachedLat, cachedLon);
-            }
         }
 
         function updateTimeForLocation() {
@@ -764,14 +724,10 @@
                         toggleSettingsModal(false);
                     },
                     (error) => {
-                        updateTimeForLocation();
-                        updateSunClock(cachedLat, cachedLon); 
-                        document.getElementById('location-text').innerText = "GPS disattivato.";
-                    }
+                        alert("Impossibile recuperare la posizione GPS.");
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
                 );
-            } else {
-                updateTimeForLocation();
-                updateSunClock(cachedLat, cachedLon);
             }
         }
 
@@ -832,12 +788,12 @@
                     
                     const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                         maxZoom: 17,
-                        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+                        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM'
                     });
 
                     const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                         maxZoom: 19,
-                        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
                     });
 
                     let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
@@ -848,19 +804,8 @@
                         layers: [savedLayer]
                     });
 
-                    const baseMaps = {
-                        "Topografica": topo,
-                        "Politica": political
-                    };
+                    const baseMaps = { "Topografica": topo, "Politica": political };
                     L.control.layers(baseMaps).addTo(map);
-
-                    map.on('baselayerchange', function (e) {
-                        if (e.name === 'Politica') {
-                            localStorage.setItem('sunclock_map_layer', 'political');
-                        } else {
-                            localStorage.setItem('sunclock_map_layer', 'topo');
-                        }
-                    });
 
                     marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
@@ -876,7 +821,6 @@
                         marker.setLatLng([lat, lon]);
                         document.getElementById('input-lat').value = lat.toFixed(4);
                         document.getElementById('input-lon').value = lon.toFixed(4);
-                        
                         getPlaceNameAndRedirect(lat, lon);
                     });
                 } else {
@@ -897,7 +841,6 @@
 
         function getCompleteMoonTimes(date, lat, lon) {
             let times = SunCalc.getMoonTimes(date, lat, lon);
-            
             let rise = times.rise;
             let set = times.set;
 
