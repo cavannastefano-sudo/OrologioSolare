@@ -1,3 +1,501 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+    
+    <!-- Libreria per i calcoli solari e lunari -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    
+    <!-- Libreria per la mappa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+    <script src="timezone-manager.js"></script>
+
+    <style>
+        :root { 
+            --bg-color: #000000; 
+            color-scheme: dark;
+        }
+        html {
+            background-color: var(--bg-color);
+            transition: background-color 1s ease;
+        }
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-bottom: env(safe-area-inset-bottom);
+            color: #facc15;
+            transition: background-color 1s ease;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: min(98vw, 480px);
+            margin-bottom: 8px;
+            gap: 6px;
+        }
+        h1 { 
+            margin: 0; 
+            color: #facc15; 
+            font-size: 1.15rem; 
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #digital-clock {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 5px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            cursor: pointer;
+        }
+        #digital-clock:hover {
+            background: rgba(0,0,0,0.5);
+        }
+
+        .header-box {
+            background: rgba(0,0,0,0.25);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+
+        #date-display-btn {
+            background: none;
+            border: none;
+            color: #39ff14;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        #date-display-btn:hover {
+            color: #70ff33;
+        }
+
+        #btn-now {
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            text-shadow: 0 0 8px rgba(57,255,20,0.6);
+        }
+        #btn-now:hover {
+            background: rgba(57, 255, 20, 0.3);
+        }
+
+        #btn-world, #btn-settings {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        #btn-world:hover, #btn-settings:hover { 
+            background: rgba(0,0,0,0.5); 
+        }
+
+        #clock-wrapper {
+            position: relative;
+            width: min(90vw, 480px);
+            height: min(90vw, 480px);
+        }
+        #clock-face {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #000; border: 4px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        .hand {
+            position: absolute; bottom: 50%; left: 50%;
+            transform-origin: bottom center;
+            border-top-left-radius: 4px; border-top-right-radius: 4px;
+            z-index: 10;
+        }
+        
+        #hand-hour { 
+            width: 6px; height: 38%; 
+            background: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
+            z-index: 12; 
+        } 
+        #hand-hour::after {
+            content: "☀️";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #ffd700;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #ffcc00;
+        }
+
+        #hand-minute { 
+            width: 4px; height: 42%; 
+            background: #39ff14; 
+            box-shadow: 0 0 12px #39ff14, 0 0 4px #22c55e;
+            z-index: 11; 
+        } 
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
+        
+        #hand-moon { 
+            width: 4px; height: 18%; 
+            background: #ffffff; 
+            box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
+            z-index: 9; 
+        }
+        #hand-moon::after {
+            content: "🌙";
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 22px;
+            width: 28px;
+            height: 28px;
+            background: #f1f5f9;
+            border: 2px solid #000000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px #cbd5e1;
+        }
+
+        #center-dot {
+            position: absolute; width: 14px; height: 14px;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+            box-shadow: 0 0 8px #ff007f;
+        }
+
+        #bottom-panels-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: min(90vw, 480px);
+            margin-top: 12px;
+            box-sizing: border-box;
+        }
+
+        .info-panel-box {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 1.05rem;
+            color: #39ff14;
+            text-align: center;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1.35;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            transition: background 0.2s ease;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .info-panel-box:hover {
+            background: rgba(0,0,0,0.4);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 1.25rem;
+        }
+        .info-grid span { 
+            color: #39ff14; 
+            font-weight: bold; 
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        /* Sezione Tendina Luna */
+        .moon-dropdown-wrapper {
+            width: min(90vw, 480px);
+            margin-top: 4px;
+            box-sizing: border-box;
+        }
+        .dropdown-toggle-btn {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            color: #facc15;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .dropdown-toggle-btn:hover {
+            background: rgba(0,0,0,0.4);
+        }
+        .dropdown-content {
+            display: none;
+            margin-top: 6px;
+            animation: fadeIn 0.3s ease;
+        }
+        .dropdown-content.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e293b; padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
+            border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
+        }
+        .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
+        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+        table.times-table th { color: #38bdf8; }
+        .form-group { margin-bottom: 12px; text-align: left; }
+        .form-group label { display: block; font-size: 0.80rem; color: #94a3b8; margin-bottom: 4px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 6px 8px; background: #0f172a;
+            border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
+        }
+        #map-container {
+            width: 100%;
+            height: 250px;
+            border-radius: 8px;
+            margin-top: 8px;
+            display: none;
+            border: 1px solid #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SunClock24</h1>
+        <div style="display: flex; align-items: center; gap: 4px;">
+            <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
+            <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+        </div>
+        <div class="header-box">
+            <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
+            <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button id="btn-now" onclick="resetToNow()">Adesso</button>
+        </div>
+        <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
+        <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
+    </header>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-minute"></div>
+            <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-moon"></div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <div id="bottom-panels-container">
+        <!-- Pannello Sole e Info Principali Ingranditi -->
+        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+            <div id="location-text">Ricerca posizione in corso...</div>
+            <div class="info-grid">
+                <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
+                <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
+            </div>
+        </div>
+
+        <!-- Sezione Tendina Luna -->
+        <div class="moon-dropdown-wrapper">
+            <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
+                <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
+                <span id="moon-phase-name" style="font-size: 1rem;">Caricamento...</span>
+                <span id="dropdown-arrow" style="margin-left: auto; font-size: 0.8rem;">▼</span>
+            </button>
+            <div id="moon-dropdown-content" class="dropdown-content">
+                <div class="info-panel-box" onclick="toggleTimesModal(true)">
+                    <div class="info-grid" style="margin-top: 0;">
+                        <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                        <div>Tramonta:<br><span id="moon-set">--:--</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-times" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Tutti i tempi solari e lunari</strong>
+                <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
+            </div>
+            <table class="times-table">
+                <thead><tr><th>Evento</th><th>Tempo</th></tr></thead>
+                <tbody id="times-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-settings" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Imposta Fuso e Posizione</strong>
+                <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
+            </div>
+            
+            <div class="form-group">
+                <label>🌍 Fuso Orario Solare Base (UTC):</label>
+                <select id="timezone-preset" onchange="applyTimezonePreset()">
+                    <option value="-12">(UTC-12:00) Isola Baker</option>
+                    <option value="-11">(UTC-11:00) Niue, Samoa</option>
+                    <option value="-10">(UTC-10:00) Hawaii, Tahiti</option>
+                    <option value="-9">(UTC-09:00) Alaska</option>
+                    <option value="-8">(UTC-08:00) Pacific Time (USA / Canada)</option>
+                    <option value="-7">(UTC-07:00) Mountain Time (USA / Canada)</option>
+                    <option value="-6">(UTC-06:00) Central Time (USA / Canada)</option>
+                    <option value="-5">(UTC-05:00) Eastern Time (USA / Canada)</option>
+                    <option value="-4">(UTC-04:00) Caraibi, Santiago</option>
+                    <option value="-3">(UTC-03:00) Buenos Aires, Brasilia</option>
+                    <option value="-2">(UTC-02:00) Isola Georgia del Sud</option>
+                    <option value="-1">(UTC-01:00) Azzorre</option>
+                    <option value="0">(UTC+00:00) Londra, Lisbona</option>
+                    <option value="1" selected>(UTC+01:00) Roma, Piacenza, Parigi</option>
+                    <option value="2">(UTC+02:00) Il Cairo, Atene</option>
+                    <option value="3">(UTC+03:00) Mosca, Istanbul</option>
+                    <option value="4">(UTC+04:00) Dubai</option>
+                    <option value="5">(UTC+05:00) Islamabad</option>
+                    <option value="5.5">(UTC+05:30) Nuova Delhi</option>
+                    <option value="6">(UTC+06:00) Almaty</option>
+                    <option value="7">(UTC+07:00) Bangkok</option>
+                    <option value="8">(UTC+08:00) Pechino, Singapore</option>
+                    <option value="9">(UTC+09:00) Tokyo, Seul</option>
+                    <option value="9.5">(UTC+09:30) Darwin</option>
+                    <option value="10">(UTC+10:00) Sydney</option>
+                    <option value="11">(UTC+11:00) Isole Salomone</option>
+                    <option value="12">(UTC+12:00) Auckland</option>
+                </select>
+            </div>
+
+            <!-- Pannello Ora Legale Auto/Manuale -->
+            <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
+                <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
+                    <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    🤖 Ora Legale Automatica (Mondo)
+                </label>
+                <div id="manual-dst-box" style="display: flex; align-items: center; gap: 8px; margin-left: 5px; transition: opacity 0.3s ease;">
+                    <input type="checkbox" id="manual-dst-toggle" onchange="toggleManualDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
+                    <label for="manual-dst-toggle" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.85rem;">☀️ Attiva Ora Legale (+1h) Manuale</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
+                <div style="display: flex; gap: 6px;">
+                    <input type="text" id="input-city" placeholder="Nome città...">
+                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
+                </div>
+                <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
+            </div>
+
+            <div class="form-group" style="margin-top: 8px;">
+                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
+                <div id="map-container"></div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
+
+            <div class="form-group">
+                <label>Latitudine:</label>
+                <input type="number" step="any" id="input-lat" value="45.05">
+            </div>
+            <div class="form-group">
+                <label>Longitudine:</label>
+                <input type="number" step="any" id="input-lon" value="9.69">
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
+                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
         SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -16,15 +514,12 @@
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
-        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
 
-        // Calcolo degli angoli per le fasce solari: gestisce lo spostamento dell'ora legale/solare
         function sunHoursToAngle(h) {
-            const dstShift = !getCurrentDstState() ? 1 : 0;
-            return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+            return hoursToAngle(h);
         }
 
         const PALETTE = {
@@ -87,7 +582,7 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function toggleManualDST(checked) {
@@ -95,7 +590,7 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon); // Ridisegna subito il canvas
+            updateSunClock(cachedLat, cachedLon);
         }
 
         function updateDstUI(isAuto) {
@@ -472,7 +967,13 @@
 
         function timeToHours(date) {
             if (!date || !isValidDate(date)) return null;
-            return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+            const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+            const isDstNowActive = getCurrentDstState();
+            const dstOffset = isDstNowActive ? 1 : 0;
+            const totalOffset = tzPresetVal + dstOffset;
+            
+            const shifted = new Date(date.getTime() + (totalOffset * 3600000));
+            return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
         }
 
         function isValidDate(d) {
@@ -858,3 +1359,6 @@
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.service.worker.js');
         }
+    </script>
+</body>
+</html>
