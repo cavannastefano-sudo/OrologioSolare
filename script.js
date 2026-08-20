@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- Librerie per Fuso Orario -->
+    <!-- Nuove Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
 
@@ -267,6 +267,7 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
+        /* Sezione Tendina Luna */
         .moon-dropdown-wrapper {
             width: min(90vw, 480px);
             margin-top: 4px;
@@ -371,6 +372,7 @@
     </div>
 
     <div id="bottom-panels-container">
+        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
@@ -379,6 +381,7 @@
             </div>
         </div>
 
+        <!-- Sezione Tendina Luna -->
         <div class="moon-dropdown-wrapper">
             <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
                 <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
@@ -449,6 +452,7 @@
                 </select>
             </div>
 
+            <!-- Nuovo Pannello Ora Legale Auto/Manuale -->
             <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
                 <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
                     <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
@@ -504,21 +508,13 @@
 
         function getCurrentDstState() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto && typeof tz_lookup === 'function') {
-                try {
-                    const tzName = tz_lookup(cachedLat, cachedLon);
-                    const now = new Date();
-                    const jan = new Date(now.getFullYear(), 0, 1);
-                    const jul = new Date(now.getFullYear(), 6, 1);
-                    const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-                    return now.getTimezoneOffset() < stdOffset;
-                } catch(e) {
-                    return false;
-                }
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, new Date());
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
+        // Numeri e tacche fissi sul quadrante
         function hoursToAngle(h) {
             return (h / 24) * Math.PI * 2 + Math.PI / 2;
         }
@@ -641,6 +637,7 @@
         }
 
         function applyTimezonePreset() {
+            const tzVal = document.getElementById('timezone-preset').value;
             isTimezoneOnlyMode = true;
             if (!isCustomTime) {
                 updateTimeForLocation();
