@@ -528,7 +528,15 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    
+    // Calcoliamo l'ora allineata al fuso e all'ora legale attiva
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+    let isDstNowActive = getCurrentDstState();
+    const dstOffset = isDstNowActive ? 1 : 0;
+    const totalOffsetHours = tzPresetVal + dstOffset;
+    
+    const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
+    return shifted.getUTCHours() + shifted.getUTCMinutes() / 60 + shifted.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
