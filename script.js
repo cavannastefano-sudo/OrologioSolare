@@ -22,7 +22,7 @@ function hoursToAngle(h) {
 
 function sunHoursToAngle(h) {
     const dstShift = getCurrentDstState() ? 1 : 0;
-    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    return ((h + dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
