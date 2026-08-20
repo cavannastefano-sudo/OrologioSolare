@@ -17,7 +17,11 @@ function getCurrentDstState() {
 }
 
 function hoursToAngle(h) { return (h / 24) * Math.PI * 2 + Math.PI / 2; }
-function sunHoursToAngle(h) { return (h / 24) * Math.PI * 2 + Math.PI / 2; }
+
+function sunHoursToAngle(h) { 
+    const dstShift = !getCurrentDstState() ? 1 : 0;
+    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2; 
+}
 
 const PALETTE = {
     night: '#000000', astro: '#172554', naut: '#1e3a8a',
@@ -84,18 +88,18 @@ async function fetchPlaceName(lat, lon) {
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
-    if (checked) {
-        localStorage.setItem('sunclock_dst', 'false');
-        document.getElementById('manual-dst-toggle').checked = false;
-    }
     updateDstUI(checked);
-    if (!isCustomTime) updateTimeForLocation();
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
     updateSunClock(cachedLat, cachedLon);
 }
 
 function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
-    if (!isCustomTime) updateTimeForLocation();
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
     updateSunClock(cachedLat, cachedLon);
 }
 
@@ -341,7 +345,7 @@ function updateSunClock(lat, lon) {
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
     cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
-    cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(refDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
@@ -591,7 +595,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, my); // Corretto da hy a my
+        ctx.fillText(minText, mx, my);
     }
 }
 
