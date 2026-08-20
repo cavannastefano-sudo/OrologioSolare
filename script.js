@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo e Corretto)
+ * SunClock24 - Core Script (Definitivo, Geolocalizzato e con Fasce DST Corrette)
  * =========================================================
  */
 
@@ -52,33 +52,35 @@ async function initClock() {
 
     let locationResolved = false;
 
-    // Timeout di sicurezza immediato a 2 secondi per evitare il blocco sul GPS
-    setTimeout(async () => {
+    const fallbackTimer = setTimeout(async () => {
         if (!locationResolved) {
             locationResolved = true;
             await setupDefaultLocation();
         }
-    }, 2000);
+    }, 3000);
 
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 if (!locationResolved) {
                     locationResolved = true;
+                    clearTimeout(fallbackTimer);
                     fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
                 }
             },
             async (error) => {
                 if (!locationResolved) {
                     locationResolved = true;
+                    clearTimeout(fallbackTimer);
                     await setupDefaultLocation();
                 }
             },
-            { timeout: 1500, enableHighAccuracy: false }
+            { timeout: 2500, enableHighAccuracy: true }
         );
     } else {
         if (!locationResolved) {
             locationResolved = true;
+            clearTimeout(fallbackTimer);
             await setupDefaultLocation();
         }
     }
@@ -182,7 +184,18 @@ function applyTimezonePreset() {
 
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
-    cachedTimes = SunCalc.getTimes(baseDate, cachedLat, cachedLon);
+    const rawTimes = SunCalc.getTimes(baseDate, cachedLat, cachedLon);
+    const isDstNowActive = getCurrentDstState();
+    const dstOffsetMs = isDstNowActive ? 3600000 : 0;
+    
+    cachedTimes = {};
+    for (let key in rawTimes) {
+        if (isValidDate(rawTimes[key])) {
+            cachedTimes[key] = new Date(rawTimes[key].getTime() + dstOffsetMs);
+        } else {
+            cachedTimes[key] = rawTimes[key];
+        }
+    }
     
     if (ctx && cachedTimes) {
         ctx.clearRect(0, 0, 500, 500);
@@ -372,7 +385,19 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
+    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
+    const isDstNowActive = getCurrentDstState();
+    const dstOffsetMs = isDstNowActive ? 3600000 : 0;
+
+    cachedTimes = {};
+    for (let key in rawTimes) {
+        if (isValidDate(rawTimes[key])) {
+            cachedTimes[key] = new Date(rawTimes[key].getTime() + dstOffsetMs);
+        } else {
+            cachedTimes[key] = rawTimes[key];
+        }
+    }
+
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -393,7 +418,6 @@ function updateSunClock(lat, lon) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
         const standardTz = Math.round(lon / 15);
-        const isDstNowActive = getCurrentDstState();
         const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
         
         const stdSign = standardTz >= 0 ? "+" : "";
@@ -414,7 +438,6 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: legge direttamente le ore locali della data shiftata senza duplicare l'offset
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
