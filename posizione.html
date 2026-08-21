@@ -510,26 +510,27 @@
 
         function getCurrentDstState() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto && typeof getEffectiveDST === 'function') {
-                return getEffectiveDST(cachedLat, cachedLon, selectedDate);
+            if (isAuto) {
+                if (typeof getEffectiveDST === 'function') {
+                    return getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+                }
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
         function initClock() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            const savedDst = getCurrentDstState();
-            
-            document.getElementById('chk-dst').checked = savedDst;
-            
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
+            
             if (isAuto) {
                 manualBox.style.opacity = "0.4";
                 manualInput.disabled = true;
+                manualInput.checked = getCurrentDstState();
             } else {
                 manualBox.style.opacity = "1.0";
                 manualInput.disabled = false;
+                manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
             }
 
             updateTimeForLocation();
