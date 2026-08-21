@@ -373,7 +373,9 @@ async function searchCity() {
             const lon = parseFloat(data[0].lon);
             const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
             
-            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}`;
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const activeDst = getCurrentDstState();
+            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}&auto=${isAuto}&dst=${activeDst}`;
         } else {
             statusEl.innerText = "Località non trovata.";
         }
@@ -404,7 +406,11 @@ async function getPlaceNameAndRedirect(lat, lon) {
     } catch (err) {
         placeName = "Posizione";
     }
-    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}`;
+
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    const activeDst = getCurrentDstState();
+
+    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}&auto=${isAuto}&dst=${activeDst}`;
 }
 
 function toggleMap() {
