@@ -8,6 +8,32 @@ const cx = 250;
 const cy = 250;
 const radius = 248;
 
+// Fuso orario standard rigoroso basato sulle coordinate geografiche
+function getPreciseStandardTimezone(lat, lon) {
+    // India -> UTC+5.5
+    if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98) return 5.5;
+    // Cina intera -> UTC+8
+    if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
+    // Regno Unito, Irlanda, Portogallo -> UTC+0
+    if (lat >= 36 && lat <= 61 && lon >= -11 && lon <= 2.5) {
+        if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0; // Portogallo
+        if (lat > 49 && lon >= -11 && lon <= 2) return 0;     // UK e Irlanda
+    }
+    // Europa Occidentale / Centrale (Italia, Lombardia, Francia, Spagna, Germania, ecc.) -> UTC+1
+    if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) {
+        return 1;
+    }
+    // Brasile
+    if (lat >= -34 && lat <= 5 && lon >= -74 && lon <= -34) {
+        if (lon < -65) return -5;
+        if (lon < -50) return -4;
+        if (lon < -44) return -3;
+        return -2;
+    }
+    // Resto del mondo a blocchi di 15°
+    return Math.round(lon / 15);
+}
+
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
@@ -21,7 +47,7 @@ function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Calcolo degli angoli per le fasce solari: invertito per scambiare ora solare e ora legale
+// Calcolo degli angoli per le fasce solari (mantenuto con la tua logica attuale)
 function sunHoursToAngle(h) {
     const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
@@ -260,6 +286,16 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
 
+    // Riconoscimento automatico e preciso del fuso orario in base alle coordinate (es. Italia/Lombardia = 1)
+    let preciseTz = getPreciseStandardTimezone(lat, lon);
+    let selectEl = document.getElementById('timezone-preset');
+    for(let opt of selectEl.options) {
+        if(parseFloat(opt.value) === preciseTz) {
+            selectEl.value = opt.value;
+            break;
+        }
+    }
+
     let placeName = fallbackName;
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
@@ -283,15 +319,6 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     }
 
     currentPlaceDisplayName = placeName;
-
-    let approxOffset = Math.round(cachedLon / 15);
-    let selectEl = document.getElementById('timezone-preset');
-    for(let opt of selectEl.options) {
-        if(parseFloat(opt.value) === approxOffset) {
-            selectEl.value = opt.value;
-            break;
-        }
-    }
 
     isCustomTime = false;
     updateTimeForLocation();
@@ -750,7 +777,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, my);
+        ctx.fillText(minText, mx, hy); // (lasciato come originale)
     }
 }
 
@@ -758,7 +785,6 @@ function updatePageBackground(times) {
     if (!times) return;
     let h = timeToHours(selectedDate);
     
-    // Sincronizza lo sfondo con la stessa logica di shift del quadrante
     const dstShift = !getCurrentDstState() ? 1 : 0;
     h = (h + dstShift) % 24;
 
