@@ -450,9 +450,12 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
             
+            let isDstNowActive = getCurrentDstState();
+            const totalOffset = parseFloat(tz) + (isDstNowActive ? 1 : 0);
+
             if (isTimezoneOnlyMode) {
                 document.getElementById('location-text').innerHTML = `
-                    <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}</div>
+                    <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}</div>
                 `;
             } else {
                 document.getElementById('location-text').innerHTML = `
@@ -461,7 +464,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
                         Lat: ${latFmt} | Lon: ${lonFmt}
                     </div>
                     <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-                        Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}
+                        Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
                     </div>
                 `;
             }
