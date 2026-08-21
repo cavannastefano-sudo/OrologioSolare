@@ -348,7 +348,7 @@ function updateSunClock(lat, lon) {
 
     const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
     
-    // Agganciamo l'effetto del flag ora legale unicamente per traslare i tempi solari sul canvas e allineare le fasce
+    // Sposta in avanti (+1 ora) quando l'ora legale è attiva per allineare le fasce
     const isDstNowActive = getCurrentDstState();
     const offsetMs = (isDstNowActive ? 1 : 0) * 3600000;
 
