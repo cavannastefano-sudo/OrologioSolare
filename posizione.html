@@ -442,6 +442,14 @@
         let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : NaN;
         let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
 
+        // Se l'URL passa i flag dell'ora legale, aggiorna il localStorage per allinearlo alla Home
+        if (urlParams.has('auto')) {
+            localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
+        }
+        if (urlParams.has('dst')) {
+            localStorage.setItem('sunclock_dst', urlParams.get('dst'));
+        }
+
         // Tabella di supporto per nazioni vaste cercate per nome
         const COUNTRY_COORDS = {
             "brasile": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
