@@ -79,24 +79,18 @@
                 .then(res => res.json())
                 .then(geoData => {
                     let country = '';
-                    let specificLocality = '';
+                    let city = '';
                     
                     if (geoData && geoData.address) {
                         country = geoData.address.country || '';
-                        // Ricerca a cascata per una maggiore precisione ovunque nel mondo
-                        specificLocality = geoData.address.city || 
-                                           geoData.address.town || 
-                                           geoData.address.village || 
-                                           geoData.address.municipality || 
-                                           geoData.address.county || 
-                                           geoData.address.state || '';
+                        city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
                     }
                     
                     let fullName = 'Posizione';
-                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
-                        fullName = `${country} - ${specificLocality}`;
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        fullName = `${country} - ${city}`;
                     } else {
-                        fullName = specificLocality || country || 'Posizione';
+                        fullName = city || country || 'Posizione';
                     }
 
                     window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
@@ -113,9 +107,9 @@
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
                         weight: 1,            // Bordo più fine
-                        opacity: 0.8,            
+                        opacity: 0.8,           
                         color: '#333',        // Bordi tornati scuri
-                        fillOpacity: 0.55      
+                        fillOpacity: 0.55     
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
