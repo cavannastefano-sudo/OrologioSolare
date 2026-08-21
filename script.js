@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Allineamento Corretto)
+ * SunClock24 - Core Script (Definitivo, Colori Corretti DST)
  * =========================================================
  */
 
@@ -388,19 +388,11 @@ function updateSunClock(lat, lon) {
     }
 }
 
-/**
- * CORRETTO: La logica dell'offset è stata allineata per evitare lo scambio di colori:
- * Se il flag DST è attivo, sottraiamo l'offset affinché le fasce si allineino correttamente.
- */
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
-    
-    // Per far sì che i colori corrispondano correttamente all'ora legale/solare,
-    // l'offset viene calcolato coerentemente con il flag.
-    const dstOffsetHours = isDstNowActive ? 1 : 0;
+    const dstOffsetHours = isDstNowActive ? -1 : 0;
     const adjustedDate = new Date(date.getTime() + (dstOffsetHours * 3600000));
-    
     return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
 }
 
@@ -645,7 +637,7 @@ function getIntervalColorSafe(h, times) {
     const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
     const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
     const hNautDusk = timeToHours(times.nauticalDusk) ?? (hDusk + 0.8);
-    const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+    const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
     const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
 
     const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
