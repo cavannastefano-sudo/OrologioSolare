@@ -1,4 +1,4 @@
-ecco lo script Non toccare niente, solo quello che serve.    SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
         SunCalc.addTime(-6, 'dawn', 'dusk');
 
