@@ -635,16 +635,9 @@
             const lonFmt = parseFloat(lon).toFixed(2);
 
             const tzName = getResolvedTimeZone() || "Fuso personalizzato";
-            const standardOffset = Math.round(cachedLon / 15);
-            const isDstNowActive = getCurrentDstState();
-            const stdSign = standardOffset >= 0 ? "+" : "";
             const totalSign = totalTzOffset >= 0 ? "+" : "";
-
-            let fusoText = `Fuso: ${tzName} (UTC ${stdSign}${standardOffset}`;
-            if (isDstNowActive) {
-                fusoText += `, Ora legale: UTC ${totalSign}${totalTzOffset}`;
-            }
-            fusoText += `)`;
+            
+            let fusoText = `Fuso: ${tzName} (UTC ${totalSign}${totalTzOffset})`;
 
             document.getElementById('location-text').innerHTML = `
                 <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
