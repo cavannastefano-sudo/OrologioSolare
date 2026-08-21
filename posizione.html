@@ -513,7 +513,7 @@
             if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98) return 5.5;
             if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
             if (lat >= 36 && lat <= 61 && lon >= -11 && lon <= 2.5) {
-                if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0;
+                if (lat <= 43 && lon >= -9.5 && lon >= -6) return 0;
                 if (lat > 49 && lon >= -11 && lon <= 2) return 0;
             }
             if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) return 1;
@@ -532,7 +532,7 @@
             } else {
                 manualBox.style.opacity = "1.0";
                 manualInput.disabled = false;
-                manualInput.checked = localStorage.getItem('sunclock_dst'] === 'true';
+                manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
             }
 
             updateTimeForLocation();
