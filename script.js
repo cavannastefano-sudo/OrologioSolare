@@ -398,6 +398,7 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: Sposta la fascia indietro sottraendo l'ora legale quando il flag è attivo sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
