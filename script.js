@@ -1,9 +1,3 @@
-/**
- * =========================================================
- * SunClock24 - Core Script (Definitivo, Perfetto e Allineato)
- * =========================================================
- */
-
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
 SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -39,7 +33,7 @@ let selectedDate = new Date();
 let isCustomTime = false;
 let map = null;
 let marker = null;
-let currentPlaceDisplayName = "Piacenza, Italia";
+let currentPlaceDisplayName = "Piacenza - Italia";
 let isTimezoneOnlyMode = false;
 
 async function initClock() {
@@ -50,38 +44,18 @@ async function initClock() {
     document.getElementById('manual-dst-toggle').checked = isManualDst;
     updateDstUI(isAuto);
 
-    let locationResolved = false;
-
-    const fallbackTimer = setTimeout(async () => {
-        if (!locationResolved) {
-            locationResolved = true;
-            await setupDefaultLocation();
-        }
-    }, 3000);
-
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                if (!locationResolved) {
-                    locationResolved = true;
-                    clearTimeout(fallbackTimer);
-                    fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
-                }
+                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
             async (error) => {
-                if (!locationResolved) {
-                    locationResolved = true;
-                    clearTimeout(fallbackTimer);
-                    await setupDefaultLocation();
-                }
+                await setupDefaultLocation();
             },
-            { timeout: 2500, enableHighAccuracy: true }
+            { timeout: 8000, enableHighAccuracy: true }
         );
     } else {
-        if (!locationResolved) {
-            locationResolved = true;
-            await setupDefaultLocation();
-        }
+        await setupDefaultLocation();
     }
 }
 
@@ -103,32 +77,25 @@ async function fetchPlaceName(lat, lon) {
             const addr = data.address;
             const city = addr.city || addr.town || addr.village || addr.hamlet || addr.suburb || addr.county || "";
             const country = addr.country || "";
-            currentPlaceDisplayName = (city && country) ? `${city}, ${country}` : (city || country || "Piacenza, Italia");
+            currentPlaceDisplayName = (city && country) ? `${city}, ${country}` : (city || country || "Località");
         }
-    } catch (err) { currentPlaceDisplayName = "Piacenza, Italia"; }
+    } catch (err) { currentPlaceDisplayName = "Località"; }
 }
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
     if (checked) {
         localStorage.setItem('sunclock_dst', 'false');
-        const manualInput = document.getElementById('manual-dst-toggle');
-        if (manualInput) manualInput.checked = false;
+        document.getElementById('manual-dst-toggle').checked = false;
     }
     updateDstUI(checked);
-    if (!isCustomTime) {
-        selectedDate = getEffectiveDate();
-        updateInputsVal();
-    }
+    if (!isCustomTime) updateTimeForLocation();
     updateSunClock(cachedLat, cachedLon);
 }
 
 function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
-    if (!isCustomTime) {
-        selectedDate = getEffectiveDate();
-        updateInputsVal();
-    }
+    if (!isCustomTime) updateTimeForLocation();
     updateSunClock(cachedLat, cachedLon);
 }
 
@@ -239,7 +206,7 @@ function onTimeChanged(val) {
     if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
-async function fetchAndUpdateLocation(lat, lon, fallbackName = "Piacenza, Italia") {
+async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat; cachedLon = lon;
     isTimezoneOnlyMode = false; 
     document.getElementById('input-lat').value = cachedLat;
@@ -265,7 +232,7 @@ function resetToNow() {
         navigator.geolocation.getCurrentPosition(
             (pos) => fetchAndUpdateLocation(pos.coords.latitude, pos.coords.longitude, "Posizione Corrente"),
             () => { updateTimeForLocation(); updateInputsVal(); updateSunClock(cachedLat, cachedLon); },
-            { timeout: 5000, enableHighAccuracy: true }
+            { timeout: 10000, enableHighAccuracy: true }
         );
     } else {
         updateTimeForLocation(); updateInputsVal(); updateSunClock(cachedLat, cachedLon);
@@ -373,23 +340,7 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || Math.round(lon / 15);
-    const isDstNowActive = getCurrentDstState();
-    
-    // Offset standard coerente senza raddoppi
-    const totalOffsetHours = tzPresetVal + (isDstNowActive ? 1 : 0);
-    const offsetMs = totalOffsetHours * 3600000;
-
-    cachedTimes = {};
-    for (let key in rawTimes) {
-        if (isValidDate(rawTimes[key])) {
-            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
-        } else {
-            cachedTimes[key] = rawTimes[key];
-        }
-    }
-
+    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -410,12 +361,15 @@ function updateSunClock(lat, lon) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
         const standardTz = Math.round(lon / 15);
+        const isDstNowActive = getCurrentDstState();
+        const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
+        
         const stdSign = standardTz >= 0 ? "+" : "";
-        const totalSign = totalOffsetHours >= 0 ? "+" : "";
+        const totalSign = totalTzOffset >= 0 ? "+" : "";
         
         let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
         if (isDstNowActive) {
-            fusoText += ` (Ora legale: UTC ${totalSign}${totalOffsetHours})`;
+            fusoText += ` (Ora legale: UTC ${totalSign}${totalTzOffset})`;
         }
         
         document.getElementById('location-text').innerHTML = `
@@ -428,7 +382,6 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Usa getHours() locale per allinearsi perfettamente all'orologio del telefono senza anticipi
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
@@ -638,7 +591,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, my);
+        ctx.fillText(minText, mx, my); // Corretto da hy a my
     }
 }
 
@@ -702,15 +655,16 @@ function getIntervalColorSafe(h, times) {
 
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
-    const isDstNowActive = getCurrentDstState();
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+    
+    let isDstNowActive = getCurrentDstState();
     const dstOffset = isDstNowActive ? 1 : 0;
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
-    return String(shifted.getHours()).padStart(2, '0') + ":" + 
-           String(shifted.getMinutes()).padStart(2, '0') + ":" + 
-           String(shifted.getSeconds()).padStart(2, '0');
+    return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
+           String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
+           String(shifted.getUTCSeconds()).padStart(2, '0');
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -718,8 +672,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
     const setEl = document.getElementById('moon-set');
-    const phase = illumination.phase;
 
+    const phase = illumination.phase;
     let phaseName = "";
     let iconSymbol = "🌕";
 
