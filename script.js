@@ -132,15 +132,20 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 
         async function fetchPlaceName(lat, lon) {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        currentPlaceDisplayName = `${country} - ${city}`;
+                    const specificLocality = geoData.address.city || 
+                                           geoData.address.town || 
+                                           geoData.address.village || 
+                                           geoData.address.municipality || 
+                                           geoData.address.county || 
+                                           geoData.address.state || '';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        currentPlaceDisplayName = `${country} - ${specificLocality}`;
                     } else {
-                        currentPlaceDisplayName = city || country || "Piacenza - Italia";
+                        currentPlaceDisplayName = specificLocality || country || "Piacenza - Italia";
                     }
                 }
             } catch (err) {
@@ -259,15 +264,20 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 
             let placeName = fallbackName;
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        placeName = `${country} - ${city}`;
+                    const specificLocality = geoData.address.city || 
+                                           geoData.address.town || 
+                                           geoData.address.village || 
+                                           geoData.address.municipality || 
+                                           geoData.address.county || 
+                                           geoData.address.state || '';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${specificLocality}`;
                     } else {
-                        placeName = city || country || fallbackName;
+                        placeName = specificLocality || country || fallbackName;
                     }
                 }
             } catch (err) {
@@ -349,7 +359,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             }
             statusEl.innerText = "Ricerca in corso...";
             try {
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=it`);
                 const data = await response.json();
                 if (data && data.length > 0) {
                     const lat = parseFloat(data[0].lat);
@@ -368,15 +378,20 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
         async function getPlaceNameAndRedirect(lat, lon) {
             let placeName = "Posizione";
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10`);
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
                 const geoData = await res.json();
                 if (geoData && geoData.address) {
                     const country = geoData.address.country || '';
-                    const city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
-                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
-                        placeName = `${country} - ${city}`;
+                    const specificLocality = geoData.address.city || 
+                                           geoData.address.town || 
+                                           geoData.address.village || 
+                                           geoData.address.municipality || 
+                                           geoData.address.county || 
+                                           geoData.address.state || '';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${specificLocality}`;
                     } else {
-                        placeName = city || country || "Posizione";
+                        placeName = specificLocality || country || "Posizione";
                     }
                 }
             } catch (err) {
