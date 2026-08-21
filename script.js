@@ -13,15 +13,26 @@ function getCurrentDstState() {
     if (isAuto) {
         if (typeof getEffectiveDST === 'function') {
             const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-            if (effective) return true;
+            if (effective !== undefined) return effective;
         }
         
-        // Controllo di sicurezza automatico per l'Europa Occidentale (Spagna, Francia, Italia, ecc.)
-        const d = selectedDate || new Date();
-        const month = d.getMonth() + 1; // 1 a 12
-        if (cachedLat >= 35 && cachedLat <= 72 && cachedLon >= -10 && cachedLon <= 35) {
-            if (month > 3 && month < 10) {
-                return true; // Ora legale attiva in Europa nei mesi estivi
+        // Controllo globale tramite tz-lookup per tutto il globo
+        if (typeof tzlookup === 'function') {
+            try {
+                const tz = tzlookup(cachedLat, cachedLon);
+                const now = selectedDate || new Date();
+                const jan = new Date(now.getFullYear(), 0, 1);
+                
+                // Confronta l'offset per determinare se vige l'ora legale in qualsiasi parte del mondo
+                const getOffsetMinutes = (d, timeZone) => {
+                    const utcDate = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
+                    const tzDate = new Date(d.toLocaleString('en-US', { timeZone }));
+                    return (tzDate.getTime() - utcDate.getTime()) / 60000;
+                };
+                
+                return getOffsetMinutes(now, tz) !== getOffsetMinutes(jan, tz);
+            } catch (e) {
+                console.warn("Impossibile determinare DST tramite tz-lookup", e);
             }
         }
     }
@@ -127,7 +138,7 @@ function updateDstUI(isAuto) {
     if (isAuto) {
         manualBox.style.opacity = "0.4";
         manualInput.disabled = true;
-        manualInput.checked = (typeof getEffectiveDST === 'function') ? getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date()) : false;
+        manualInput.checked = getCurrentDstState();
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
