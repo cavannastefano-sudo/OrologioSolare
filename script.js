@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Preciso e Corretto)
+ * SunClock24 - Core Script (Definitivo, Fuso + Ora Legale Corretti)
  * =========================================================
  */
 
@@ -80,7 +80,6 @@ async function initClock() {
     } else {
         if (!locationResolved) {
             locationResolved = true;
-            clearTimeout(fallbackTimer);
             await setupDefaultLocation();
         }
     }
@@ -144,7 +143,7 @@ function toggleMoonDropdown() {
     const content = document.getElementById('moon-dropdown-content');
     const arrow = document.getElementById('dropdown-arrow');
     content.classList.toggle('show');
-    arrow.innerText = content.classList.contains('show') ? '▲' : '▼';
+    arrow.innerText = content.classList.contains('show' ) ? '▲' : '▼';
 }
 
 function applyTimezonePreset() {
@@ -374,7 +373,22 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
+    // Gestiamo correttamente il fuso orario di Naomi unito all'ora legale attiva
+    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || Math.round(lon / 15);
+    const isDstNowActive = getCurrentDstState();
+    const totalOffsetHours = tzPresetVal + (isDstNowActive ? 1 : 0);
+    const offsetMs = totalOffsetHours * 3600000;
+
+    cachedTimes = {};
+    for (let key in rawTimes) {
+        if (isValidDate(rawTimes[key])) {
+            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
+        } else {
+            cachedTimes[key] = rawTimes[key];
+        }
+    }
+
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -395,15 +409,12 @@ function updateSunClock(lat, lon) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
         const standardTz = Math.round(lon / 15);
-        const isDstNowActive = getCurrentDstState();
-        const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
-        
         const stdSign = standardTz >= 0 ? "+" : "";
-        const totalSign = totalTzOffset >= 0 ? "+" : "";
+        const totalSign = totalOffsetHours >= 0 ? "+" : "";
         
         let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
         if (isDstNowActive) {
-            fusoText += ` (Ora legale: UTC ${totalSign}${totalTzOffset})`;
+            fusoText += ` (Ora legale: UTC ${totalSign}${totalOffsetHours})`;
         }
         
         document.getElementById('location-text').innerHTML = `
@@ -416,10 +427,9 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Usa getUTCHours per evitare il doppio offset dell'ora legale sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -690,9 +700,15 @@ function getIntervalColorSafe(h, times) {
 
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
-    return String(date.getHours()).padStart(2, '0') + ":" + 
-           String(date.getMinutes()).padStart(2, '0') + ":" + 
-           String(date.getSeconds()).padStart(2, '0');
+    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || 0;
+    const isDstNowActive = getCurrentDstState();
+    const dstOffset = isDstNowActive ? 1 : 0;
+    const totalOffsetHours = tzPresetVal + dstOffset;
+    
+    const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
+    return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
+           String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
+           String(shifted.getUTCSeconds()).padStart(2, '0');
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
