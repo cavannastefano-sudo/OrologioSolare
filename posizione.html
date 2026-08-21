@@ -471,7 +471,7 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // Fuso orario standard rigoroso basato sulle coordinate geografiche (India UTC+5.5, Cina UTC+8, Europa, ecc.)
+        // Fuso orario standard corretto e rigoroso (Ora Solare di base)
         function getPreciseStandardTimezone(lat, lon) {
             // India -> UTC+5.5 (Controllato per primo per evitare sovrapposizioni)
             if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98) return 5.5;
@@ -485,7 +485,7 @@
                 if (lat > 49 && lon >= -11 && lon <= 2) return 0;     // UK e Irlanda
             }
 
-            // Europa Occidentale / Centrale (Spagna, Francia, Italia/Lombardia, Germania, ecc.) -> Standard UTC+1 (CET)
+            // Europa Occidentale / Centrale (Spagna, Francia, Italia, Germania, ecc.) -> Standard UTC+1 (CET)
             if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) {
                 return 1;
             }
