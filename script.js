@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Completo e Allineato)
+ * SunClock24 - Core Script (Definitivo, Fascia Corretta)
  * =========================================================
  */
 
@@ -388,12 +388,12 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Mantiene la fascia allineata correttamente quando l'ora legale è attiva
+// CORRETTO: Sposta la fascia indietro sottraendo l'ora legale quando il flag è attivo sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
     const dstOffsetHours = isDstNowActive ? 1 : 0;
-    const adjustedDate = new Date(date.getTime() + (dstOffsetHours * 3600000));
+    const adjustedDate = new Date(date.getTime() - (dstOffsetHours * 3600000));
     return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
 }
 
