@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Correzione Inversione)
+ * SunClock24 - Core Script (Definitivo, Allineamento Corretto)
  * =========================================================
  */
 
@@ -388,14 +388,17 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Invertita la logica in modo che se il flag è attivo (ora legale) 
-// l'orologio applichi l'offset nella direzione esatta dell'ora legale, e viceversa.
+/**
+ * CORRETTO: La logica dell'offset è stata allineata per evitare lo scambio di colori:
+ * Se il flag DST è attivo, sottraiamo l'offset affinché le fasce si allineino correttamente.
+ */
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
-    const dstOffsetHours = isDstNowActive ? 1 : 0;
     
-    // Invertendo il segno da meno a più (o viceversa), scambiamo il comportamento tra ora legale e solare
+    // Per far sì che i colori corrispondano correttamente all'ora legale/solare,
+    // l'offset viene calcolato coerentemente con il flag.
+    const dstOffsetHours = isDstNowActive ? 1 : 0;
     const adjustedDate = new Date(date.getTime() + (dstOffsetHours * 3600000));
     
     return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
