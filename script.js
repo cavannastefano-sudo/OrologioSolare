@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Corretto e Allineato)
+ * SunClock24 - Core Script (Definitivo, Perfetto e Allineato)
  * =========================================================
  */
 
@@ -80,7 +80,6 @@ async function initClock() {
     } else {
         if (!locationResolved) {
             locationResolved = true;
-            clearTimeout(fallbackTimer);
             await setupDefaultLocation();
         }
     }
@@ -378,7 +377,7 @@ function updateSunClock(lat, lon) {
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || Math.round(lon / 15);
     const isDstNowActive = getCurrentDstState();
     
-    // Togliamo l'ulteriore somma dell'ora legale che faceva scattare avanti di 2 ore, lasciando il corretto offset del fuso impostato da Naomi
+    // Offset standard coerente senza raddoppi
     const totalOffsetHours = tzPresetVal + (isDstNowActive ? 1 : 0);
     const offsetMs = totalOffsetHours * 3600000;
 
@@ -429,10 +428,10 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Adesso usa getUTCHours() per evitare che l'orario venga sballato di 2 ore in avanti sul canvas
+// CORRETTO: Usa getHours() locale per allinearsi perfettamente all'orologio del telefono senza anticipi
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -709,9 +708,9 @@ function formatTime(date) {
     const totalOffsetHours = tzPresetVal + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
-    return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
-           String(shifted.getUTCMinutes()).padStart(2, '0') + ":" + 
-           String(shifted.getUTCSeconds()).padStart(2, '0');
+    return String(shifted.getHours()).padStart(2, '0') + ":" + 
+           String(shifted.getMinutes()).padStart(2, '0') + ":" + 
+           String(shifted.getSeconds()).padStart(2, '0');
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
