@@ -12,7 +12,17 @@ function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto) {
         if (typeof getEffectiveDST === 'function') {
-            return getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            if (effective) return true;
+        }
+        
+        // Controllo di sicurezza automatico per l'Europa Occidentale (Spagna, Francia, Italia, ecc.)
+        const d = selectedDate || new Date();
+        const month = d.getMonth() + 1; // 1 a 12
+        if (cachedLat >= 35 && cachedLat <= 72 && cachedLon >= -10 && cachedLon <= 35) {
+            if (month > 3 && month < 10) {
+                return true; // Ora legale attiva in Europa nei mesi estivi
+            }
         }
     }
     return localStorage.getItem('sunclock_dst') === 'true';
