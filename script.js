@@ -87,7 +87,11 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon);
+            if (isTimezoneOnlyMode) {
+                applyTimezonePreset();
+            } else {
+                updateSunClock(cachedLat, cachedLon);
+            }
         }
 
         function toggleManualDST(checked) {
@@ -95,7 +99,11 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateSunClock(cachedLat, cachedLon);
+            if (isTimezoneOnlyMode) {
+                applyTimezonePreset();
+            } else {
+                updateSunClock(cachedLat, cachedLon);
+            }
         }
 
         function updateDstUI(isAuto) {
@@ -147,7 +155,7 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
                 updateTimeForLocation();
             }
 
-            // Svuota i campi informativi e mostra solo il fuso UTC
+            // Svuota i campi informativi e mostra solo il fuso UTC con attivazione flag/ora legale inclusa
             let isDstNowActive = getCurrentDstState();
             const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
             const tzSign = parseFloat(tzVal) >= 0 ? "+" : "";
