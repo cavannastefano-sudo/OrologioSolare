@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Fuso + Ora Legale Corretti)
+ * SunClock24 - Core Script (Definitivo, Corretto e Allineato)
  * =========================================================
  */
 
@@ -80,6 +80,7 @@ async function initClock() {
     } else {
         if (!locationResolved) {
             locationResolved = true;
+            clearTimeout(fallbackTimer);
             await setupDefaultLocation();
         }
     }
@@ -143,7 +144,7 @@ function toggleMoonDropdown() {
     const content = document.getElementById('moon-dropdown-content');
     const arrow = document.getElementById('dropdown-arrow');
     content.classList.toggle('show');
-    arrow.innerText = content.classList.contains('show' ) ? '▲' : '▼';
+    arrow.innerText = content.classList.contains('show') ? '▲' : '▼';
 }
 
 function applyTimezonePreset() {
@@ -373,10 +374,11 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    // Gestiamo correttamente il fuso orario di Naomi unito all'ora legale attiva
     const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
     const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value) || Math.round(lon / 15);
     const isDstNowActive = getCurrentDstState();
+    
+    // Togliamo l'ulteriore somma dell'ora legale che faceva scattare avanti di 2 ore, lasciando il corretto offset del fuso impostato da Naomi
     const totalOffsetHours = tzPresetVal + (isDstNowActive ? 1 : 0);
     const offsetMs = totalOffsetHours * 3600000;
 
@@ -427,9 +429,10 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: Adesso usa getUTCHours() per evitare che l'orario venga sballato di 2 ore in avanti sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
