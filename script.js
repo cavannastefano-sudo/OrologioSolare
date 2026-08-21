@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo, Colori Corretti DST)
+ * SunClock24 - Core Script (Definitivo, Sincronizzato)
  * =========================================================
  */
 
@@ -388,12 +388,13 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: Sincronizza perfettamente le fasce colorate con l'ora effettiva (legale o solare)
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
-    const dstOffsetHours = isDstNowActive ? -1 : 0;
+    const dstOffsetHours = isDstNowActive ? 1 : 0;
     const adjustedDate = new Date(date.getTime() + (dstOffsetHours * 3600000));
-    return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
+    return adjustedDate.getUTCHours() + adjustedDate.getUTCMinutes() / 60 + adjustedDate.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
