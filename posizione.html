@@ -444,6 +444,20 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
+        function getGlobalStandardTimezone(lat, lon) {
+            // Europa Occidentale (Spagna, Francia, Benelux, Europa Centrale) -> CET (UTC+1)
+            if (lat >= 35 && lat <= 70 && lon >= -10 && lon <= 35) return 1;
+            // Regno Unito, Irlanda, Portogallo -> WET (UTC+0)
+            if (lat >= 35 && lat <= 65 && lon >= -10 && lon < 0) return 0;
+            // Cina intera unificata su UTC+8
+            if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
+            // India -> UTC+5.5
+            if (lat >= 6 && lat <= 36 && lon >= 68 && lon <= 98) return 5.5;
+
+            // Resto del mondo standard a blocchi di 15°
+            return Math.round(lon / 15);
+        }
+
         function getCurrentDstState() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (isAuto && typeof getEffectiveDST === 'function') {
@@ -490,7 +504,7 @@
         }
 
         function getEffectiveDate() {
-            const standardTz = Math.round(cachedLon / 15);
+            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -541,7 +555,7 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const standardTz = Math.round(cachedLon / 15);
+            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
@@ -574,7 +588,7 @@
         }
 
         function updateSunClock(lat, lon) {
-            const standardTz = Math.round(lon / 15);
+            const standardTz = getGlobalStandardTimezone(lat, lon);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
@@ -678,7 +692,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const standardTz = Math.round(cachedLon / 15);
+                const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -723,7 +737,7 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const standardTz = Math.round(cachedLon / 15);
+                const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -981,7 +995,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = Math.round(cachedLon / 15);
+            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
