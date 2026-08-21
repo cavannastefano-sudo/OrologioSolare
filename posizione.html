@@ -437,23 +437,62 @@
         let cachedMoonIllumination = null;
         
         const urlParams = new URLSearchParams(window.location.search);
-        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
+        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : NaN;
+        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : NaN;
+        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
+
+        // Tabella di supporto per nazioni vaste cercate per nome
+        const COUNTRY_COORDS = {
+            "brasile": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
+            "brazil": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
+            "stati uniti": { lat: 38.8951, lon: -77.0364, name: "Stati Uniti (Washington)" },
+            "usa": { lat: 38.8951, lon: -77.0364, name: "Stati Uniti (Washington)" },
+            "francia": { lat: 48.8566, lon: 2.3522, name: "Francia (Parigi)" },
+            "spagna": { lat: 40.4168, lon: -3.7038, name: "Spagna (Madrid)" },
+            "italia": { lat: 41.9028, lon: 12.4964, name: "Italia (Roma)" },
+            "germania": { lat: 52.5200, lon: 13.4050, name: "Germania (Berlino)" },
+            "regno unito": { lat: 51.5074, lon: -0.1278, name: "Regno Unito (Londra)" },
+            "uk": { lat: 51.5074, lon: -0.1278, name: "Regno Unito (Londra)" },
+            "portogallo": { lat: 38.7223, lon: -9.1393, name: "Portogallo (Lisbona)" },
+            "irlanda": { lat: 53.3498, lon: -6.2603, name: "Irlanda (Dublino)" }
+        };
+
+        const lowerCity = cityName.toLowerCase().trim();
+        if ((isNaN(cachedLat) || isNaN(cachedLon)) && COUNTRY_COORDS[lowerCity]) {
+            cachedLat = COUNTRY_COORDS[lowerCity].lat;
+            cachedLon = COUNTRY_COORDS[lowerCity].lon;
+            cityName = COUNTRY_COORDS[lowerCity].name;
+        } else {
+            if (isNaN(cachedLat)) cachedLat = 45.05;
+            if (isNaN(cachedLon)) cachedLon = 9.69;
+            if (!cityName) cityName = "Posizione";
+        }
 
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        function getGlobalStandardTimezone(lat, lon) {
-            // Europa Occidentale (Spagna, Francia, Benelux, Europa Centrale) -> CET (UTC+1)
-            if (lat >= 35 && lat <= 70 && lon >= -10 && lon <= 35) return 1;
-            // Regno Unito, Irlanda, Portogallo -> WET (UTC+0)
-            if (lat >= 35 && lat <= 65 && lon >= -10 && lon < 0) return 0;
-            // Cina intera unificata su UTC+8
+        // Fuso orario standard corretto e rigoroso (Ora Solare di base, l'ora legale viene aggiunta separatamente)
+        function getPreciseStandardTimezone(lat, lon) {
+            // Regno Unito, Irlanda, Portogallo -> Standard UTC+0 (WET)
+            if (lat >= 36 && lat <= 61 && lon >= -11 && lon <= 2.5) {
+                if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0; // Portogallo
+                if (lat > 49 && lon >= -11 && lon <= 2) return 0;     // UK e Irlanda
+            }
+            // Europa Occidentale / Centrale (Spagna, Francia, Italia, Germania, ecc.) -> Standard UTC+1 (CET)
+            if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) {
+                return 1;
+            }
+            // Cina intera (UTC+8)
             if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
             // India -> UTC+5.5
             if (lat >= 6 && lat <= 36 && lon >= 68 && lon <= 98) return 5.5;
-
+            // Brasile (Fusi specifici in base alla longitudine)
+            if (lat >= -34 && lat <= 5 && lon >= -74 && lon <= -34) {
+                if (lon < -65) return -5;
+                if (lon < -50) return -4;
+                if (lon < -44) return -3;
+                return -2;
+            }
             // Resto del mondo standard a blocchi di 15°
             return Math.round(lon / 15);
         }
@@ -504,7 +543,7 @@
         }
 
         function getEffectiveDate() {
-            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -555,7 +594,7 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
@@ -588,7 +627,7 @@
         }
 
         function updateSunClock(lat, lon) {
-            const standardTz = getGlobalStandardTimezone(lat, lon);
+            const standardTz = getPreciseStandardTimezone(lat, lon);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
@@ -692,7 +731,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
+                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -737,7 +776,7 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
+                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -995,7 +1034,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = getGlobalStandardTimezone(cachedLat, cachedLon);
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
