@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappa Mondiale - SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body { background-color: #000; font-family: sans-serif; color: #facc15; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box; }
+        header { width: 100%; max-width: 800px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        h1 { margin: 0; font-size: 1.2rem; text-shadow: 0 0 6px #ff0000; }
+        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-weight: bold; }
+        .back-btn:hover { background: rgba(0,0,0,0.5); }
+        #map { width: 100%; max-width: 800px; height: 70vh; border-radius: 12px; border: 2px solid #334155; }
+        #status-msg { margin-top: 12px; color: #38bdf8; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌍 Mappa Mondiale</h1>
+        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
+    </header>
+
+    <div id="map"></div>
+    <div id="status-msg">Caricamento confini in corso...</div>
+
+    <script>
+        // Definiamo i layer
+        const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
+        });
+
+        // Controlla se hai salvato una preferenza precedente nel browser
+        const savedLayerName = localStorage.getItem('sunclock_map_layer');
+        // Se c'è "Mappa Chiara" salvato usa quella, altrimenti usa "Topografica" di base
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+
+        // Creiamo la mappa impostando il layer corretto
+        const map = L.map('map', {
+            center: [20, 0],
+            zoom: 2,
+            layers: [initialLayer] 
+        });
+
+        const baseMaps = {
+            "Topografica": topo,
+            "Mappa Chiara": chiara
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        let geojsonLayer = null;
+
+        function getColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = (hash * 31) + name.charCodeAt(i); 
+            }
+            const hue = Math.abs(hash * 137.5) % 360; 
+            return `hsl(${hue}, 85%, 55%)`; 
+        }
+
+        function handleMapClick(lat, lon) {
+            document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
+                .then(res => res.json())
+                .then(geoData => {
+                    let country = '';
+                    let city = '';
+                    
+                    if (geoData && geoData.address) {
+                        country = geoData.address.country || '';
+                        city = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.county || '';
+                    }
+                    
+                    let fullName = 'Posizione';
+                    if (country && city && city.toLowerCase() !== country.toLowerCase()) {
+                        fullName = `${country} - ${city}`;
+                    } else {
+                        fullName = city || country || 'Posizione';
+                    }
+
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
+                })
+                .catch(() => {
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}`;
+                });
+        }
+
+        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+            .then(res => res.json())
+            .then(data => {
+                geojsonLayer = L.geoJSON(data, {
+                    style: (feature) => ({
+                        fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
+                        weight: 1,            // Bordo più fine
+                        opacity: 0.8,           
+                        color: '#333',        // Bordi tornati scuri
+                        fillOpacity: 0.55     
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            handleMapClick(e.latlng.lat, e.latlng.lng);
+                        });
+                    }
+                });
+
+                // Aggiungiamo i confini solo se il layer attuale è la Mappa Chiara
+                if (map.hasLayer(chiara)) {
+                    geojsonLayer.addTo(map);
+                }
+                
+                document.getElementById('status-msg').innerText = "Clicca sulla mappa per selezionare una località.";
+            })
+            .catch(() => {
+                document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
+            });
+
+        // Evento cambio mappa
+        map.on('baselayerchange', function(e) {
+            // Salva la scelta dell'utente ogni volta che cambia livello
+            localStorage.setItem('sunclock_map_layer', e.name);
+
+            if (e.name === "Topografica") {
+                if (geojsonLayer && map.hasLayer(geojsonLayer)) {
+                    map.removeLayer(geojsonLayer); 
+                }
+            } else if (e.name === "Mappa Chiara") {
+                if (geojsonLayer && !map.hasLayer(geojsonLayer)) {
+                    map.addLayer(geojsonLayer); 
+                }
+            }
+        });
+
+        map.on('click', (e) => {
+            handleMapClick(e.latlng.lat, e.latlng.lng);
+        });
+    </script>
+</body>
+</html>
