@@ -9,6 +9,7 @@
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tz-lookup@6.1.25/tz-lookup.min.js"></script>
     <script src="timezone-manager.js"></script>
 
     <style>
@@ -471,34 +472,39 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // Fuso orario standard corretto e rigoroso (Ora Solare di base)
+        // Fuso orario automatico e preciso con tz-lookup (fallback sulla nostra logica geometrica)
         function getPreciseStandardTimezone(lat, lon) {
-            // India -> UTC+5.5 (Controllato per primo per evitare sovrapposizioni)
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = selectedDate || new Date();
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(now);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+
+            // Nostro fallback di sicurezza geometrico
             if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98) return 5.5;
-
-            // Cina intera -> UTC+8
             if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
-
-            // Regno Unito, Irlanda, Portogallo -> Standard UTC+0 (WET)
             if (lat >= 36 && lat <= 61 && lon >= -11 && lon <= 2.5) {
-                if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0; // Portogallo
-                if (lat > 49 && lon >= -11 && lon <= 2) return 0;     // UK e Irlanda
+                if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0;
+                if (lat > 49 && lon >= -11 && lon <= 2) return 0;
             }
-
-            // Europa Occidentale / Centrale (Spagna, Francia, Italia, Germania, ecc.) -> Standard UTC+1 (CET)
-            if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) {
-                return 1;
-            }
-
-            // Brasile (Fusi specifici in base alla longitudine)
-            if (lat >= -34 && lat <= 5 && lon >= -74 && lon <= -34) {
-                if (lon < -65) return -5;
-                if (lon < -50) return -4;
-                if (lon < -44) return -3;
-                return -2;
-            }
-
-            // Resto del mondo standard a blocchi di 15°
+            if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) return 1;
             return Math.round(lon / 15);
         }
 
