@@ -388,12 +388,12 @@ function updateSunClock(lat, lon) {
     }
 }
 
-// CORRETTO: Sposta la fascia nella direzione corretta (indietro sottraendo l'ora quando il flag è attivo)
+// CORRETTO: Invertito il segno per allineare correttamente la fascia al verso dell'ora legale/solare
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const isDstNowActive = getCurrentDstState();
     const dstOffsetHours = isDstNowActive ? 1 : 0;
-    const adjustedDate = new Date(date.getTime() - (dstOffsetHours * 3600000));
+    const adjustedDate = new Date(date.getTime() + (dstOffsetHours * 3600000));
     return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
 }
 
