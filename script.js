@@ -160,7 +160,6 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
                 updateTimeForLocation();
             }
 
-            // Svuota i campi informativi e mostra solo il fuso UTC con attivazione flag/ora legale inclusa
             let isDstNowActive = getCurrentDstState();
             const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
             const tzSign = parseFloat(tzVal) >= 0 ? "+" : "";
@@ -201,7 +200,6 @@ SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
                 <tr><td>Crepuscolo astronomico</td><td>----</td></tr>
             `;
 
-            // Aggiorna solo il quadrante con la data base senza ricalcoli errati
             const refDate = selectedDate;
             cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
             ctx.clearRect(0, 0, 500, 500);
