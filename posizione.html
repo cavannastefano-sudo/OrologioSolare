@@ -104,70 +104,48 @@
     </div>
 
     <script>
-        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
-        const urlParams = new URLSearchParams(window.location.search);
-        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
-        let selectedDate = new Date();
-        let isCustomTime = false;
-
-        // Nuova funzione per offset basato su fuso legale ufficiale
-        function getPreciseTzOffsetHours(date = new Date()) {
-            try {
-                const timeZone = tzlookup(cachedLat, cachedLon);
-                const formatOption = { timeZone: timeZone, timeZoneName: 'shortOffset' };
-                const parts = new Intl.DateTimeFormat('en-US', formatOption).formatToParts(date);
-                const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
-                const match = tzPart.match(/GMT([+-]\d+)(?::(\d+))?/);
-                if (match) {
-                    const hours = parseInt(match[1], 10);
-                    return hours; 
-                }
-            } catch (e) { return 1; }
-            return 1;
-        }
-
-        function getEffectiveDate() {
-            const offset = getPreciseTzOffsetHours();
-            return new Date(Date.now() + (offset * 3600000));
-        }
-
-        function updateSunClock(lat, lon) {
-            const totalTzOffset = getPreciseTzOffsetHours(selectedDate);
-            let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
+    // 1. Funzione infallibile per ottenere l'ora locale del luogo scelto
+    function getCityDate(lat, lon) {
+        try {
+            const tz = tzlookup(lat, lon); // Ottiene es. "Europe/Paris"
+            const options = { timeZone: tz, hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
+            const formatter = new Intl.DateTimeFormat('it-IT', options);
+            const parts = formatter.formatToParts(new Date());
             
-            const times = SunCalc.getTimes(utcCalculationDate, lat, lon);
-            const timeZone = tzlookup(lat, lon);
-            
-            document.getElementById('location-text').innerHTML = `
-                <div>${cityName}</div>
-                <div style="font-size: 0.8rem; opacity: 0.8;">Fuso: ${timeZone} (UTC ${totalTzOffset})</div>
-            `;
-            document.getElementById('txt-sunrise').innerText = formatTime(times.sunrise, totalTzOffset);
-            document.getElementById('txt-sunset').innerText = formatTime(times.sunset, totalTzOffset);
+            // Crea una data che rappresenti l'orario civile di quella città
+            const d = new Date();
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 
+                            parts.find(p => p.type === 'hour').value, 
+                            parts.find(p => p.type === 'minute').value, 
+                            parts.find(p => p.type === 'second').value);
+        } catch (e) {
+            return new Date(); // Fallback su ora locale
         }
+    }
 
-        function formatTime(date, offset) {
-            if (!date || isNaN(date)) return "--:--";
-            let d = new Date(date.getTime() + (offset * 3600000));
-            return d.getUTCHours().toString().padStart(2,'0') + ":" + d.getUTCMinutes().toString().padStart(2,'0');
-        }
+    // 2. Aggiornamento orologio
+    function updateHands() {
+        // Usa la data calcolata per la città specifica
+        selectedDate = getCityDate(cachedLat, cachedLon);
+        
+        document.getElementById('digital-clock').innerText = 
+            selectedDate.getHours().toString().padStart(2,'0') + ":" + 
+            selectedDate.getMinutes().toString().padStart(2,'0') + ":" + 
+            selectedDate.getSeconds().toString().padStart(2,'0');
 
-        function updateHands() {
-            if (!isCustomTime) selectedDate = getEffectiveDate();
-            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            // ... (logica rotazione lancette invariata)
-        }
+        // Rotazione lancette basata su ore locali (0-24)
+        const h = selectedDate.getHours() + selectedDate.getMinutes() / 60;
+        const m = selectedDate.getMinutes();
+        const s = selectedDate.getSeconds();
 
-        function toggleDST() { /* Gestione manuale/auto */ }
-        function onDateChanged(val) { /* ... */ }
-        function onTimeChanged(val) { /* ... */ }
-        function resetToNow() { isCustomTime = false; updateSunClock(cachedLat, cachedLon); }
-        function toggleTimesModal(show) { document.getElementById('modal-times').style.display = show ? 'flex' : 'none'; }
+        document.getElementById('hand-hour').style.transform = `rotate(${(h / 24) * 360 - 180}deg)`;
+        document.getElementById('hand-minute').style.transform = `rotate(${(m / 60) * 360}deg)`;
+        document.getElementById('hand-second').style.transform = `rotate(${(s / 60) * 360}deg)`;
+    }
 
-        setInterval(updateHands, 1000);
-        updateSunClock(cachedLat, cachedLon);
-    </script>
+    // 3. Inizializzazione
+    setInterval(updateHands, 1000);
+    updateHands();
+</script>
 </body>
 </html>
