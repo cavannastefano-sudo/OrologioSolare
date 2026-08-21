@@ -449,43 +449,6 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // Ottiene la stringa del fuso orario tramite tzlookup (es: "Europe/Rome")
-        function getResolvedTimeZone() {
-            try {
-                const lookupFn = typeof tzlookup === 'function' ? tzlookup : null;
-                if (lookupFn) {
-                    return lookupFn(cachedLat, cachedLon);
-                }
-            } catch (e) {
-                console.warn("Errore tzlookup, fallback su offset geometrico", e);
-            }
-            return null;
-        }
-
-        // Calcola l'offset reale in ore (standard + DST opzionale) basato sul fuso orario effettivo
-        function getPreciseTzOffsetHours(date = new Date()) {
-            const tz = getResolvedTimeZone();
-            if (tz) {
-                try {
-                    const formatOption = { timeZone: tz, timeZoneName: 'shortOffset' };
-                    const parts = new Intl.DateTimeFormat('en-US', formatOption).formatToParts(date);
-                    const tzPart = parts.find(p => p.type === 'timeZoneName')?.value || '';
-                    const match = tzPart.match(/GMT([+-]\d+)(?::(\d+))?/);
-                    if (match) {
-                        const hours = parseInt(match[1], 10);
-                        const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
-                        return hours >= 0 ? hours + minutes : hours - minutes;
-                    }
-                } catch (e) {
-                    console.warn("Errore estrazione offset da Intl:", e);
-                }
-            }
-            // Fallback geometrico se tzlookup non è disponibile
-            const standardTz = Math.round(cachedLon / 15);
-            const isDstNowActive = getCurrentDstState();
-            return standardTz + (isDstNowActive ? 1 : 0);
-        }
-
         function getCurrentDstState() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (isAuto && typeof getEffectiveDST === 'function') {
@@ -532,8 +495,10 @@
         }
 
         function getEffectiveDate() {
-            const totalOffsetHours = getPreciseTzOffsetHours(new Date());
-            return new Date(Date.now() + (totalOffsetHours * 3600000));
+            const standardTz = Math.round(cachedLon / 15);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            return new Date(Date.now() + (cityOffsetHours * 3600000));
         }
 
         function updateInputsVal() {
@@ -581,8 +546,10 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const totalOffsetHours = getPreciseTzOffsetHours(selectedDate);
-            return new Date(date.getTime() + (totalOffsetHours * 3600000));
+            const standardTz = Math.round(cachedLon / 15);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
         function getCompleteMoonTimes(date, lat, lon) {
@@ -612,7 +579,9 @@
         }
 
         function updateSunClock(lat, lon) {
-            const totalTzOffset = getPreciseTzOffsetHours(selectedDate);
+            const standardTz = Math.round(lon / 15);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -634,10 +603,13 @@
             const latFmt = parseFloat(lat).toFixed(2);
             const lonFmt = parseFloat(lon).toFixed(2);
 
-            const tzName = getResolvedTimeZone() || "Fuso personalizzato";
+            const stdSign = standardTz >= 0 ? "+" : "";
             const totalSign = totalTzOffset >= 0 ? "+" : "";
             
-            let fusoText = `Fuso: ${tzName} (UTC ${totalSign}${totalTzOffset})`;
+            let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
+            if (isDstNowActive) {
+                fusoText += ` (Ora legale: UTC ${totalSign}${totalTzOffset})`;
+            }
 
             document.getElementById('location-text').innerHTML = `
                 <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
@@ -711,7 +683,9 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = getPreciseTzOffsetHours(selectedDate);
+                const standardTz = Math.round(cachedLon / 15);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -754,7 +728,9 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = getPreciseTzOffsetHours(selectedDate);
+                const standardTz = Math.round(cachedLon / 15);
+                const isDstNowActive = getCurrentDstState();
+                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -1010,7 +986,9 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const totalTzOffset = getPreciseTzOffsetHours(selectedDate);
+            const standardTz = Math.round(cachedLon / 15);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
