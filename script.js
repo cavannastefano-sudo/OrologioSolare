@@ -1,6 +1,6 @@
 /**
  * =========================================================
- * SunClock24 - Core Script (Definitivo)
+ * SunClock24 - Core Script (Definitivo, Fascia Corretta)
  * =========================================================
  */
 
@@ -346,21 +346,7 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
-    
-    // Sposta in avanti (+1 ora) quando l'ora legale è attiva per allineare le fasce
-    const isDstNowActive = getCurrentDstState();
-    const offsetMs = (isDstNowActive ? 1 : 0) * 3600000;
-
-    cachedTimes = {};
-    for (let key in rawTimes) {
-        if (isValidDate(rawTimes[key])) {
-            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
-        } else {
-            cachedTimes[key] = rawTimes[key];
-        }
-    }
-
+    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -381,6 +367,7 @@ function updateSunClock(lat, lon) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
         const standardTz = Math.round(lon / 15);
+        const isDstNowActive = getCurrentDstState();
         const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
         
         const stdSign = standardTz >= 0 ? "+" : "";
@@ -401,9 +388,13 @@ function updateSunClock(lat, lon) {
     }
 }
 
+// CORRETTO: Sposta la fascia indietro sottraendo l'ora legale quando il flag è attivo sul canvas
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+    const isDstNowActive = getCurrentDstState();
+    const dstOffsetHours = isDstNowActive ? 1 : 0;
+    const adjustedDate = new Date(date.getTime() - (dstOffsetHours * 3600000));
+    return adjustedDate.getHours() + adjustedDate.getMinutes() / 60 + adjustedDate.getSeconds() / 3600;
 }
 
 function isValidDate(d) {
