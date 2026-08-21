@@ -1,3 +1,9 @@
+/**
+ * =========================================================
+ * SunClock24 - Core Script (Definitivo)
+ * =========================================================
+ */
+
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
 SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
 SunCalc.addTime(-6, 'dawn', 'dusk');
@@ -340,7 +346,21 @@ function updateSunClock(lat, lon) {
     const refDate = selectedDate;
     let baseDate = new Date(refDate.getFullYear(), refDate.getMonth(), refDate.getDate(), 0, 0, 0, 0);
 
-    cachedTimes = SunCalc.getTimes(baseDate, lat, lon);
+    const rawTimes = SunCalc.getTimes(baseDate, lat, lon);
+    
+    // Agganciamo l'effetto del flag ora legale unicamente per traslare i tempi solari sul canvas e allineare le fasce
+    const isDstNowActive = getCurrentDstState();
+    const offsetMs = (isDstNowActive ? 1 : 0) * 3600000;
+
+    cachedTimes = {};
+    for (let key in rawTimes) {
+        if (isValidDate(rawTimes[key])) {
+            cachedTimes[key] = new Date(rawTimes[key].getTime() + offsetMs);
+        } else {
+            cachedTimes[key] = rawTimes[key];
+        }
+    }
+
     cachedMoonTimes = getCompleteMoonTimes(baseDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(baseDate);
 
@@ -361,7 +381,6 @@ function updateSunClock(lat, lon) {
         populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         
         const standardTz = Math.round(lon / 15);
-        const isDstNowActive = getCurrentDstState();
         const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
         
         const stdSign = standardTz >= 0 ? "+" : "";
@@ -591,7 +610,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, my); // Corretto da hy a my
+        ctx.fillText(minText, mx, my);
     }
 }
 
