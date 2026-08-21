@@ -11,28 +11,36 @@ const radius = 248;
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto) {
+        // 1. Priorità alla logica della tua libreria custom se presente
         if (typeof getEffectiveDST === 'function') {
             const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
             if (effective !== undefined) return effective;
         }
         
-        // Controllo globale tramite tz-lookup per tutto il globo
+        // 2. Controllo globale basato su confronto offset Gennaio/Luglio
         if (typeof tzlookup === 'function') {
             try {
                 const tz = tzlookup(cachedLat, cachedLon);
                 const now = selectedDate || new Date();
-                const jan = new Date(now.getFullYear(), 0, 1);
+                const jan = new Date(now.getFullYear(), 0, 15);
+                const jul = new Date(now.getFullYear(), 6, 15);
                 
-                // Confronta l'offset per determinare se vige l'ora legale in qualsiasi parte del mondo
-                const getOffsetMinutes = (d, timeZone) => {
-                    const utcDate = new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));
-                    const tzDate = new Date(d.toLocaleString('en-US', { timeZone }));
-                    return (tzDate.getTime() - utcDate.getTime()) / 60000;
+                const getOffset = (d, timeZone) => {
+                    const str = d.toLocaleString('en-US', { timeZone, timeStyle: 'long' });
+                    const match = str.match(/GMT([+-]\d+)/);
+                    return match ? parseInt(match[1]) * 60 : 0;
                 };
+
+                const offsetJan = getOffset(jan, tz);
+                const offsetJul = getOffset(jul, tz);
+                const offsetNow = getOffset(now, tz);
                 
-                return getOffsetMinutes(now, tz) !== getOffsetMinutes(jan, tz);
+                // Se l'offset attuale è diverso dal minimo tra estate e inverno, 
+                // stiamo applicando l'ora legale (o comunque un offset stagionale)
+                const minOffset = Math.min(offsetJan, offsetJul);
+                return offsetNow > minOffset;
             } catch (e) {
-                console.warn("Impossibile determinare DST tramite tz-lookup", e);
+                console.warn("Impossibile determinare DST globale tramite tz-lookup, uso fallback", e);
             }
         }
     }
