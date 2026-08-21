@@ -10,8 +10,10 @@ const radius = 248;
 
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        return getEffectiveDST(cachedLat, cachedLon, new Date());
+    if (isAuto) {
+        if (typeof getEffectiveDST === 'function') {
+            return getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+        }
     }
     return localStorage.getItem('sunclock_dst') === 'true';
 }
@@ -21,7 +23,7 @@ function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Calcolo degli angoli per le fasce solari: invertito per scambiare ora solare e ora legale
+// Calcolo degli angoli per le fasce solari
 function sunHoursToAngle(h) {
     const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
@@ -110,12 +112,16 @@ function updateDstUI(isAuto) {
     const manualBox = document.getElementById('manual-dst-box');
     const manualInput = document.getElementById('manual-dst-toggle');
     
+    if (!manualBox || !manualInput) return;
+    
     if (isAuto) {
         manualBox.style.opacity = "0.4";
         manualInput.disabled = true;
+        manualInput.checked = (typeof getEffectiveDST === 'function') ? getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date()) : false;
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
+        manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
     }
 }
 
@@ -292,6 +298,9 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
             break;
         }
     }
+
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    updateDstUI(isAuto);
 
     isCustomTime = false;
     updateTimeForLocation();
@@ -758,7 +767,6 @@ function updatePageBackground(times) {
     if (!times) return;
     let h = timeToHours(selectedDate);
     
-    // Sincronizza lo sfondo con la stessa logica di shift del quadrante
     const dstShift = !getCurrentDstState() ? 1 : 0;
     h = (h + dstShift) % 24;
 
