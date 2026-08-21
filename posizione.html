@@ -471,21 +471,25 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // Fuso orario standard corretto e rigoroso (Ora Solare di base, l'ora legale viene aggiunta separatamente)
+        // Fuso orario standard corretto e rigoroso (Ora Solare di base)
         function getPreciseStandardTimezone(lat, lon) {
+            // India -> UTC+5.5 (Controllato per primo per evitare sovrapposizioni)
+            if (lat >= 6 && lat <= 37 && lon >= 68 && lon <= 98) return 5.5;
+
+            // Cina intera -> UTC+8
+            if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
+
             // Regno Unito, Irlanda, Portogallo -> Standard UTC+0 (WET)
             if (lat >= 36 && lat <= 61 && lon >= -11 && lon <= 2.5) {
                 if (lat <= 43 && lon >= -9.5 && lon <= -6) return 0; // Portogallo
                 if (lat > 49 && lon >= -11 && lon <= 2) return 0;     // UK e Irlanda
             }
+
             // Europa Occidentale / Centrale (Spagna, Francia, Italia, Germania, ecc.) -> Standard UTC+1 (CET)
             if (lat >= 35 && lat <= 72 && lon >= -10 && lon <= 35) {
                 return 1;
             }
-            // Cina intera (UTC+8)
-            if (lat >= 18 && lat <= 54 && lon >= 73 && lon <= 135) return 8;
-            // India -> UTC+5.5
-            if (lat >= 6 && lat <= 36 && lon >= 68 && lon <= 98) return 5.5;
+
             // Brasile (Fusi specifici in base alla longitudine)
             if (lat >= -34 && lat <= 5 && lon >= -74 && lon <= -34) {
                 if (lon < -65) return -5;
@@ -493,6 +497,7 @@
                 if (lon < -44) return -3;
                 return -2;
             }
+
             // Resto del mondo standard a blocchi di 15°
             return Math.round(lon / 15);
         }
