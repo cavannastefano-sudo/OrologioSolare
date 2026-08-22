@@ -37,9 +37,16 @@ function getCurrentDstState() {
                     const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
                     if (match) {
                         const currentOffset = parseInt(match[1], 10);
-                        const standardBaseOffset = Math.round(cachedLon / 15);
                         
-                        // Se l'offset attuale della località è superiore al suo standard geometrico di base, l'ora legale è attiva
+                        // Correzione dello standard base per gestire correttamente Francia, Spagna (+1/+2) e Portogallo (+0/+1)
+                        let standardBaseOffset = Math.round(cachedLon / 15);
+                        if (tzString === 'Europe/Paris' || tzString === 'Europe/Madrid') {
+                            standardBaseOffset = 1; // Standard CET per Francia e Spagna è +1 (ora legale +2)
+                        } else if (tzString === 'Europe/Lisbon') {
+                            standardBaseOffset = 0; // Standard WET per il Portogallo è +0 (ora legale +1)
+                        }
+
+                        // Se l'offset attuale della località è superiore al suo standard base, l'ora legale è attiva
                         if (currentOffset > standardBaseOffset) {
                             return true;
                         } else {
