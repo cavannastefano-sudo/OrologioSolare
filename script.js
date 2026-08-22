@@ -22,7 +22,7 @@ function getCurrentDstState() {
             if (effective !== undefined) return effective;
         }
 
-        // 2. Controllo rigoroso basato sul fuso orario reale della località tramite tzlookup
+        // 2. Controllo basato sul fuso orario reale tramite tzlookup
         try {
             if (typeof tzlookup === 'function') {
                 const tzString = tzlookup(cachedLat, cachedLon);
@@ -39,8 +39,7 @@ function getCurrentDstState() {
                         const currentOffset = parseInt(match[1], 10);
                         const standardBaseOffset = Math.round(cachedLon / 15);
                         
-                        // Se l'offset attuale è maggiore dello standard geometrico di base, l'ora legale è attiva.
-                        // Questo gestisce correttamente Francia, Spagna, Portogallo ed esclude il Nord Africa.
+                        // Se l'offset attuale della località è superiore al suo standard geometrico di base, l'ora legale è attiva
                         if (currentOffset > standardBaseOffset) {
                             return true;
                         } else {
