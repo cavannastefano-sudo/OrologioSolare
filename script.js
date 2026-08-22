@@ -10,39 +10,9 @@ const radius = 248;
 
 function getCurrentDstState() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (isAuto) {
-        // 1. Priorità alla logica della tua libreria custom se presente
-        if (typeof getEffectiveDST === 'function') {
-            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-            if (effective !== undefined) return effective;
-        }
-        
-        // 2. Controllo globale basato su confronto offset Gennaio/Luglio
-        if (typeof tzlookup === 'function') {
-            try {
-                const tz = tzlookup(cachedLat, cachedLon);
-                const now = selectedDate || new Date();
-                const jan = new Date(now.getFullYear(), 0, 15);
-                const jul = new Date(now.getFullYear(), 6, 15);
-                
-                const getOffset = (d, timeZone) => {
-                    const str = d.toLocaleString('en-US', { timeZone, timeStyle: 'long' });
-                    const match = str.match(/GMT([+-]\d+)/);
-                    return match ? parseInt(match[1]) * 60 : 0;
-                };
-
-                const offsetJan = getOffset(jan, tz);
-                const offsetJul = getOffset(jul, tz);
-                const offsetNow = getOffset(now, tz);
-                
-                // Se l'offset attuale è diverso dal minimo tra estate e inverno, 
-                // stiamo applicando l'ora legale (o comunque un offset stagionale)
-                const minOffset = Math.min(offsetJan, offsetJul);
-                return offsetNow > minOffset;
-            } catch (e) {
-                console.warn("Impossibile determinare DST globale tramite tz-lookup, uso fallback", e);
-            }
-        }
+    if (isAuto && typeof getEffectiveDST === 'function') {
+        const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+        if (effective !== undefined) return effective;
     }
     return localStorage.getItem('sunclock_dst') === 'true';
 }
@@ -75,25 +45,37 @@ let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 
+// Sincronizzazione immediata dei parametri passati dall'URL (se presenti)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('auto')) {
+    localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
+}
+if (urlParams.has('dst')) {
+    localStorage.setItem('sunclock_dst', urlParams.get('dst'));
+}
+
 async function initClock() {
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    const isManualDst = localStorage.getItem('sunclock_dst') === 'true';
+    const isManualDst = getCurrentDstState();
     
-    document.getElementById('auto-dst-toggle').checked = isAuto;
-    document.getElementById('manual-dst-toggle').checked = isManualDst;
+    const autoToggle = document.getElementById('auto-dst-toggle');
+    const manualToggle = document.getElementById('manual-dst-toggle');
+    if (autoToggle) autoToggle.checked = isAuto;
+    if (manualToggle) manualToggle.checked = isManualDst;
     updateDstUI(isAuto);
 
-    if (navigator.geolocation) {
+    if (navigator.geolocation && !urlParams.has('lat')) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
             async (error) => {
-                cachedLat = 45.05;
-                cachedLon = 9.69;
+                cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+                cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+                currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
+                
                 document.getElementById('input-lat').value = cachedLat;
                 document.getElementById('input-lon').value = cachedLon;
-                await fetchPlaceName(cachedLat, cachedLon);
                 updateTimeForLocation();
                 updateInputsVal();
                 updateSunClock(cachedLat, cachedLon);
@@ -101,11 +83,12 @@ async function initClock() {
             { timeout: 8000, enableHighAccuracy: true }
         );
     } else {
-        cachedLat = 45.05;
-        cachedLon = 9.69;
+        cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+        cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+        currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
+
         document.getElementById('input-lat').value = cachedLat;
         document.getElementById('input-lon').value = cachedLon;
-        await fetchPlaceName(cachedLat, cachedLon);
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
