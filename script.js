@@ -13,11 +13,42 @@ function getCurrentDstState() {
     if (urlParams.has('dst')) {
         return urlParams.get('dst') === 'true';
     }
+    
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (isAuto && typeof getEffectiveDST === 'function') {
-        const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-        if (effective !== undefined) return effective;
+    if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+        // 1. Controllo tramite gestore esterno se disponibile
+        if (typeof getEffectiveDST === 'function') {
+            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            if (effective !== undefined) return effective;
+        }
+
+        // 2. Controllo basato sul fuso orario reale tramite tzlookup
+        try {
+            if (typeof tzlookup === 'function') {
+                const tzString = tzlookup(cachedLat, cachedLon);
+                const now = selectedDate || new Date();
+                const dtf = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzString,
+                    timeZoneName: 'shortOffset'
+                });
+                const parts = dtf.formatToParts(now);
+                const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                if (offsetPart) {
+                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (match) {
+                        const currentOffset = parseInt(match[1], 10);
+                        const standardBaseOffset = Math.round(cachedLon / 15);
+                        if (currentOffset > standardBaseOffset) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+        }
     }
+
     return localStorage.getItem('sunclock_dst') === 'true';
 }
 
