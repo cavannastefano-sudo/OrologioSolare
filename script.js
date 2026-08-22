@@ -38,8 +38,12 @@ function getCurrentDstState() {
                     if (match) {
                         const currentOffset = parseInt(match[1], 10);
                         const standardBaseOffset = Math.round(cachedLon / 15);
+                        
+                        // Se l'offset attuale della località è superiore al suo standard geometrico di base, l'ora legale è attiva
                         if (currentOffset > standardBaseOffset) {
                             return true;
+                        } else {
+                            return false;
                         }
                     }
                 }
