@@ -45,7 +45,6 @@
 
         // Controlla se hai salvato una preferenza precedente nel browser
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        // Se c'è "Mappa Chiara" salvato usa quella, altrimenti usa "Topografica" di base
         const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
         // Creiamo la mappa impostando il layer corretto
@@ -72,6 +71,15 @@
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
+        function isDstActiveForCoords(lat, lon) {
+            const month = new Date().getUTCMonth();
+            if (lat >= 0) {
+                return (month >= 2 && month <= 9); // Da marzo a ottobre nell'emisfero boreale
+            } else {
+                return (month >= 9 || month <= 2); // Da ottobre a marzo nell'emisfero australe
+            }
+        }
+
         function handleMapClick(lat, lon) {
             document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
 
@@ -83,7 +91,6 @@
                     
                     if (geoData && geoData.address) {
                         country = geoData.address.country || '';
-                        // Ricerca a cascata per una maggiore precisione ovunque nel mondo
                         specificLocality = geoData.address.city || 
                                            geoData.address.town || 
                                            geoData.address.village || 
@@ -99,10 +106,15 @@
                         fullName = specificLocality || country || 'Posizione';
                     }
 
-                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}`;
+                    const activeDst = isDstActiveForCoords(lat, lon);
+                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${activeDst}`;
                 })
                 .catch(() => {
-                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}`;
+                    const activeDst = isDstActiveForCoords(lat, lon);
+                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${activeDst}`;
                 });
         }
 
@@ -112,9 +124,9 @@
                 geojsonLayer = L.geoJSON(data, {
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
-                        weight: 1,            // Bordo più fine
+                        weight: 1,
                         opacity: 0.8,            
-                        color: '#333',        // Bordi tornati scuri
+                        color: '#333',
                         fillOpacity: 0.55      
                     }),
                     onEachFeature: (feature, layer) => {
@@ -125,7 +137,6 @@
                     }
                 });
 
-                // Aggiungiamo i confini solo se il layer attuale è la Mappa Chiara
                 if (map.hasLayer(chiara)) {
                     geojsonLayer.addTo(map);
                 }
@@ -136,9 +147,7 @@
                 document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
             });
 
-        // Evento cambio mappa
         map.on('baselayerchange', function(e) {
-            // Salva la scelta dell'utente ogni volta che cambia livello
             localStorage.setItem('sunclock_map_layer', e.name);
 
             if (e.name === "Topografica") {
