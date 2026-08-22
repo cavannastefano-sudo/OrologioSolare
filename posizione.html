@@ -433,6 +433,30 @@
             if (urlParams.has('dst')) {
                 return urlParams.get('dst') === 'true';
             }
+            
+            // Sfrutta tzlookup e timezone-manager se presenti per determinare l'effettiva ora legale della zona
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && typeof getEffectiveDST === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+                const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+                if (effective !== undefined) return effective;
+            }
+
+            // Fallback calcolato in base al fuso orario effettivo confrontato con l'orario UTC standard della zona
+            if (!isNaN(cachedLat) && !isNaN(cachedLon) && typeof tzlookup === 'function') {
+                try {
+                    const tzString = tzlookup(cachedLat, cachedLon);
+                    const now = selectedDate || new Date();
+                    const dtfStandard = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeStyle: 'short', hour12: false });
+                    // Rileva se l'offset corrente differisce da quello standard invernale
+                    const formatterParts = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' }).formatToParts(now);
+                    const offsetPart = formatterParts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart && offsetPart.value.includes(':30') || offsetPart && parseInt(offsetPart.value.replace('GMT', '')) !== Math.round(cachedLon / 15)) {
+                        // Se c'è uno scostamento rispetto al fuso geometrico puro o offset estivo rilevato
+                        return true;
+                    }
+                } catch (e) {}
+            }
+
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
@@ -525,7 +549,6 @@
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
             
-            // Aggiorna lo stato del checkbox in base al valore effettivo (URL / memoria)
             if (manualInput) {
                 manualInput.checked = getCurrentDstState();
             }
