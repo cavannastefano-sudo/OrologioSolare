@@ -16,35 +16,37 @@ function getCurrentDstState() {
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+        // 1. Controllo tramite gestore esterno se disponibile
         if (typeof getEffectiveDST === 'function') {
             const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
             if (effective !== undefined) return effective;
         }
 
+        // 2. Controllo basato sul fuso orario reale tramite tzlookup
         try {
             if (typeof tzlookup === 'function') {
                 const tzString = tzlookup(cachedLat, cachedLon);
                 const now = selectedDate || new Date();
-                const janDate = new Date(now.getFullYear(), 0, 15);
-
-                const getCurrentOffsetMinutes = (date, tz) => {
-                    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
-                    const parts = dtf.formatToParts(date);
-                    const name = parts.find(p => p.type === 'timeZoneName')?.value;
-                    const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
+                const dtf = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzString,
+                    timeZoneName: 'shortOffset'
+                });
+                const parts = dtf.formatToParts(now);
+                const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                if (offsetPart) {
+                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
                     if (match) {
-                        const hours = parseInt(match[2], 10);
-                        const mins = parseInt(match[3], 10);
-                        const total = hours * 60 + mins;
-                        return match[1] === '-' ? -total : total;
+                        const currentOffset = parseInt(match[1], 10);
+                        const standardBaseOffset = Math.round(cachedLon / 15);
+                        
+                        // Se l'offset attuale della località è superiore al suo standard geometrico di base, l'ora legale è attiva
+                        if (currentOffset > standardBaseOffset) {
+                            return true;
+                        } else {
+                            return false;
+                        }
                     }
-                    return 0;
-                };
-
-                const currentMin = getCurrentOffsetMinutes(now, tzString);
-                const standardMin = getCurrentOffsetMinutes(janDate, tzString);
-
-                return currentMin > standardMin;
+                }
             }
         } catch (e) {
             console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
@@ -59,35 +61,9 @@ function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Calcolo degli angoli per le fasce solari basato sul fuso orario effettivo della località
+// Calcolo degli angoli per le fasce solari
 function sunHoursToAngle(h) {
-    let dstShift = 0;
-    try {
-        if (typeof tzlookup === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-            const tzString = tzlookup(cachedLat, cachedLon);
-            const now = selectedDate || new Date();
-            const janDate = new Date(now.getFullYear(), 0, 15);
-            
-            const getOffsetHours = (date, tz) => {
-                const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
-                const parts = dtf.formatToParts(date);
-                const name = parts.find(p => p.type === 'timeZoneName')?.value;
-                const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
-                if (match) {
-                    const hours = parseInt(match[2], 10);
-                    return match[1] === '-' ? -hours : hours;
-                }
-                return 0;
-            };
-            
-            dstShift = getOffsetHours(janDate, tzString);
-        } else {
-            dstShift = !getCurrentDstState() ? 1 : 0;
-        }
-    } catch (e) {
-        dstShift = !getCurrentDstState() ? 1 : 0;
-    }
-    
+    const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -848,32 +824,8 @@ function updatePageBackground(times) {
     if (!times) return;
     let h = timeToHours(selectedDate);
     
-    let dstShift = 0;
-    try {
-        if (typeof tzlookup === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-            const tzString = tzlookup(cachedLat, cachedLon);
-            const now = selectedDate || new Date();
-            const janDate = new Date(now.getFullYear(), 0, 15);
-            const getOffsetHours = (date, tz) => {
-                const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
-                const parts = dtf.formatToParts(date);
-                const name = parts.find(p => p.type === 'timeZoneName')?.value;
-                const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
-                if (match) {
-                    const hours = parseInt(match[2], 10);
-                    return match[1] === '-' ? -hours : hours;
-                }
-                return 0;
-            };
-            dstShift = getOffsetHours(janDate, tzString);
-        } else {
-            dstShift = !getCurrentDstState() ? 1 : 0;
-        }
-    } catch (e) {
-        dstShift = !getCurrentDstState() ? 1 : 0;
-    }
-
-    h = (h - dstShift + 24) % 24;
+    const dstShift = !getCurrentDstState() ? 1 : 0;
+    h = (h + dstShift) % 24;
 
     const currentColor = getIntervalColorSafe(h, times);
     const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
@@ -922,7 +874,6 @@ function getIntervalColorSafe(h, times) {
     if (h >= hDawn && h < hSunrise) return PALETTE.civil;
     
     if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
-    if (h >= hDusk && h < hNauthDusk) return PALETTE.naut; // safety fallback if typo, keeping original logic below:
     if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
 
     if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
