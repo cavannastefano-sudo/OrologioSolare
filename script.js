@@ -15,10 +15,43 @@ function getCurrentDstState() {
     }
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    // Sfruttiamo direttamente il gestore centralizzato in timezone-manager.js se disponibile
-    if (isAuto && typeof getEffectiveDST === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-        const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-        if (effective !== undefined) return effective;
+    if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+        // 1. Controllo tramite gestore esterno se disponibile
+        if (typeof getEffectiveDST === 'function') {
+            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            if (effective !== undefined) return effective;
+        }
+
+        // 2. Controllo rigoroso basato sul fuso orario reale della località tramite tzlookup
+        try {
+            if (typeof tzlookup === 'function') {
+                const tzString = tzlookup(cachedLat, cachedLon);
+                const now = selectedDate || new Date();
+                const dtf = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzString,
+                    timeZoneName: 'shortOffset'
+                });
+                const parts = dtf.formatToParts(now);
+                const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                if (offsetPart) {
+                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (match) {
+                        const currentOffset = parseInt(match[1], 10);
+                        const standardBaseOffset = Math.round(cachedLon / 15);
+                        
+                        // Se l'offset attuale è maggiore dello standard geometrico di base, l'ora legale è attiva.
+                        // Questo gestisce correttamente Francia, Spagna, Portogallo ed esclude il Nord Africa.
+                        if (currentOffset > standardBaseOffset) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+        }
     }
 
     return localStorage.getItem('sunclock_dst') === 'true';
