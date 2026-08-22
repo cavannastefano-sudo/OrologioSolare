@@ -16,44 +16,35 @@ function getCurrentDstState() {
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-        // 1. Controllo tramite gestore esterno se disponibile
         if (typeof getEffectiveDST === 'function') {
             const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
             if (effective !== undefined) return effective;
         }
 
-        // 2. Controllo basato sul fuso orario reale tramite tzlookup
         try {
             if (typeof tzlookup === 'function') {
                 const tzString = tzlookup(cachedLat, cachedLon);
                 const now = selectedDate || new Date();
-                const dtf = new Intl.DateTimeFormat('en-US', {
-                    timeZone: tzString,
-                    timeZoneName: 'shortOffset'
-                });
-                const parts = dtf.formatToParts(now);
-                const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                if (offsetPart) {
-                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                    if (match) {
-                        const currentOffset = parseInt(match[1], 10);
-                        
-                        // Correzione dello standard base per gestire correttamente Francia, Spagna (+1/+2) e Portogallo (+0/+1)
-                        let standardBaseOffset = Math.round(cachedLon / 15);
-                        if (tzString === 'Europe/Paris' || tzString === 'Europe/Madrid') {
-                            standardBaseOffset = 1; // Standard CET per Francia e Spagna è +1 (ora legale +2)
-                        } else if (tzString === 'Europe/Lisbon') {
-                            standardBaseOffset = 0; // Standard WET per il Portogallo è +0 (ora legale +1)
-                        }
+                const janDate = new Date(now.getFullYear(), 0, 15);
 
-                        // Se l'offset attuale della località è superiore al suo standard base, l'ora legale è attiva
-                        if (currentOffset > standardBaseOffset) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                const getCurrentOffsetMinutes = (date, tz) => {
+                    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
+                    const parts = dtf.formatToParts(date);
+                    const name = parts.find(p => p.type === 'timeZoneName')?.value;
+                    const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
+                    if (match) {
+                        const hours = parseInt(match[2], 10);
+                        const mins = parseInt(match[3], 10);
+                        const total = hours * 60 + mins;
+                        return match[1] === '-' ? -total : total;
                     }
-                }
+                    return 0;
+                };
+
+                const currentMin = getCurrentOffsetMinutes(now, tzString);
+                const standardMin = getCurrentOffsetMinutes(janDate, tzString);
+
+                return currentMin > standardMin;
             }
         } catch (e) {
             console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
