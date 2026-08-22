@@ -429,9 +429,9 @@
         const radius = 248;
 
         function getCurrentDstState() {
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto && typeof getEffectiveDST === 'function') {
-                return getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('dst')) {
+                return urlParams.get('dst') === 'true';
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
