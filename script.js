@@ -9,6 +9,10 @@ const cy = 250;
 const radius = 248;
 
 function getCurrentDstState() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('dst')) {
+        return urlParams.get('dst') === 'true';
+    }
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && typeof getEffectiveDST === 'function') {
         const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
