@@ -525,14 +525,17 @@
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
             
+            // Aggiorna lo stato del checkbox in base al valore effettivo (URL / memoria)
+            if (manualInput) {
+                manualInput.checked = getCurrentDstState();
+            }
+
             if (isAuto) {
                 manualBox.style.opacity = "0.4";
                 manualInput.disabled = true;
-                manualInput.checked = getCurrentDstState();
             } else {
                 manualBox.style.opacity = "1.0";
                 manualInput.disabled = false;
-                manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
             }
 
             updateTimeForLocation();
