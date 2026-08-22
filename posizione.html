@@ -434,27 +434,39 @@
                 return urlParams.get('dst') === 'true';
             }
             
-            // Sfrutta tzlookup e timezone-manager se presenti per determinare l'effettiva ora legale della zona
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto && typeof getEffectiveDST === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-                const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-                if (effective !== undefined) return effective;
-            }
+            if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+                // 1. Controllo tramite il gestore esterno se disponibile
+                if (typeof getEffectiveDST === 'function') {
+                    const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+                    if (effective !== undefined) return effective;
+                }
 
-            // Fallback calcolato in base al fuso orario effettivo confrontato con l'orario UTC standard della zona
-            if (!isNaN(cachedLat) && !isNaN(cachedLon) && typeof tzlookup === 'function') {
+                // 2. Controllo basato sul fuso orario reale tramite tzlookup
                 try {
-                    const tzString = tzlookup(cachedLat, cachedLon);
-                    const now = selectedDate || new Date();
-                    const dtfStandard = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeStyle: 'short', hour12: false });
-                    // Rileva se l'offset corrente differisce da quello standard invernale
-                    const formatterParts = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' }).formatToParts(now);
-                    const offsetPart = formatterParts.find(p => p.type === 'timeZoneName');
-                    if (offsetPart && offsetPart.value.includes(':30') || offsetPart && parseInt(offsetPart.value.replace('GMT', '')) !== Math.round(cachedLon / 15)) {
-                        // Se c'è uno scostamento rispetto al fuso geometrico puro o offset estivo rilevato
-                        return true;
+                    if (typeof tzlookup === 'function') {
+                        const tzString = tzlookup(cachedLat, cachedLon);
+                        const now = selectedDate || new Date();
+                        const dtf = new Intl.DateTimeFormat('en-US', {
+                            timeZone: tzString,
+                            timeZoneName: 'shortOffset'
+                        });
+                        const parts = dtf.formatToParts(now);
+                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                        if (offsetPart) {
+                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                            if (match) {
+                                const currentOffset = parseInt(match[1], 10);
+                                const standardBaseOffset = Math.round(cachedLon / 15);
+                                if (currentOffset > standardBaseOffset) {
+                                    return true;
+                                }
+                            }
+                        }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
             }
 
             return localStorage.getItem('sunclock_dst') === 'true';
