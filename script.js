@@ -59,9 +59,35 @@ function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Calcolo degli angoli per le fasce solari
+// Calcolo degli angoli per le fasce solari basato sul fuso orario effettivo della località
 function sunHoursToAngle(h) {
-    const dstShift = !getCurrentDstState() ? 1 : 0;
+    let dstShift = 0;
+    try {
+        if (typeof tzlookup === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+            const tzString = tzlookup(cachedLat, cachedLon);
+            const now = selectedDate || new Date();
+            const janDate = new Date(now.getFullYear(), 0, 15);
+            
+            const getOffsetHours = (date, tz) => {
+                const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
+                const parts = dtf.formatToParts(date);
+                const name = parts.find(p => p.type === 'timeZoneName')?.value;
+                const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
+                if (match) {
+                    const hours = parseInt(match[2], 10);
+                    return match[1] === '-' ? -hours : hours;
+                }
+                return 0;
+            };
+            
+            dstShift = getOffsetHours(janDate, tzString);
+        } else {
+            dstShift = !getCurrentDstState() ? 1 : 0;
+        }
+    } catch (e) {
+        dstShift = !getCurrentDstState() ? 1 : 0;
+    }
+    
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -822,8 +848,32 @@ function updatePageBackground(times) {
     if (!times) return;
     let h = timeToHours(selectedDate);
     
-    const dstShift = !getCurrentDstState() ? 1 : 0;
-    h = (h + dstShift) % 24;
+    let dstShift = 0;
+    try {
+        if (typeof tzlookup === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+            const tzString = tzlookup(cachedLat, cachedLon);
+            const now = selectedDate || new Date();
+            const janDate = new Date(now.getFullYear(), 0, 15);
+            const getOffsetHours = (date, tz) => {
+                const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
+                const parts = dtf.formatToParts(date);
+                const name = parts.find(p => p.type === 'timeZoneName')?.value;
+                const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
+                if (match) {
+                    const hours = parseInt(match[2], 10);
+                    return match[1] === '-' ? -hours : hours;
+                }
+                return 0;
+            };
+            dstShift = getOffsetHours(janDate, tzString);
+        } else {
+            dstShift = !getCurrentDstState() ? 1 : 0;
+        }
+    } catch (e) {
+        dstShift = !getCurrentDstState() ? 1 : 0;
+    }
+
+    h = (h - dstShift + 24) % 24;
 
     const currentColor = getIntervalColorSafe(h, times);
     const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
@@ -872,6 +922,7 @@ function getIntervalColorSafe(h, times) {
     if (h >= hDawn && h < hSunrise) return PALETTE.civil;
     
     if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+    if (h >= hDusk && h < hNauthDusk) return PALETTE.naut; // safety fallback if typo, keeping original logic below:
     if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
 
     if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
