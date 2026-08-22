@@ -16,37 +16,35 @@ function getCurrentDstState() {
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-        // 1. Controllo tramite gestore esterno se disponibile
         if (typeof getEffectiveDST === 'function') {
             const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
             if (effective !== undefined) return effective;
         }
 
-        // 2. Controllo basato sul fuso orario reale tramite tzlookup
         try {
             if (typeof tzlookup === 'function') {
                 const tzString = tzlookup(cachedLat, cachedLon);
                 const now = selectedDate || new Date();
-                const dtf = new Intl.DateTimeFormat('en-US', {
-                    timeZone: tzString,
-                    timeZoneName: 'shortOffset'
-                });
-                const parts = dtf.formatToParts(now);
-                const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                if (offsetPart) {
-                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                const janDate = new Date(now.getFullYear(), 0, 15);
+                
+                const getCurrentOffsetMinutes = (date, tz) => {
+                    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
+                    const parts = dtf.formatToParts(date);
+                    const name = parts.find(p => p.type === 'timeZoneName')?.value;
+                    const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
                     if (match) {
-                        const currentOffset = parseInt(match[1], 10);
-                        const standardBaseOffset = Math.round(cachedLon / 15);
-                        
-                        // Se l'offset attuale della località è superiore al suo standard geometrico di base, l'ora legale è attiva
-                        if (currentOffset > standardBaseOffset) {
-                            return true;
-                        } else {
-                            return false;
-                        }
+                        const hours = parseInt(match[2], 10);
+                        const mins = parseInt(match[3], 10);
+                        const total = hours * 60 + mins;
+                        return match[1] === '-' ? -total : total;
                     }
-                }
+                    return 0;
+                };
+
+                const currentMin = getCurrentOffsetMinutes(now, tzString);
+                const standardMin = getCurrentOffsetMinutes(janDate, tzString);
+
+                return currentMin > standardMin;
             }
         } catch (e) {
             console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
@@ -56,6 +54,42 @@ function getCurrentDstState() {
     return localStorage.getItem('sunclock_dst') === 'true';
 }
 
+function getPreciseStandardTimezone(lat, lon) {
+    try {
+        if (typeof tzlookup === 'function') {
+            const tzString = tzlookup(lat, lon);
+            
+            // Correzione forzata e mirata per Spagna e Portogallo
+            if (tzString === 'Europe/Madrid' || tzString === 'Europe/Paris') {
+                return 1; // Spagna e Francia come l'Italia (UTC+1 standard)
+            }
+            if (tzString === 'Europe/Lisbon') {
+                return 0; // Portogallo come UK (UTC+0 standard)
+            }
+
+            const now = selectedDate || new Date();
+            const janDate = new Date(now.getFullYear(), 0, 15);
+            const dtf = new Intl.DateTimeFormat('en-US', {
+                timeZone: tzString,
+                timeZoneName: 'shortOffset'
+            });
+            const parts = dtf.formatToParts(janDate);
+            const offsetPart = parts.find(p => p.type === 'timeZoneName');
+            if (offsetPart) {
+                const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                if (match) {
+                    const hours = parseInt(match[1], 10);
+                    const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                    return hours + (hours < 0 ? -minutes : minutes);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Fallback su calcolo fuso geometrico", e);
+    }
+    return Math.round(lon / 15);
+}
+
 // Numeri e tacche fissi sul quadrante
 function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
@@ -63,7 +97,9 @@ function hoursToAngle(h) {
 
 // Calcolo degli angoli per le fasce solari
 function sunHoursToAngle(h) {
-    const dstShift = !getCurrentDstState() ? 1 : 0;
+    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+    const isDstNowActive = getCurrentDstState();
+    const dstShift = standardTz + (isDstNowActive ? 1 : 0);
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
@@ -269,12 +305,12 @@ function applyTimezonePreset() {
 }
 
 function getEffectiveDate() {
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     const now = new Date();
     
     let isDstNowActive = getCurrentDstState();
     const dstOffset = isDstNowActive ? 1 : 0;
-    const targetTotalOffsetHours = tzPresetVal + dstOffset;
+    const targetTotalOffsetHours = standardTz + dstOffset;
 
     const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
     return new Date(utcTimeMs + (targetTotalOffsetHours * 3600000));
@@ -587,12 +623,12 @@ function updateSunClock(lat, lon) {
     updatePageBackground(cachedTimes);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
-    const tz = document.getElementById('timezone-preset').value;
+    const standardTz = getPreciseStandardTimezone(lat, lon);
     const latFmt = parseFloat(lat).toFixed(2);
     const lonFmt = parseFloat(lon).toFixed(2);
     
     let isDstNowActive = getCurrentDstState();
-    const totalOffset = parseFloat(tz) + (isDstNowActive ? 1 : 0);
+    const totalOffset = standardTz + (isDstNowActive ? 1 : 0);
 
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
@@ -600,7 +636,7 @@ function updateSunClock(lat, lon) {
             Lat: ${latFmt} | Lon: ${lonFmt}
         </div>
         <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-            Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
+            Fuso: UTC ${standardTz >= 0 ? "+" : ""}${standardTz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
         </div>
     `;
 
@@ -824,7 +860,9 @@ function updatePageBackground(times) {
     if (!times) return;
     let h = timeToHours(selectedDate);
     
-    const dstShift = !getCurrentDstState() ? 1 : 0;
+    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+    const isDstNowActive = getCurrentDstState();
+    const dstShift = standardTz + (isDstNowActive ? 1 : 0);
     h = (h + dstShift) % 24;
 
     const currentColor = getIntervalColorSafe(h, times);
@@ -884,10 +922,10 @@ function getIntervalColorSafe(h, times) {
 
 function formatTime(date) {
     if (!isValidDate(date)) return "--:--";
-    const tzPresetVal = parseFloat(document.getElementById('timezone-preset').value);
+    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let isDstNowActive = getCurrentDstState();
     const dstOffset = isDstNowActive ? 1 : 0;
-    const totalOffsetHours = tzPresetVal + dstOffset;
+    const totalOffsetHours = standardTz + dstOffset;
     
     const shifted = new Date(date.getTime() + (totalOffsetHours * 3600000));
     return String(shifted.getUTCHours()).padStart(2, '0') + ":" + 
