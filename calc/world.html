@@ -131,12 +131,12 @@
                     const activeDst = isDstActiveForCoords(lat, lon);
                     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
 
-                    window.location.href = `calc/posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${activeDst}`;
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${activeDst}`;
                 })
                 .catch(() => {
                     const activeDst = isDstActiveForCoords(lat, lon);
                     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-                    window.location.href = `calc/posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${activeDst}`;
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${activeDst}`;
                 });
         }
 
