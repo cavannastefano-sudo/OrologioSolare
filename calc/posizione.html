@@ -6,6 +6,7 @@
     <title>SunClock24 - Posizione</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
 
@@ -244,7 +245,7 @@
             flex: 1;
             min-width: 200px;
             background: rgba(0,0,0,0.25);
-            padding: 10px;
+            padding: 8px 10px;
             border-radius: 10px;
             font-size: 0.85rem;
             color: #39ff14;
@@ -253,6 +254,7 @@
             box-shadow: none;
             font-weight: bold;
             cursor: pointer;
+            line-height: 1.25;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             transition: background 0.2s ease;
             box-sizing: border-box;
@@ -415,10 +417,9 @@
         }
 
         function getEffectiveDate() {
-            const now = new Date();
-            const utcTimeMs = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const cityOffsetHours = (cachedLon / 15) + (isDstActive ? 1 : 0);
-            return new Date(utcTimeMs + (cityOffsetHours * 3600000));
+            const standardTz = Math.round(cachedLon / 15);
+            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
+            return new Date(Date.now() + (cityOffsetHours * 3600000));
         }
 
         function updateInputsVal() {
@@ -466,7 +467,8 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const cityOffsetHours = (cachedLon / 15) + (isDstActive ? 1 : 0);
+            const standardTz = Math.round(cachedLon / 15);
+            const cityOffsetHours = standardTz + (isDstActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
@@ -497,8 +499,9 @@
         }
 
         function updateSunClock(lat, lon) {
-            const dstOffset = isDstActive ? 1 : 0;
-            let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+            const standardTz = Math.round(lon / 15);
+            const totalTzOffset = standardTz + (isDstActive ? 1 : 0);
+            let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
             cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
@@ -516,7 +519,16 @@
             updatePageBackground(cachedTimes);
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
-            document.getElementById('location-text').innerHTML = `<b>${cityName}</b><br>Lat: ${lat.toFixed(2)}, Lon: ${lon.toFixed(2)}`;
+            const latFmt = parseFloat(lat).toFixed(2);
+            const lonFmt = parseFloat(lon).toFixed(2);
+
+            document.getElementById('location-text').innerHTML = `
+                <div style="font-size: 0.9rem;">${cityName}</div>
+                <div style="font-size: 0.7rem; opacity: 0.85; margin-top: 2px;">
+                    Lat: ${latFmt} | Lon: ${lonFmt} | UTC ${totalTzOffset >= 0 ? "+" : ""}${totalTzOffset}
+                </div>
+            `;
+
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
             document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
         }
@@ -583,8 +595,9 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+                const standardTz = Math.round(cachedLon / 15);
+                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -626,8 +639,9 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const dstOffset = isDstActive ? 1 : 0;
-                let utcCalculationDate = new Date(selectedDate.getTime() - ((cachedLon / 15 + dstOffset) * 3600000));
+                const standardTz = Math.round(cachedLon / 15);
+                const dstOffset = standardTz + (isDstActive ? 1 : 0);
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
                 
