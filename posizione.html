@@ -428,10 +428,22 @@
         const cy = 250;
         const radius = 248;
 
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Sincronizzazione immediata dei parametri passati dall'URL se presenti
+        if (urlParams.has('auto')) {
+            localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
+        }
+        if (urlParams.has('dst')) {
+            localStorage.setItem('sunclock_dst', urlParams.get('dst'));
+            // Rimuoviamo il parametro dst dall'URL per dare priorità assoluta al toggle manuale locale della pagina
+            urlParams.delete('dst');
+        }
+
         function getCurrentDstState() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('dst')) {
-                return urlParams.get('dst') === 'true';
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (!isAuto) {
+                return localStorage.getItem('sunclock_dst') === 'true';
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
@@ -445,17 +457,9 @@
         let cachedMoonTimes = null;
         let cachedMoonIllumination = null;
         
-        const urlParams = new URLSearchParams(window.location.search);
         let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : NaN;
         let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : NaN;
         let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
-
-        if (urlParams.has('auto')) {
-            localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
-        }
-        if (urlParams.has('dst')) {
-            localStorage.setItem('sunclock_dst', urlParams.get('dst'));
-        }
 
         const COUNTRY_COORDS = {
             "brasile": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
@@ -488,11 +492,11 @@
 
         function getPreciseStandardTimezone(lat, lon) {
             // FORZATURE GEOGRAFICHE E POLITICO-NAZIONALI ASSOLUTE
-            // Portogallo (Lisbona circa lat 38.7, lon -9.1) -> Standard UTC+0
+            // Portogallo (Lisbona) -> Standard UTC+0
             if ((lat >= 36 && lat <= 42) && (lon >= -10 && lon <= -6)) {
                 return 0; 
             }
-            // Spagna (Madrid / penisola iberica) -> Standard UTC+1 (come Italia/Francia)
+            // Spagna (Madrid / penisola iberica) -> Standard UTC+1
             if ((lat >= 36 && lat <= 44) && (lon > -6 && lon <= 4)) {
                 return 1; 
             }
@@ -565,7 +569,7 @@
             const isChecked = document.getElementById('chk-dst').checked;
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             
-            // CORRETTO: Forza il ricalcolo immediato dell'orologio e del quadrante quando si spunta il flag manuale
+            // Forza il ricalcolo immediato dell'orologio e del quadrante quando si spunta il flag manuale
             isCustomTime = false;
             updateTimeForLocation();
             updateInputsVal();
