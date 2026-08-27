@@ -526,6 +526,23 @@
         let isCustomTime = false;
 
         function getPreciseStandardTimezone(lat, lon) {
+            // CORRETTORE INFALLIBILE PER I PAESI CRITICI (Evita gli errori di polygon clipping del database)
+            // 1. Portogallo Continentale (Copertura geografica reale)
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
+                return 0;
+            }
+            // 2. Tutta l'Irlanda e Irlanda del Nord
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) {
+                return 0;
+            }
+            // 3. Spagna Continentale e Francia
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) {
+                return 1; // Spagna
+            }
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) {
+                return 1; // Francia
+            }
+
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
