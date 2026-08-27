@@ -341,34 +341,10 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     currentPlaceDisplayName = placeName;
 
-    // Determina l'offset esatto usando tzlookup se disponibile (gestisce correttamente Spagna, Portogallo, ecc.)
-    let exactOffset = 0;
-    try {
-        if (typeof tzlookup === 'function') {
-            const tzString = tzlookup(lat, lon);
-            const now = new Date();
-            const dtf = new Intl.DateTimeFormat('en-US', {
-                timeZone: tzString,
-                timeZoneName: 'shortOffset'
-            });
-            const parts = dtf.formatToParts(now);
-            const offsetPart = parts.find(p => p.type === 'timeZoneName');
-            if (offsetPart) {
-                const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                if (match) {
-                    exactOffset = parseInt(match[1], 10);
-                }
-            }
-        } else {
-            exactOffset = Math.round(cachedLon / 15);
-        }
-    } catch (e) {
-        exactOffset = Math.round(cachedLon / 15);
-    }
-
+    let approxOffset = Math.round(cachedLon / 15);
     let selectEl = document.getElementById('timezone-preset');
     for(let opt of selectEl.options) {
-        if(parseFloat(opt.value) === exactOffset) {
+        if(parseFloat(opt.value) === approxOffset) {
             selectEl.value = opt.value;
             break;
         }
