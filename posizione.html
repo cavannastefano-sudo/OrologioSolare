@@ -530,12 +530,11 @@
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
                     
-                    // CORREZIONI MIRATE PER I FUSI EUROPEI
                     if (tzString === 'Europe/Madrid' || tzString === 'Europe/Paris') {
-                        return 1; // Spagna e Francia come l'Italia (UTC+1 standard)
+                        return 1;
                     }
-                    if (tzString === 'Europe/Lisbon' || tzString === 'Europe/Dublin' || tzString === 'Europe/Belfast' || tzString === 'Europe/London') {
-                        return 0; // Portogallo, Irlanda e UK (UTC+0 standard)
+                    if (tzString === 'Europe/Lisbon' || tzString === 'Europe/Dublin' || tzString === 'Europe/Belfast' || tzString === 'Europe/London' || tzString.includes('Belfast') || tzString.includes('Dublin')) {
+                        return 0;
                     }
 
                     const now = selectedDate || new Date();
@@ -557,6 +556,11 @@
                 }
             } catch (e) {
                 console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+
+            // Gabbia di sicurezza per isola d'Irlanda e Regno Unito (gestisce anche il Nord-Ovest irlandese)
+            if (lat >= 50 && lat <= 60 && lon >= -11 && lon <= 2) {
+                return 0;
             }
 
             return Math.round(lon / 15);
