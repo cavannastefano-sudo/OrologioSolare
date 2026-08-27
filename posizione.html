@@ -440,7 +440,7 @@
                     if (typeof tzlookup === 'function') {
                         const tzString = tzlookup(cachedLat, cachedLon);
                         
-                        // ESCLUDI IL NORD AFRICA E ZONE SENZA ORA LEGALE
+                        // Esclude le zone africane e del Nord Africa che non usano l'ora legale
                         if (tzString.startsWith('Africa/')) {
                             return false;
                         }
@@ -526,19 +526,29 @@
         let isCustomTime = false;
 
         function getPreciseStandardTimezone(lat, lon) {
+            // CORRETTORE INFALLIBILE PER I PAESI CRITICI (Evita gli errori di polygon clipping del database)
+            // 1. Portogallo Continentale (Copertura geografica reale)
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
+                return 0;
+            }
+            // 2. Tutta l'Irlanda e Irlanda del Nord
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) {
+                return 0;
+            }
+            // 3. Spagna Continentale e Francia
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) {
+                return 1; // Spagna
+            }
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) {
+                return 1; // Francia
+            }
+
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
-                    
-                    if (tzString === 'Europe/Madrid' || tzString === 'Europe/Paris') {
-                        return 1;
-                    }
-                    if (tzString === 'Europe/Lisbon' || tzString === 'Europe/Dublin' || tzString === 'Europe/Belfast' || tzString === 'Europe/London' || tzString.includes('Belfast') || tzString.includes('Dublin') || tzString.includes('Lisbon')) {
-                        return 0;
-                    }
-
                     const now = selectedDate || new Date();
                     const janDate = new Date(now.getFullYear(), 0, 15);
+                    
                     const dtf = new Intl.DateTimeFormat('en-US', {
                         timeZone: tzString,
                         timeZoneName: 'shortOffset'
@@ -556,16 +566,6 @@
                 }
             } catch (e) {
                 console.warn("Fallback su calcolo fuso geometrico", e);
-            }
-
-            // Gabbia di sicurezza per isola d'Irlanda e Regno Unito (include il Nord-Ovest irlandese)
-            if (lat >= 50 && lat <= 60 && lon >= -11 && lon <= 2) {
-                return 0;
-            }
-
-            // Regola geografica specifica per il Portogallo continentale
-            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
-                return 0;
             }
 
             return Math.round(lon / 15);
