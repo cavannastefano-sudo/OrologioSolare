@@ -428,7 +428,7 @@
         const cy = 250;
         const radius = 248;
 
-        // Funzione standard universale basata sul database globale di tzlookup
+        // Restituisce sempre il vero fuso orario standard (solare) della località
         function getPreciseStandardTimezone(lat, lon) {
             try {
                 if (typeof tzlookup === 'function') {
@@ -458,7 +458,7 @@
             return Math.round(lon / 15);
         }
 
-        // Funzione universale globale per il rilevamento dell'ora legale in qualsiasi Stato del mondo
+        // Gestisce lo stato dell'ora legale (automatico o forzato manualmente dal flag)
         function getCurrentDstState() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
@@ -473,7 +473,7 @@
                         const now = selectedDate || new Date();
                         const janDate = new Date(now.getFullYear(), 0, 15);
 
-                        const getCurrentOffsetMinutes = (date, tz) => {
+                        const getOffsetMinutesForDate = (date, tz) => {
                             const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
                             const parts = dtf.formatToParts(date);
                             const name = parts.find(p => p.type === 'timeZoneName')?.value;
@@ -487,14 +487,13 @@
                             return 0;
                         };
 
-                        const currentMin = getCurrentOffsetMinutes(now, tzString);
-                        const standardMin = getCurrentOffsetMinutes(janDate, tzString);
+                        const currentMin = getOffsetMinutesForDate(now, tzString);
+                        const standardMin = getOffsetMinutesForDate(janDate, tzString);
 
-                        // Confronta l'ora attuale con gennaio: se l'offset è maggiore, l'ora legale è attiva ovunque nel mondo
                         return currentMin > standardMin;
                     }
                 } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale globale tramite tzlookup", e);
+                    console.warn("Impossibile determinare l'ora legale globale", e);
                 }
             }
 
