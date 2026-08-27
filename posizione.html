@@ -428,43 +428,6 @@
         const cy = 250;
         const radius = 248;
 
-        function getPreciseStandardTimezone(lat, lon) {
-            // 1. Correzioni manuali mirate per zone europee critiche
-            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
-            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
-            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
-            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;  // Francia
-
-            // 2. Copertura mondiale tramite il database ufficiale dei fusi orari
-            try {
-                if (typeof tzlookup === 'function') {
-                    const tzString = tzlookup(lat, lon);
-                    const now = selectedDate || new Date();
-                    const janDate = new Date(now.getFullYear(), 0, 15);
-                    
-                    const dtf = new Intl.DateTimeFormat('en-US', {
-                        timeZone: tzString,
-                        timeZoneName: 'shortOffset'
-                    });
-                    const parts = dtf.formatToParts(janDate);
-                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                    if (offsetPart) {
-                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                        if (match) {
-                            const hours = parseInt(match[1], 10);
-                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
-                            return hours + (hours < 0 ? -minutes : minutes);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.warn("Fallback geometrico globale", e);
-            }
-
-            // 3. Fallback geometrico standard basato sulla longitudine per oceani o aree remote
-            return Math.round(lon / 15);
-        }
-
         function getCurrentDstState() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
@@ -477,6 +440,11 @@
                     if (typeof tzlookup === 'function') {
                         const tzString = tzlookup(cachedLat, cachedLon);
                         
+                        // Esclude le zone africane e del Nord Africa che non usano l'ora legale
+                        if (tzString.startsWith('Africa/')) {
+                            return false;
+                        }
+
                         const now = selectedDate || new Date();
                         const janDate = new Date(now.getFullYear(), 0, 15);
 
@@ -500,7 +468,7 @@
                         return currentMin > standardMin;
                     }
                 } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale globale", e);
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
                 }
             }
 
@@ -556,6 +524,52 @@
 
         let selectedDate = new Date();
         let isCustomTime = false;
+
+        function getPreciseStandardTimezone(lat, lon) {
+            // CORRETTORE INFALLIBILE PER I PAESI CRITICI (Evita gli errori di polygon clipping del database)
+            // 1. Portogallo Continentale (Copertura geografica reale)
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
+                return 0;
+            }
+            // 2. Tutta l'Irlanda e Irlanda del Nord
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) {
+                return 0;
+            }
+            // 3. Spagna Continentale e Francia
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) {
+                return 1; // Spagna
+            }
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) {
+                return 1; // Francia
+            }
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = selectedDate || new Date();
+                    const janDate = new Date(now.getFullYear(), 0, 15);
+                    
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(janDate);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+
+            return Math.round(lon / 15);
+        }
 
         function initClock() {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
