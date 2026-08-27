@@ -439,10 +439,6 @@
         }
 
         function getCurrentDstState() {
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (!isAuto) {
-                return localStorage.getItem('sunclock_dst'] === 'true';
-            }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
