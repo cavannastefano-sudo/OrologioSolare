@@ -533,7 +533,7 @@
                     if (tzString === 'Europe/Madrid' || tzString === 'Europe/Paris') {
                         return 1;
                     }
-                    if (tzString === 'Europe/Lisbon' || tzString === 'Europe/Dublin' || tzString === 'Europe/Belfast' || tzString === 'Europe/London' || tzString.includes('Belfast') || tzString.includes('Dublin')) {
+                    if (tzString === 'Europe/Lisbon' || tzString === 'Europe/Dublin' || tzString === 'Europe/Belfast' || tzString === 'Europe/London' || tzString.includes('Belfast') || tzString.includes('Dublin') || tzString.includes('Lisbon')) {
                         return 0;
                     }
 
@@ -558,8 +558,13 @@
                 console.warn("Fallback su calcolo fuso geometrico", e);
             }
 
-            // Gabbia di sicurezza per isola d'Irlanda e Regno Unito (gestisce anche il Nord-Ovest irlandese)
+            // Gabbia di sicurezza per isola d'Irlanda e Regno Unito (include il Nord-Ovest irlandese)
             if (lat >= 50 && lat <= 60 && lon >= -11 && lon <= 2) {
+                return 0;
+            }
+
+            // Regola geografica specifica per il Portogallo continentale
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
                 return 0;
             }
 
