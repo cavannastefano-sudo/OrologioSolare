@@ -428,78 +428,6 @@
         const cy = 250;
         const radius = 248;
 
-        // Calibrazione Universale e Precisa del Fuso Orario Standard (Solare)
-        function getPreciseStandardTimezone(lat, lon) {
-            try {
-                if (typeof tzlookup === 'function') {
-                    const tzString = tzlookup(lat, lon);
-                    const now = selectedDate || new Date();
-                    // Usiamo gennaio per estrarre l'offset standard invernale reale di qualsiasi nazione (Francia, Spagna, Grecia, Algeria incluse)
-                    const janDate = new Date(now.getFullYear(), 0, 15);
-                    
-                    const dtf = new Intl.DateTimeFormat('en-US', {
-                        timeZone: tzString,
-                        timeZoneName: 'longOffset'
-                    });
-                    const parts = dtf.formatToParts(janDate);
-                    const name = parts.find(p => p.type === 'timeZoneName')?.value;
-                    const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
-                    if (match) {
-                        const hours = parseInt(match[2], 10);
-                        const mins = parseInt(match[3], 10) / 60;
-                        const total = hours + mins;
-                        return match[1] === '-' ? -total : total;
-                    }
-                }
-            } catch (e) {
-                console.warn("Fallback su calcolo fuso geometrico globale", e);
-            }
-
-            return Math.round(lon / 15);
-        }
-
-        // Calibrazione dinamica e immediata dello stato dell'Ora Legale (Automatica o Manuale)
-        function getCurrentDstState() {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('dst')) {
-                return urlParams.get('dst') === 'true';
-            }
-            
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-                try {
-                    if (typeof tzlookup === 'function') {
-                        const tzString = tzlookup(cachedLat, cachedLon);
-                        const now = selectedDate || new Date();
-                        const janDate = new Date(now.getFullYear(), 0, 15);
-
-                        const getOffsetMinutesForDate = (date, tz) => {
-                            const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' });
-                            const parts = dtf.formatToParts(date);
-                            const name = parts.find(p => p.type === 'timeZoneName')?.value;
-                            const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
-                            if (match) {
-                                const hours = parseInt(match[2], 10);
-                                const mins = parseInt(match[3], 10);
-                                const total = hours * 60 + mins;
-                                return match[1] === '-' ? -total : total;
-                            }
-                            return 0;
-                        };
-
-                        const currentMin = getOffsetMinutesForDate(now, tzString);
-                        const standardMin = getOffsetMinutesForDate(janDate, tzString);
-
-                        return currentMin > standardMin;
-                    }
-                } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale globale", e);
-                }
-            }
-
-            return localStorage.getItem('sunclock_dst') === 'true';
-        }
-
         const PALETTE = {
             night: '#000000', astro: '#172554', naut: '#1e3a8a',
             civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
@@ -550,7 +478,68 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
+        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA (Segreto per far andare veloce il flag)
+        let cachedStandardTz = Math.round(cachedLon / 15);
+        let cachedAutoDst = false;
+
+        function calibrateTimezone() {
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(cachedLat, cachedLon);
+                    const now = selectedDate || new Date();
+                    
+                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni "fuori asse"
+                    const janDate = new Date(now.getFullYear(), 0, 15);
+                    const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+                    const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
+                    if (offsetStrJan) {
+                        const matchJan = offsetStrJan.match(/GMT([+-])(\d{2}):(\d{2})/);
+                        if (matchJan) {
+                            const h = parseInt(matchJan[2], 10);
+                            const m = parseInt(matchJan[3], 10) / 60;
+                            cachedStandardTz = matchJan[1] === '-' ? -(h + m) : (h + m);
+                        }
+                    }
+
+                    // 2. Calcolo se oggi in quel paese c'è l'ora legale (Per l'opzione Auto)
+                    const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+                    const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
+                    if (offsetStrNow) {
+                        const matchNow = offsetStrNow.match(/GMT([+-])(\d{2}):(\d{2})/);
+                        if (matchNow) {
+                            const hNow = parseInt(matchNow[2], 10);
+                            const mNow = parseInt(matchNow[3], 10) / 60;
+                            const totalNow = matchNow[1] === '-' ? -(hNow + mNow) : (hNow + mNow);
+                            cachedAutoDst = totalNow > cachedStandardTz;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback, uso il fuso orario geometrico solare", e);
+                cachedStandardTz = Math.round(cachedLon / 15);
+                cachedAutoDst = false;
+            }
+        }
+
+        // Ora la funzione che legge il flag è ISTANTANEA come nel tuo vecchio codice
+        function getCurrentDstState() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('dst')) {
+                return urlParams.get('dst') === 'true';
+            }
+            
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto) {
+                return cachedAutoDst;
+            }
+
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
         function initClock() {
+            // ESEGUIAMO LA CALIBRAZIONE DEI PAESI SOLO QUI!
+            calibrateTimezone(); 
+
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
@@ -581,7 +570,6 @@
 
         function toggleDST() {
             const isChecked = document.getElementById('chk-dst').checked;
-            // Forzatura manuale attiva: disattiva l'automatismo e aggiorna subito lo stato
             localStorage.setItem('sunclock_auto_dst', 'false');
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             
@@ -598,7 +586,7 @@
         }
 
         function getEffectiveDate() {
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const standardTz = cachedStandardTz; // Legge la memoria all'istante
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -649,7 +637,7 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const standardTz = cachedStandardTz;
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
@@ -682,7 +670,7 @@
         }
 
         function updateSunClock(lat, lon) {
-            const standardTz = getPreciseStandardTimezone(lat, lon);
+            const standardTz = cachedStandardTz;
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             
@@ -787,7 +775,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+                const standardTz = cachedStandardTz;
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -832,7 +820,7 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+                const standardTz = cachedStandardTz;
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -1090,7 +1078,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const standardTz = cachedStandardTz; // Zero sforzo per il telefono
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
