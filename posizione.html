@@ -428,27 +428,27 @@
         const cy = 250;
         const radius = 248;
 
-        // Restituisce sempre il vero fuso orario standard (solare) della località
+        // Calibrazione Universale e Precisa del Fuso Orario Standard (Solare)
         function getPreciseStandardTimezone(lat, lon) {
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
                     const now = selectedDate || new Date();
+                    // Usiamo gennaio per estrarre l'offset standard invernale reale di qualsiasi nazione (Francia, Spagna, Grecia, Algeria incluse)
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     
                     const dtf = new Intl.DateTimeFormat('en-US', {
                         timeZone: tzString,
-                        timeZoneName: 'shortOffset'
+                        timeZoneName: 'longOffset'
                     });
                     const parts = dtf.formatToParts(janDate);
-                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                    if (offsetPart) {
-                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                        if (match) {
-                            const hours = parseInt(match[1], 10);
-                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
-                            return hours + (hours < 0 ? -minutes : minutes);
-                        }
+                    const name = parts.find(p => p.type === 'timeZoneName')?.value;
+                    const match = name && name.match(/GMT([+-])(\d{2}):(\d{2})/);
+                    if (match) {
+                        const hours = parseInt(match[2], 10);
+                        const mins = parseInt(match[3], 10) / 60;
+                        const total = hours + mins;
+                        return match[1] === '-' ? -total : total;
                     }
                 }
             } catch (e) {
@@ -458,7 +458,7 @@
             return Math.round(lon / 15);
         }
 
-        // Gestisce lo stato dell'ora legale (automatico o forzato manualmente dal flag)
+        // Calibrazione dinamica e immediata dello stato dell'Ora Legale (Automatica o Manuale)
         function getCurrentDstState() {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
@@ -581,7 +581,7 @@
 
         function toggleDST() {
             const isChecked = document.getElementById('chk-dst').checked;
-            // Quando l'utente clicca manualmente la casella, disattiva l'auto DST e salva la preferenza
+            // Forzatura manuale attiva: disattiva l'automatismo e aggiorna subito lo stato
             localStorage.setItem('sunclock_auto_dst', 'false');
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             
@@ -686,7 +686,6 @@
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             
-            // Allineamento corretto: usiamo direttamente la data locale convertita in UTC per i calcoli astronomici
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
