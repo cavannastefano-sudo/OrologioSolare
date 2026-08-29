@@ -478,17 +478,15 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        let cachedStandardTz = 1; // Default sicuro in Europa centrale
+        let cachedStandardTz = 0;
         let cachedAutoDst = false;
 
-        // CALIBRAZIONE GLOBALE BASATA ESCLUSIVAMENTE SUL DATABASE TZ (NIENTE LONGITUDINE APPROSSIMATIVA)
         function calibrateTimezone() {
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(cachedLat, cachedLon);
                     const now = selectedDate || new Date();
                     
-                    // 1. Estrae l'offset legale standard (invernale) reale di quella specifica zona geografica
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
@@ -501,7 +499,6 @@
                         }
                     }
 
-                    // 2. Estrae l'offset odierno per verificare se in quel paese è attiva l'ora legale
                     const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
                     if (offsetStrNow) {
@@ -515,7 +512,9 @@
                     }
                 }
             } catch (e) {
-                console.warn("Errore nel recupero della timezone tramite tzlookup", e);
+                console.warn("Errore nel recupero della timezone tramite tzlookup, fallback geometrico", e);
+                cachedStandardTz = Math.round(cachedLon / 15);
+                cachedAutoDst = false;
             }
         }
 
