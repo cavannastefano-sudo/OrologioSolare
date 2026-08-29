@@ -9,7 +9,8 @@
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/tz-lookup@6.1.25/tz-lookup.min.js"></script>
+    <!-- Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
 
     <style>
@@ -283,6 +284,7 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
+        /* Sezione Tendina Luna */
         .moon-dropdown-wrapper {
             width: min(90vw, 480px);
             margin-top: 4px;
@@ -379,6 +381,7 @@
     </div>
 
     <div id="bottom-panels-container">
+        <!-- Pannello Sole e Info Principali Ingranditi -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -387,6 +390,7 @@
             </div>
         </div>
 
+        <!-- Sezione Tendina Luna -->
         <div class="moon-dropdown-wrapper">
             <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
                 <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
@@ -438,123 +442,29 @@
         let cachedMoonIllumination = null;
         
         const urlParams = new URLSearchParams(window.location.search);
-        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : NaN;
-        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : NaN;
-        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : '';
-
-        if (urlParams.has('auto')) {
-            localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
-        }
-        if (urlParams.has('dst')) {
-            localStorage.setItem('sunclock_dst', urlParams.get('dst'));
-        }
-
-        const COUNTRY_COORDS = {
-            "brasile": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
-            "brazil": { lat: -15.7938, lon: -47.8827, name: "Brasile (Brasilia)" },
-            "stati uniti": { lat: 38.8951, lon: -77.0364, name: "Stati Uniti (Washington)" },
-            "usa": { lat: 38.8951, lon: -77.0364, name: "Stati Uniti (Washington)" },
-            "francia": { lat: 48.8566, lon: 2.3522, name: "Francia (Parigi)" },
-            "spagna": { lat: 40.4168, lon: -3.7038, name: "Spagna (Madrid)" },
-            "italia": { lat: 41.9028, lon: 12.4964, name: "Italia (Roma)" },
-            "germania": { lat: 52.5200, lon: 13.4050, name: "Germania (Berlino)" },
-            "regno unito": { lat: 51.5074, lon: -0.1278, name: "Regno Unito (Londra)" },
-            "uk": { lat: 51.5074, lon: -0.1278, name: "Regno Unito (Londra)" },
-            "portogallo": { lat: 38.7223, lon: -9.1393, name: "Portogallo (Lisbona)" },
-            "irlanda": { lat: 53.3498, lon: -6.2603, name: "Irlanda (Dublino)" }
-        };
-
-        const lowerCity = cityName.toLowerCase().trim();
-        if ((isNaN(cachedLat) || isNaN(cachedLon)) && COUNTRY_COORDS[lowerCity]) {
-            cachedLat = COUNTRY_COORDS[lowerCity].lat;
-            cachedLon = COUNTRY_COORDS[lowerCity].lon;
-            cityName = COUNTRY_COORDS[lowerCity].name;
-        } else {
-            if (isNaN(cachedLat)) cachedLat = 45.05;
-            if (isNaN(cachedLon)) cachedLon = 9.69;
-            if (!cityName) cityName = "Posizione";
-        }
+        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
 
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        let cachedStandardTz = Math.round(cachedLon / 15);
-        let cachedAutoDst = false;
-
-        // CALIBRAZIONE UFFICIALE TRAMITE TZ-LOOKUP E INTEL (Corregge Francia, Portogallo, Spagna, ecc.)
-        function calibrateTimezone() {
-            try {
-                if (typeof tzlookup === 'function') {
-                    const tzString = tzlookup(cachedLat, cachedLon);
-                    const now = selectedDate || new Date();
-                    
-                    // 1. Calcolo dell'offset standard (invernale) reale della specifica timezone
-                    const janDate = new Date(now.getFullYear(), 0, 15);
-                    const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
-                    const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
-                    if (offsetStrJan) {
-                        const matchJan = offsetStrJan.match(/GMT([+-])(\d{2}):(\d{2})/);
-                        if (matchJan) {
-                            const h = parseInt(matchJan[2], 10);
-                            const m = parseInt(matchJan[3], 10) / 60;
-                            cachedStandardTz = matchJan[1] === '-' ? -(h + m) : (h + m);
-                        }
-                    }
-
-                    // 2. Calcolo dello stato attuale per verificare se è attiva l'ora legale (DST)
-                    const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
-                    const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
-                    if (offsetStrNow) {
-                        const matchNow = offsetStrNow.match(/GMT([+-])(\d{2}):(\d{2})/);
-                        if (matchNow) {
-                            const hNow = parseInt(matchNow[2], 10);
-                            const mNow = parseInt(matchNow[3], 10) / 60;
-                            const totalNow = matchNow[1] === '-' ? -(hNow + mNow) : (hNow + mNow);
-                            cachedAutoDst = totalNow > cachedStandardTz;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.warn("Fallback geometrico basato sulla longitudine", e);
-                cachedStandardTz = Math.round(cachedLon / 15);
-                cachedAutoDst = false;
-            }
-        }
-
         function getCurrentDstState() {
-            const manualInput = document.getElementById('chk-dst');
-            if (manualInput && !manualInput.disabled) {
-                return manualInput.checked;
-            }
-            
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('dst')) {
-                return urlParams.get('dst') === 'true';
-            }
-            
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto) {
-                return cachedAutoDst;
+            if (isAuto && typeof getEffectiveDST === 'function') {
+                return getEffectiveDST(cachedLat, cachedLon, selectedDate);
             }
-
             return localStorage.getItem('sunclock_dst') === 'true';
         }
 
         function initClock() {
-            calibrateTimezone(); 
-
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const savedDst = getCurrentDstState();
+            
+            document.getElementById('chk-dst').checked = savedDst;
+            
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
-            
-            if (manualInput) {
-                if (isAuto) {
-                    manualInput.checked = cachedAutoDst;
-                } else {
-                    manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
-                }
-            }
-
             if (isAuto) {
                 manualBox.style.opacity = "0.4";
                 manualInput.disabled = true;
@@ -577,23 +487,15 @@
 
         function toggleDST() {
             const isChecked = document.getElementById('chk-dst').checked;
-            localStorage.setItem('sunclock_auto_dst', 'false');
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
-            
-            const manualBox = document.getElementById('manual-dst-box');
-            if (manualBox) manualBox.style.opacity = "1.0";
-            const manualInput = document.getElementById('chk-dst');
-            if (manualInput) manualInput.disabled = false;
-
             if (!isCustomTime) {
                 updateTimeForLocation();
             }
-            updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
 
         function getEffectiveDate() {
-            const standardTz = cachedStandardTz;
+            const standardTz = Math.round(cachedLon / 15);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -644,7 +546,7 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const standardTz = cachedStandardTz;
+            const standardTz = Math.round(cachedLon / 15);
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
@@ -677,10 +579,9 @@
         }
 
         function updateSunClock(lat, lon) {
-            const standardTz = cachedStandardTz;
+            const standardTz = Math.round(lon / 15);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
-            
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -782,7 +683,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const standardTz = cachedStandardTz;
+                const standardTz = Math.round(cachedLon / 15);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -827,7 +728,7 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const standardTz = cachedStandardTz;
+                const standardTz = Math.round(cachedLon / 15);
                 const isDstNowActive = getCurrentDstState();
                 const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
@@ -1085,7 +986,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = cachedStandardTz;
+            const standardTz = Math.round(cachedLon / 15);
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
