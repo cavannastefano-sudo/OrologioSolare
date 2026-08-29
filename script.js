@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo e Corretto)
+// SunClock24 - script.js (Completo e Integrato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -12,42 +12,24 @@ const cx = 250;
 const cy = 250;
 const radius = 248;
 
-const PALETTE = {
-    night: '#000000', astro: '#172554', naut: '#1e3a8a',
-    civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
-};
-
-let cachedTimes = null;
-let cachedMoonTimes = null;
-let cachedMoonIllumination = null;
-let cachedLat = 45.05; 
-let cachedLon = 9.69;
-let selectedDate = new Date();
-let isCustomTime = false;
-let map = null;
-let marker = null;
-let currentPlaceDisplayName = "Ricerca in corso...";
-let isTimezoneOnlyMode = false;
-
-// Sincronizzazione parametri passati dall'URL
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has('auto')) {
-    localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
-}
-if (urlParams.has('dst')) {
-    localStorage.setItem('sunclock_dst', urlParams.get('dst'));
-}
-
-// Funzione fuso orario standard blindata per i Paesi critici (Europa occidentale)
+// Funzione fuso orario standard blindata e allineata con i confini reali
 function getPreciseStandardTimezone(lat, lon) {
     // 1. Portogallo Continentale
-    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
-    // 2. Irlanda
-    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
+    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) {
+        return 0;
+    }
+    // 2. Tutta l'Irlanda e Irlanda del Nord (include il Nord-Ovest)
+    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) {
+        return 0;
+    }
     // 3. Spagna Continentale
-    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
+    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) {
+        return 1;
+    }
     // 4. Francia
-    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
+    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) {
+        return 1;
+    }
 
     try {
         if (typeof tzlookup === 'function') {
@@ -85,10 +67,21 @@ function getCurrentDstState() {
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+        // 1. Controllo tramite gestore esterno se disponibile
+        if (typeof getEffectiveDST === 'function') {
+            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+            if (effective !== undefined) return effective;
+        }
+
+        // 2. Controllo basato sul fuso orario reale tramite tzlookup e confini blindati
         try {
             if (typeof tzlookup === 'function') {
                 const tzString = tzlookup(cachedLat, cachedLon);
-                if (tzString.startsWith('Africa/')) return false;
+                
+                // Esclude le zone africane e del Nord Africa che non usano l'ora legale
+                if (tzString.startsWith('Africa/')) {
+                    return false;
+                }
 
                 const now = selectedDate || new Date();
                 const dtf = new Intl.DateTimeFormat('en-US', {
@@ -102,7 +95,13 @@ function getCurrentDstState() {
                     if (match) {
                         const currentOffset = parseInt(match[1], 10);
                         const standardBaseOffset = getPreciseStandardTimezone(cachedLat, cachedLon);
-                        return currentOffset > standardBaseOffset;
+                        
+                        // Se l'offset attuale della località è superiore al suo standard invernale, l'ora legale è attiva
+                        if (currentOffset > standardBaseOffset) {
+                            return true;
+                        } else {
+                            return false;
+                        }
                     }
                 }
             }
@@ -114,13 +113,41 @@ function getCurrentDstState() {
     return localStorage.getItem('sunclock_dst') === 'true';
 }
 
+// Numeri e tacche fissi sul quadrante
 function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
+// Calcolo degli angoli per le fasce solari
 function sunHoursToAngle(h) {
     const dstShift = !getCurrentDstState() ? 1 : 0;
     return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+}
+
+const PALETTE = {
+    night: '#000000', astro: '#172554', naut: '#1e3a8a',
+    civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
+};
+
+let cachedTimes = null;
+let cachedMoonTimes = null;
+let cachedMoonIllumination = null;
+let cachedLat = 45.05; 
+let cachedLon = 9.69;
+let selectedDate = new Date();
+let isCustomTime = false;
+let map = null;
+let marker = null;
+let currentPlaceDisplayName = "Ricerca in corso...";
+let isTimezoneOnlyMode = false;
+
+// Sincronizzazione immediata dei parametri passati dall'URL (se presenti)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('auto')) {
+    localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
+}
+if (urlParams.has('dst')) {
+    localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
 async function initClock() {
@@ -167,21 +194,32 @@ async function initClock() {
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
     updateDstUI(checked);
-    if (!isCustomTime) updateTimeForLocation();
-    if (isTimezoneOnlyMode) applyTimezonePreset();
-    else updateSunClock(cachedLat, cachedLon);
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
-    if (!isCustomTime) updateTimeForLocation();
-    if (isTimezoneOnlyMode) applyTimezonePreset();
-    else updateSunClock(cachedLat, cachedLon);
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function updateDstUI(isAuto) {
     const manualBox = document.getElementById('manual-dst-box');
     const manualInput = document.getElementById('manual-dst-toggle');
+    
     if (!manualBox || !manualInput) return;
     
     if (isAuto) {
@@ -199,13 +237,42 @@ function toggleMoonDropdown() {
     const content = document.getElementById('moon-dropdown-content');
     const arrow = document.getElementById('dropdown-arrow');
     content.classList.toggle('show');
-    arrow.innerText = content.classList.contains('show') ? '▲' : '▼';
+    if (content.classList.contains('show')) {
+        arrow.innerText = '▲';
+    } else {
+        arrow.innerText = '▼';
+    }
+}
+
+async function fetchPlaceName(lat, lon) {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+        const geoData = await res.json();
+        if (geoData && geoData.address) {
+            const country = geoData.address.country || '';
+            const specificLocality = geoData.address.city || 
+                                   geoData.address.town || 
+                                   geoData.address.village || 
+                                   geoData.address.municipality || 
+                                   geoData.address.county || 
+                                   geoData.address.state || '';
+            if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                currentPlaceDisplayName = `${country} - ${specificLocality}`;
+            } else {
+                currentPlaceDisplayName = specificLocality || country || "Piacenza - Italia";
+            }
+        }
+    } catch (err) {
+        currentPlaceDisplayName = "Piacenza - Italia";
+    }
 }
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = true;
-    if (!isCustomTime) updateTimeForLocation();
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
 
     let isDstNowActive = getCurrentDstState();
     const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
@@ -225,6 +292,27 @@ function applyTimezonePreset() {
     document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
+
+    const tbody = document.getElementById('times-table-body');
+    tbody.innerHTML = `
+        <tr><td>Fase Lunare</td><td>----</td></tr>
+        <tr><td>Sorge la Luna</td><td>----</td></tr>
+        <tr><td>Tramonta la Luna</td><td>----</td></tr>
+        <tr><td>Mezzanotte solare</td><td>----</td></tr>
+        <tr><td>Alba astronomica</td><td>----</td></tr>
+        <tr><td>Alba Nautica</td><td>----</td></tr>
+        <tr><td>Alba Civile</td><td>----</td></tr>
+        <tr><td>Alba</td><td>----</td></tr>
+        <tr><td>Fine dell'alba</td><td>----</td></tr>
+        <tr><td>Fine dell'ora d'oro</td><td>----</td></tr>
+        <tr><td>Mezzogiorno solare</td><td>----</td></tr>
+        <tr><td>Inizio dell'ora d'oro</td><td>----</td></tr>
+        <tr><td>Inizio del tramonto</td><td>----</td></tr>
+        <tr><td>Tramonto</td><td>----</td></tr>
+        <tr><td>Crepuscolo civile</td><td>----</td></tr>
+        <tr><td>Crepuscolo nautico</td><td>----</td></tr>
+        <tr><td>Crepuscolo astronomico</td><td>----</td></tr>
+    `;
 
     const refDate = selectedDate;
     cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
@@ -292,7 +380,12 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         const geoData = await res.json();
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
-            const specificLocality = geoData.address.city || geoData.address.town || geoData.address.village || geoData.address.municipality || '';
+            const specificLocality = geoData.address.city || 
+                                   geoData.address.town || 
+                                   geoData.address.village || 
+                                   geoData.address.municipality || 
+                                   geoData.address.county || 
+                                   geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -305,7 +398,6 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     currentPlaceDisplayName = placeName;
 
-    // Sincronizza il menu a tendina con il fuso reale blindato calcolato
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
@@ -366,8 +458,12 @@ function useGPSLocation() {
             (error) => {
                 updateTimeForLocation();
                 updateSunClock(cachedLat, cachedLon); 
+                document.getElementById('location-text').innerText = "GPS disattivato.";
             }
         );
+    } else {
+        updateTimeForLocation();
+        updateSunClock(cachedLat, cachedLon);
     }
 }
 
@@ -387,15 +483,44 @@ async function searchCity() {
             const lon = parseFloat(data[0].lon);
             const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
             
-            fetchAndUpdateLocation(lat, lon, cityName);
-            toggleSettingsModal(false);
-            statusEl.innerText = "";
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const activeDst = getCurrentDstState();
+            window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}&auto=${isAuto}&dst=${activeDst}`;
         } else {
             statusEl.innerText = "Località non trovata.";
         }
     } catch (e) {
         statusEl.innerText = "Errore di connessione.";
     }
+}
+
+async function getPlaceNameAndRedirect(lat, lon) {
+    let placeName = "Posizione";
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+        const geoData = await res.json();
+        if (geoData && geoData.address) {
+            const country = geoData.address.country || '';
+            const specificLocality = geoData.address.city || 
+                                   geoData.address.town || 
+                                   geoData.address.village || 
+                                   geoData.address.municipality || 
+                                   geoData.address.county || 
+                                   geoData.address.state || '';
+            if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                placeName = `${country} - ${specificLocality}`;
+            } else {
+                placeName = specificLocality || country || "Posizione";
+            }
+        }
+    } catch (err) {
+        placeName = "Posizione";
+    }
+
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    const activeDst = getCurrentDstState();
+
+    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}&auto=${isAuto}&dst=${activeDst}`;
 }
 
 function toggleMap() {
@@ -408,10 +533,38 @@ function toggleMap() {
             const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
             const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
             
-            const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { maxZoom: 17 });
-            const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+            const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+            });
 
-            map = L.map('map-container', { center: [currentLat, currentLon], zoom: 6, layers: [political] });
+            const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            });
+
+            let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
+
+            map = L.map('map-container', {
+                center: [currentLat, currentLon],
+                zoom: 6,
+                layers: [savedLayer]
+            });
+
+            const baseMaps = {
+                "Topografica": topo,
+                "Politica": political
+            };
+            L.control.layers(baseMaps).addTo(map);
+
+            map.on('baselayerchange', function (e) {
+                if (e.name === 'Politica') {
+                    localStorage.setItem('sunclock_map_layer', 'political');
+                } else {
+                    localStorage.setItem('sunclock_map_layer', 'topo');
+                }
+            });
+
             marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
 
             marker.on('dragend', function(e) {
@@ -426,8 +579,8 @@ function toggleMap() {
                 marker.setLatLng([lat, lon]);
                 document.getElementById('input-lat').value = lat.toFixed(4);
                 document.getElementById('input-lon').value = lon.toFixed(4);
-                fetchAndUpdateLocation(lat, lon, "Posizione Mappa");
-                toggleMap();
+                
+                getPlaceNameAndRedirect(lat, lon);
             });
         } else {
             map.invalidateSize();
@@ -439,8 +592,7 @@ function applyManualLocation() {
     const lat = parseFloat(document.getElementById('input-lat').value);
     const lon = parseFloat(document.getElementById('input-lon').value);
     if (!isNaN(lat) && !isNaN(lon)) {
-        fetchAndUpdateLocation(lat, lon, "Posizione Manuale");
-        toggleSettingsModal(false);
+        getPlaceNameAndRedirect(lat, lon);
     } else {
         alert("Inserisci coordinate valide.");
     }
@@ -448,6 +600,7 @@ function applyManualLocation() {
 
 function getCompleteMoonTimes(date, lat, lon) {
     let times = SunCalc.getMoonTimes(date, lat, lon);
+    
     let rise = times.rise;
     let set = times.set;
 
@@ -502,8 +655,10 @@ function updateSunClock(lat, lon) {
 
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
-        <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">
+        <div style="font-size: 0.95rem; opacity: 0.9;">
+            Lat: ${latFmt} | Lon: ${lonFmt}
+        </div>
+        <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
             Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
         </div>
     `;
@@ -800,6 +955,8 @@ function formatTime(date) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
+    if (isTimezoneOnlyMode) return;
+
     const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
