@@ -478,7 +478,6 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // Calibrazione e memorizzazione accurata dei fusi (Francia, Spagna, Grecia, Algeria calibrate)
         let cachedStandardTz = Math.round(cachedLon / 15);
         let cachedAutoDst = false;
 
@@ -541,9 +540,8 @@
             const manualInput = document.getElementById('chk-dst');
             
             if (manualInput) {
-                // Se è in automatico, la spunta riflette esattamente se c'è l'ora legale nello Stato
                 if (isAuto) {
-                    manualInput.checked = cachedAutoDst;
+                    manualInput.checked = cachedAutoDst; // Spunta automatica se lo stato ha l'ora legale attiva
                     manualBox.style.opacity = "0.4"; // Semitrasparenza visiva
                     manualInput.disabled = true;
                 } else {
