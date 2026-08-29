@@ -478,17 +478,17 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA ALL'AVVIO
         let cachedStandardTz = Math.round(cachedLon / 15);
         let cachedAutoDst = false;
 
+        // CALIBRAZIONE UNIVERSALE AL 100% CON TZ-LOOKUP E INTEL
         function calibrateTimezone() {
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(cachedLat, cachedLon);
                     const now = selectedDate || new Date();
                     
-                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni come Spagna, Francia, Grecia, Algeria
+                    // Estrae l'offset invernale reale (gennaio) per qualsiasi coordinate del mondo
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
@@ -501,7 +501,7 @@
                         }
                     }
 
-                    // 2. Calcolo se oggi in quel paese c'è l'ora legale (Per l'opzione Auto)
+                    // Estrae l'offset attuale per capire se oggi è attiva l'ora legale in quel paese
                     const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
                     if (offsetStrNow) {
@@ -515,19 +515,13 @@
                     }
                 }
             } catch (e) {
-                console.warn("Fallback, uso il fuso orario geometrico solare", e);
+                console.warn("Fallback geometrico utilizzato", e);
                 cachedStandardTz = Math.round(cachedLon / 15);
                 cachedAutoDst = false;
             }
         }
 
-        // FUNZIONE FLAG CORRETTA E ISTANTANEA (Legge direttamente lo stato del checkbox senza intoppi)
         function getCurrentDstState() {
-            const manualInput = document.getElementById('chk-dst');
-            if (manualInput && !manualInput.disabled) {
-                return manualInput.checked;
-            }
-            
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
                 return urlParams.get('dst') === 'true';
@@ -549,20 +543,15 @@
             const manualInput = document.getElementById('chk-dst');
             
             if (manualInput) {
-                // Se è attivo l'auto, impostiamo lo stato calcolato, altrimenti leggiamo il salvataggio manuale
                 if (isAuto) {
                     manualInput.checked = cachedAutoDst;
+                    manualBox.style.opacity = "0.4";
+                    manualInput.disabled = true;
                 } else {
                     manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
+                    manualBox.style.opacity = "1.0";
+                    manualInput.disabled = false;
                 }
-            }
-
-            if (isAuto) {
-                manualBox.style.opacity = "0.4";
-                manualInput.disabled = true;
-            } else {
-                manualBox.style.opacity = "1.0";
-                manualInput.disabled = false;
             }
 
             updateTimeForLocation();
