@@ -478,17 +478,17 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA ALL'AVVIO
         let cachedStandardTz = Math.round(cachedLon / 15);
         let cachedAutoDst = false;
 
+        // CALIBRAZIONE UFFICIALE TRAMITE TZ-LOOKUP E INTEL (Corregge Francia, Portogallo, Spagna, ecc.)
         function calibrateTimezone() {
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(cachedLat, cachedLon);
                     const now = selectedDate || new Date();
                     
-                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni come Spagna, Francia, Grecia, Algeria
+                    // 1. Calcolo dell'offset standard (invernale) reale della specifica timezone
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
@@ -501,7 +501,7 @@
                         }
                     }
 
-                    // 2. Calcolo se oggi in quel paese c'è l'ora legale (Per l'opzione Auto)
+                    // 2. Calcolo dello stato attuale per verificare se è attiva l'ora legale (DST)
                     const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
                     if (offsetStrNow) {
@@ -515,13 +515,12 @@
                     }
                 }
             } catch (e) {
-                console.warn("Fallback, uso il fuso orario geometrico solare", e);
+                console.warn("Fallback geometrico basato sulla longitudine", e);
                 cachedStandardTz = Math.round(cachedLon / 15);
                 cachedAutoDst = false;
             }
         }
 
-        // FUNZIONE FLAG CORRETTA E ISTANTANEA (Legge direttamente lo stato del checkbox senza intoppi)
         function getCurrentDstState() {
             const manualInput = document.getElementById('chk-dst');
             if (manualInput && !manualInput.disabled) {
@@ -549,7 +548,6 @@
             const manualInput = document.getElementById('chk-dst');
             
             if (manualInput) {
-                // Se è attivo l'auto, impostiamo lo stato calcolato, altrimenti leggiamo il salvataggio manuale
                 if (isAuto) {
                     manualInput.checked = cachedAutoDst;
                 } else {
