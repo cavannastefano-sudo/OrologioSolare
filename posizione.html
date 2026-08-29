@@ -478,7 +478,7 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA (Segreto per far andare veloce il flag)
+        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA ALL'AVVIO
         let cachedStandardTz = Math.round(cachedLon / 15);
         let cachedAutoDst = false;
 
@@ -488,7 +488,7 @@
                     const tzString = tzlookup(cachedLat, cachedLon);
                     const now = selectedDate || new Date();
                     
-                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni "fuori asse"
+                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni come Spagna, Francia, Grecia, Algeria
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
@@ -521,8 +521,13 @@
             }
         }
 
-        // Ora la funzione che legge il flag è ISTANTANEA come nel tuo vecchio codice
+        // FUNZIONE FLAG CORRETTA E ISTANTANEA (Legge direttamente lo stato del checkbox senza intoppi)
         function getCurrentDstState() {
+            const manualInput = document.getElementById('chk-dst');
+            if (manualInput && !manualInput.disabled) {
+                return manualInput.checked;
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
                 return urlParams.get('dst') === 'true';
@@ -537,7 +542,6 @@
         }
 
         function initClock() {
-            // ESEGUIAMO LA CALIBRAZIONE DEI PAESI SOLO QUI!
             calibrateTimezone(); 
 
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -545,7 +549,12 @@
             const manualInput = document.getElementById('chk-dst');
             
             if (manualInput) {
-                manualInput.checked = getCurrentDstState();
+                // Se è attivo l'auto, impostiamo lo stato calcolato, altrimenti leggiamo il salvataggio manuale
+                if (isAuto) {
+                    manualInput.checked = cachedAutoDst;
+                } else {
+                    manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
+                }
             }
 
             if (isAuto) {
@@ -586,7 +595,7 @@
         }
 
         function getEffectiveDate() {
-            const standardTz = cachedStandardTz; // Legge la memoria all'istante
+            const standardTz = cachedStandardTz;
             const isDstNowActive = getCurrentDstState();
             const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
             return new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1078,7 +1087,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = cachedStandardTz; // Zero sforzo per il telefono
+            const standardTz = cachedStandardTz;
             const isDstNowActive = getCurrentDstState();
             const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
