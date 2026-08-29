@@ -478,41 +478,49 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
-        let cachedStandardTz = 0;
+        let cachedStandardTz = 1;
         let cachedAutoDst = false;
 
+        // CALIBRAZIONE PRECISA DEL FUSO ORARIO TRAMITE TZ-LOOKUP E INTEL DI PRECISIONE
         function calibrateTimezone() {
             try {
-                if (typeof tzlookup === 'function') {
-                    const tzString = tzlookup(cachedLat, cachedLon);
-                    const now = selectedDate || new Date();
-                    
-                    const janDate = new Date(now.getFullYear(), 0, 15);
-                    const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
-                    const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
-                    if (offsetStrJan) {
-                        const matchJan = offsetStrJan.match(/GMT([+-])(\d{2}):(\d{2})/);
-                        if (matchJan) {
-                            const h = parseInt(matchJan[2], 10);
-                            const m = parseInt(matchJan[3], 10) / 60;
-                            cachedStandardTz = matchJan[1] === '-' ? -(h + m) : (h + m);
-                        }
-                    }
+                let tzString = null;
+                if (typeof tzlookup === 'function' && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+                    tzString = tzlookup(cachedLat, cachedLon);
+                }
+                if (!tzString) {
+                    tzString = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                }
 
-                    const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
-                    const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
-                    if (offsetStrNow) {
-                        const matchNow = offsetStrNow.match(/GMT([+-])(\d{2}):(\d{2})/);
-                        if (matchNow) {
-                            const hNow = parseInt(matchNow[2], 10);
-                            const mNow = parseInt(matchNow[3], 10) / 60;
-                            const totalNow = matchNow[1] === '-' ? -(hNow + mNow) : (hNow + mNow);
-                            cachedAutoDst = totalNow > cachedStandardTz;
-                        }
+                const now = selectedDate || new Date();
+                
+                // 1. Estrae l'offset legale standard (invernale) reale di quella specifica zona geografica
+                const janDate = new Date(now.getFullYear(), 0, 15);
+                const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+                const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
+                if (offsetStrJan) {
+                    const matchJan = offsetStrJan.match(/GMT([+-])(\d{2}):(\d{2})/);
+                    if (matchJan) {
+                        const h = parseInt(matchJan[2], 10);
+                        const m = parseInt(matchJan[3], 10) / 60;
+                        cachedStandardTz = matchJan[1] === '-' ? -(h + m) : (h + m);
+                    }
+                }
+
+                // 2. Estrae l'offset odierno per verificare se in quel paese è attiva l'ora legale
+                const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
+                const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
+                if (offsetStrNow) {
+                    const matchNow = offsetStrNow.match(/GMT([+-])(\d{2}):(\d{2})/);
+                    if (matchNow) {
+                        const hNow = parseInt(matchNow[2], 10);
+                        const mNow = parseInt(matchNow[3], 10) / 60;
+                        const totalNow = matchNow[1] === '-' ? -(hNow + mNow) : (hNow + mNow);
+                        cachedAutoDst = totalNow > cachedStandardTz;
                     }
                 }
             } catch (e) {
-                console.warn("Errore nel recupero della timezone tramite tzlookup, fallback geometrico", e);
+                console.warn("Errore nel recupero della timezone, uso offset basato su longitudine", e);
                 cachedStandardTz = Math.round(cachedLon / 15);
                 cachedAutoDst = false;
             }
