@@ -478,6 +478,7 @@
         let selectedDate = new Date();
         let isCustomTime = false;
 
+        // MEMORIZZIAMO IL FUSO PESANTE UNA SOLA VOLTA ALL'AVVIO
         let cachedStandardTz = Math.round(cachedLon / 15);
         let cachedAutoDst = false;
 
@@ -487,6 +488,7 @@
                     const tzString = tzlookup(cachedLat, cachedLon);
                     const now = selectedDate || new Date();
                     
+                    // 1. Calcolo del fuso invernale (Standard) per calibrare nazioni come Spagna, Francia, Grecia, Algeria
                     const janDate = new Date(now.getFullYear(), 0, 15);
                     const dtfJan = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrJan = dtfJan.formatToParts(janDate).find(p => p.type === 'timeZoneName')?.value;
@@ -499,6 +501,7 @@
                         }
                     }
 
+                    // 2. Calcolo se oggi in quel paese c'è l'ora legale (Per l'opzione Auto)
                     const dtfNow = new Intl.DateTimeFormat('en-US', { timeZone: tzString, timeZoneName: 'longOffset' });
                     const offsetStrNow = dtfNow.formatToParts(now).find(p => p.type === 'timeZoneName')?.value;
                     if (offsetStrNow) {
@@ -518,7 +521,13 @@
             }
         }
 
+        // FUNZIONE FLAG CORRETTA E ISTANTANEA (Legge direttamente lo stato del checkbox senza intoppi)
         function getCurrentDstState() {
+            const manualInput = document.getElementById('chk-dst');
+            if (manualInput && !manualInput.disabled) {
+                return manualInput.checked;
+            }
+            
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.has('dst')) {
                 return urlParams.get('dst') === 'true';
@@ -540,15 +549,20 @@
             const manualInput = document.getElementById('chk-dst');
             
             if (manualInput) {
+                // Se è attivo l'auto, impostiamo lo stato calcolato, altrimenti leggiamo il salvataggio manuale
                 if (isAuto) {
-                    manualInput.checked = cachedAutoDst; // Spunta automatica se lo stato ha l'ora legale attiva
-                    manualBox.style.opacity = "0.4"; // Semitrasparenza visiva
-                    manualInput.disabled = true;
+                    manualInput.checked = cachedAutoDst;
                 } else {
                     manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
-                    manualBox.style.opacity = "1.0";
-                    manualInput.disabled = false;
                 }
+            }
+
+            if (isAuto) {
+                manualBox.style.opacity = "0.4";
+                manualInput.disabled = true;
+            } else {
+                manualBox.style.opacity = "1.0";
+                manualInput.disabled = false;
             }
 
             updateTimeForLocation();
