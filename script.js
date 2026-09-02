@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo - Lancette e Ora Sincronizzate)
+// SunClock24 - script.js (Definitivo Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -186,9 +186,6 @@ function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
     if (!isCustomTime) {
         updateTimeForLocation();
-    } else {
-        // Se l'utente ha impostato un'ora manuale e tocca l'ora legale, aggiorniamo il riferimento
-        updateSunClock(cachedLat, cachedLon);
     }
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
@@ -210,7 +207,7 @@ function updateDstUI(isAuto) {
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
-        manualInput.checked = localStorage.getItem('sunclock_dst'] === 'true';
+        manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
     }
 }
 
@@ -908,7 +905,7 @@ function populateTable(times, moonTimes, illumination) {
         <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
         <tr><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
         <tr><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
-        <tr><td>Fine dell'alba</td><td>${formatTestTime = formatTime(times.sunriseEnd)}</td></tr>
+        <tr><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
         <tr><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
         <tr><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
         <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
@@ -929,13 +926,9 @@ function toggleSettingsModal(show) {
 }
 
 function updateHands() {
-    // Se NON siamo in modalità personalizzata, aggiorniamo la data con l'ora effettiva e il fuso/ora legale corrente
     if (!isCustomTime) {
         selectedDate = getEffectiveDate();
         updateInputsVal();
-    } else {
-        // Se l'utente ha impostato una data/ora manuale, facciamo avanzare i secondi in modo continuo se si desidera, 
-        // oppure manteniamo fissa l'ora scelta applicando correttamente l'offset del fuso
     }
     
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
