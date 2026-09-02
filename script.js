@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Integrato - Corretto)
+// SunClock24 - script.js (Definitivo - Lancette e Ora Sincronizzate)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -12,7 +12,6 @@ const cx = 250;
 const cy = 250;
 const radius = 248;
 
-// Funzione fuso orario standard blindata e allineata con i confini reali
 function getPreciseStandardTimezone(lat, lon) {
     if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
     if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
@@ -96,12 +95,10 @@ function getTotalOffsetHours() {
     return baseTz + (isDstNowActive ? 1 : 0);
 }
 
-// Numeri e tacche fissi sul quadrante
 function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Angoli coerenti con il fuso e l'ora effettivi
 function sunHoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
@@ -189,6 +186,9 @@ function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
     if (!isCustomTime) {
         updateTimeForLocation();
+    } else {
+        // Se l'utente ha impostato un'ora manuale e tocca l'ora legale, aggiorniamo il riferimento
+        updateSunClock(cachedLat, cachedLon);
     }
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
@@ -210,7 +210,7 @@ function updateDstUI(isAuto) {
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
-        manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
+        manualInput.checked = localStorage.getItem('sunclock_dst'] === 'true';
     }
 }
 
@@ -246,27 +246,6 @@ function applyTimezonePreset() {
     document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
-
-    const tbody = document.getElementById('times-table-body');
-    tbody.innerHTML = `
-        <tr><td>Fase Lunare</td><td>----</td></tr>
-        <tr><td>Sorge la Luna</td><td>----</td></tr>
-        <tr><td>Tramonta la Luna</td><td>----</td></tr>
-        <tr><td>Mezzanotte solare</td><td>----</td></tr>
-        <tr><td>Alba astronomica</td><td>----</td></tr>
-        <tr><td>Alba Nautica</td><td>----</td></tr>
-        <tr><td>Alba Civile</td><td>----</td></tr>
-        <tr><td>Alba</td><td>----</td></tr>
-        <tr><td>Fine dell'alba</td><td>----</td></tr>
-        <tr><td>Fine dell'ora d'oro</td><td>----</td></tr>
-        <tr><td>Mezzogiorno solare</td><td>----</td></tr>
-        <tr><td>Inizio dell'ora d'oro</td><td>----</td></tr>
-        <tr><td>Inizio del tramonto</td><td>----</td></tr>
-        <tr><td>Tramonto</td><td>----</td></tr>
-        <tr><td>Crepuscolo civile</td><td>----</td></tr>
-        <tr><td>Crepuscolo nautico</td><td>----</td></tr>
-        <tr><td>Crepuscolo astronomico</td><td>----</td></tr>
-    `;
 
     const refDate = selectedDate;
     cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
@@ -558,7 +537,6 @@ function getCompleteMoonTimes(date, lat, lon) {
     return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
 }
 
-// Converte la data locale in UTC pulita per SunCalc
 function getUTCDateFromLocal(localDate) {
     const totalOffset = getTotalOffsetHours();
     return new Date(localDate.getTime() - (totalOffset * 3600000));
@@ -930,7 +908,7 @@ function populateTable(times, moonTimes, illumination) {
         <tr><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
         <tr><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
         <tr><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
-        <tr><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
+        <tr><td>Fine dell'alba</td><td>${formatTestTime = formatTime(times.sunriseEnd)}</td></tr>
         <tr><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
         <tr><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
         <tr><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
@@ -951,9 +929,13 @@ function toggleSettingsModal(show) {
 }
 
 function updateHands() {
+    // Se NON siamo in modalità personalizzata, aggiorniamo la data con l'ora effettiva e il fuso/ora legale corrente
     if (!isCustomTime) {
         selectedDate = getEffectiveDate();
         updateInputsVal();
+    } else {
+        // Se l'utente ha impostato una data/ora manuale, facciamo avanzare i secondi in modo continuo se si desidera, 
+        // oppure manteniamo fissa l'ora scelta applicando correttamente l'offset del fuso
     }
     
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
