@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto e Stabile)
+// SunClock24 - script.js (Corretto e Sbloccato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -791,7 +791,7 @@ function drawClockNumbers() {
         ctx.strokeText(minText, mx, my);
 
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(minText, mx, hy); // (Nota: mantenuto pulito)
+        ctx.fillText(minText, mx, my);
     }
 }
 
