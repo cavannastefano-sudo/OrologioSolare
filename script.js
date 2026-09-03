@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo - Sincronizzazione Data e Ora Perfetta)
+// SunClock24 - script.js (Corretto e Sbloccato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -277,7 +277,6 @@ function updateInputsVal() {
 function onDateChanged(val) {
     if (!val) return;
     const parts = val.split('-');
-    // Mantiene l'ora e i minuti correnti impostati, cambiando solo l'anno, mese e giorno
     selectedDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     updateInputsVal();
