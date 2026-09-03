@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo - Sincronizzazione Ora/Data/Flag)
+// SunClock24 - script.js (Corretto e Sbloccato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -172,25 +172,21 @@ async function initClock() {
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
     updateDstUI(checked);
-    handleDstToggleChange(checked);
+    if (!isCustomTime) {
+        updateTimeForLocation();
+    }
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
-    handleDstToggleChange(checked);
-}
-
-// Funzione centrale che sposta l'orario di +1h o -1h al click del flag
-function handleDstToggleChange(newDstState) {
-    if (isCustomTime) {
-        // Se l'utente ha impostato una data/ora manuale, aggiungiamo o togliamo 1 ora all'orario corrente visualizzato
-        const shift = newDstState ? 3600000 : -3600000;
-        selectedDate = new Date(selectedDate.getTime() + shift);
-        updateInputsVal();
-    } else {
+    if (!isCustomTime) {
         updateTimeForLocation();
     }
-
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
     } else {
