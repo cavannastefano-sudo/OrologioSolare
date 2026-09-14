@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Originale Corretto)
+// SunClock24 - script.js (Definitivo Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -113,8 +113,8 @@ let cachedMoonTimes = null;
 let cachedMoonIllumination = null;
 let cachedLat = 45.05; 
 let cachedLon = 9.69;
-let originalLat = 45.05; // Memorizza la latitudine di riferimento originale
-let originalLon = 9.69;  // Memorizza la longitudine di riferimento originale
+let originalLat = 45.05;
+let originalLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
 let map = null;
@@ -250,9 +250,9 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    const refDate = selectedDate;
-    // Mantiene fissa la geometria solare usando la posizione originale bloccata
+    const refDate = new Date();
     cachedTimes = SunCalc.getTimes(refDate, originalLat, originalLon);
+    
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
     drawMinuteRingSafe();
