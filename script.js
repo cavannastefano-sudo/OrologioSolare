@@ -551,9 +551,7 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const totalOffset = getTotalOffsetHours();
-    const localDate = new Date(date.getTime() + (totalOffset * 3600000));
-    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
