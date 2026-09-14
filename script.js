@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo con Ora Legale Stabile)
+// SunClock24 - script.js (Definitivo Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -99,10 +99,8 @@ function hoursToAngle(h) {
     return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
-// Gestione corretta per mantenere giorno sopra e notte sotto con supporto ora legale attivo
 function sunHoursToAngle(h) {
-    const dstShift = getCurrentDstState() ? 1 : 0;
-    return ((h - dstShift) / 24) * Math.PI * 2 + Math.PI / 2;
+    return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 const PALETTE = {
