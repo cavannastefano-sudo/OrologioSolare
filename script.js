@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto e Sbloccato)
+// SunClock24 - script.js (Originale Ripristinato e Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -95,7 +95,7 @@ function getTotalOffsetHours() {
     return baseTz + (isDstNowActive ? 1 : 0);
 }
 
-// Offset basato unicamente sul fuso standard geografico/preset per mantenere fissa la grafica solare sul quadrante
+// Funzione dedicata unicamente al fuso standard per ancorare la grafica solare fissa sul quadrante
 function getBaseStandardOffsetHours() {
     const tzPresetEl = document.getElementById('timezone-preset');
     return tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
@@ -830,7 +830,7 @@ function getIntervalColorSafe(h, times) {
     const hSunset = timeToHours(times.sunset);
 
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = getBaseUtcCalculationDate(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
