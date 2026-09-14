@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Fascia colorata bloccata)
+// SunClock24 - script.js (Definitivo - Fascia Bloccata, Lancette Mobili)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -120,6 +120,7 @@ let isCustomTime = false;
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
+let isTimezoneOnlyMode = false;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -219,7 +220,7 @@ function applyTimezonePreset() {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    // Aggiorna l'orologio mantenendo fissa la geometria solare della posizione di base
+    // Mantiene fissa la fascia colorata usando la posizione di base
     updateSunClock(baseLat, baseLon);
     toggleSettingsModal(false);
 }
@@ -266,6 +267,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     baseLon = lon;
     cachedLat = lat;
     cachedLon = lon;
+    isTimezoneOnlyMode = false;
     document.getElementById('input-lat').value = baseLat;
     document.getElementById('input-lon').value = baseLon;
 
@@ -511,6 +513,7 @@ function getUTCDateFromLocal(localDate) {
 function updateSunClock(lat, lon) {
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
+    // Mantiene fissa la geometria solare sulla posizione di base (baseLat, baseLon)
     cachedTimes = SunCalc.getTimes(utcCalculationDate, baseLat, baseLon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, baseLat, baseLon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
