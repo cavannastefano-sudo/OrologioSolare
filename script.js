@@ -220,7 +220,6 @@ function applyTimezonePreset() {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    // Mantiene fissa la fascia colorata usando la posizione di base
     updateSunClock(baseLat, baseLon);
     toggleSettingsModal(false);
 }
@@ -513,7 +512,6 @@ function getUTCDateFromLocal(localDate) {
 function updateSunClock(lat, lon) {
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
-    // Mantiene fissa la geometria solare sulla posizione di base (baseLat, baseLon)
     cachedTimes = SunCalc.getTimes(utcCalculationDate, baseLat, baseLon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, baseLat, baseLon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
