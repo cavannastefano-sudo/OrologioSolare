@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo - Fascia Bloccata, Lancette Mobili)
+// SunClock24 - script.js (Originale Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -53,15 +53,15 @@ function getCurrentDstState() {
     }
     
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (isAuto && !isNaN(baseLat) && !isNaN(baseLon)) {
+    if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
         if (typeof getEffectiveDST === 'function') {
-            const effective = getEffectiveDST(baseLat, baseLon, selectedDate || new Date());
+            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
             if (effective !== undefined) return effective;
         }
 
         try {
             if (typeof tzlookup === 'function') {
-                const tzString = tzlookup(baseLat, baseLon);
+                const tzString = tzlookup(cachedLat, cachedLon);
                 if (tzString.startsWith('Africa/')) return false;
 
                 const now = selectedDate || new Date();
@@ -75,7 +75,7 @@ function getCurrentDstState() {
                     const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
                     if (match) {
                         const currentOffset = parseInt(match[1], 10);
-                        const standardBaseOffset = getPreciseStandardTimezone(baseLat, baseLon);
+                        const standardBaseOffset = getPreciseStandardTimezone(cachedLat, cachedLon);
                         return currentOffset > standardBaseOffset;
                     }
                 }
@@ -90,7 +90,7 @@ function getCurrentDstState() {
 
 function getTotalOffsetHours() {
     const tzPresetEl = document.getElementById('timezone-preset');
-    const baseTz = tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(baseLat, baseLon);
+    const baseTz = tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
     const isDstNowActive = getCurrentDstState();
     return baseTz + (isDstNowActive ? 1 : 0);
 }
@@ -111,10 +111,10 @@ const PALETTE = {
 let cachedTimes = null;
 let cachedMoonTimes = null;
 let cachedMoonIllumination = null;
-let baseLat = 45.05; 
-let baseLon = 9.69;
 let cachedLat = 45.05; 
 let cachedLon = 9.69;
+let originalLat = 45.05; // Memorizza la latitudine di riferimento originale
+let originalLon = 9.69;  // Memorizza la longitudine di riferimento originale
 let selectedDate = new Date();
 let isCustomTime = false;
 let map = null;
@@ -146,32 +146,32 @@ async function initClock() {
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
             async (error) => {
-                baseLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-                baseLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-                cachedLat = baseLat;
-                cachedLon = baseLon;
+                cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+                cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+                originalLat = cachedLat;
+                originalLon = cachedLon;
                 currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
                 
-                document.getElementById('input-lat').value = baseLat;
-                document.getElementById('input-lon').value = baseLon;
+                document.getElementById('input-lat').value = cachedLat;
+                document.getElementById('input-lon').value = cachedLon;
                 updateTimeForLocation();
                 updateInputsVal();
-                updateSunClock(baseLat, baseLon);
+                updateSunClock(cachedLat, cachedLon);
             },
             { timeout: 8000, enableHighAccuracy: true }
         );
     } else {
-        baseLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-        baseLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        cachedLat = baseLat;
-        cachedLon = baseLon;
+        cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+        cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+        originalLat = cachedLat;
+        originalLon = cachedLon;
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
 
-        document.getElementById('input-lat').value = baseLat;
-        document.getElementById('input-lon').value = baseLon;
+        document.getElementById('input-lat').value = cachedLat;
+        document.getElementById('input-lon').value = cachedLon;
         updateTimeForLocation();
         updateInputsVal();
-        updateSunClock(baseLat, baseLon);
+        updateSunClock(cachedLat, cachedLon);
     }
 }
 
@@ -181,7 +181,11 @@ function toggleAutoDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(baseLat, baseLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function toggleManualDST(checked) {
@@ -189,7 +193,11 @@ function toggleManualDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(baseLat, baseLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function updateDstUI(isAuto) {
@@ -217,10 +225,40 @@ function toggleMoonDropdown() {
 }
 
 function applyTimezonePreset() {
+    const tzVal = document.getElementById('timezone-preset').value;
+    isTimezoneOnlyMode = true;
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(baseLat, baseLon);
+
+    let isDstNowActive = getCurrentDstState();
+    const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
+    const tzSign = parseFloat(tzVal) >= 0 ? "+" : "";
+    const totalSign = totalOffset >= 0 ? "+" : "";
+
+    let fusoText = `Fuso UTC ${tzSign}${tzVal}`;
+    if (isDstNowActive) {
+        fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
+    }
+
+    document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
+    document.getElementById('txt-sunrise').innerText = "----";
+    document.getElementById('txt-sunset').innerText = "----";
+
+    document.getElementById('moon-digital-icon').innerText = "🌕";
+    document.getElementById('moon-phase-name').innerText = "----";
+    document.getElementById('moon-rise').innerText = "----";
+    document.getElementById('moon-set').innerText = "----";
+
+    const refDate = selectedDate;
+    // Mantiene fissa la geometria solare usando la posizione originale bloccata
+    cachedTimes = SunCalc.getTimes(refDate, originalLat, originalLon);
+    ctx.clearRect(0, 0, 500, 500);
+    drawSunSlicesSafe(cachedTimes);
+    drawMinuteRingSafe();
+    drawClockNumbers();
+    updatePageBackground(cachedTimes);
+
     toggleSettingsModal(false);
 }
 
@@ -249,7 +287,7 @@ function onDateChanged(val) {
     selectedDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(baseLat, baseLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 function onTimeChanged(val) {
@@ -258,17 +296,17 @@ function onTimeChanged(val) {
     selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(baseLat, baseLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
-    baseLat = lat;
-    baseLon = lon;
     cachedLat = lat;
     cachedLon = lon;
+    originalLat = lat;
+    originalLon = lon;
     isTimezoneOnlyMode = false;
-    document.getElementById('input-lat').value = baseLat;
-    document.getElementById('input-lon').value = baseLon;
+    document.getElementById('input-lat').value = cachedLat;
+    document.getElementById('input-lon').value = cachedLon;
 
     let placeName = fallbackName;
     try {
@@ -294,7 +332,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     currentPlaceDisplayName = placeName;
 
-    let preciseTz = getPreciseStandardTimezone(baseLat, baseLon);
+    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
         for(let opt of selectEl.options) {
@@ -311,14 +349,14 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     isCustomTime = false;
     updateTimeForLocation();
     updateInputsVal();
-    updateSunClock(baseLat, baseLon);
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function resetToNow() {
     isCustomTime = false;
     updateTimeForLocation();
     updateInputsVal();
-    updateSunClock(baseLat, baseLon);
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function updateTimeForLocation() {
@@ -328,6 +366,7 @@ function updateTimeForLocation() {
 }
 
 function useGPSLocation() {
+    isTimezoneOnlyMode = false;
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
@@ -336,13 +375,13 @@ function useGPSLocation() {
             },
             (error) => {
                 updateTimeForLocation();
-                updateSunClock(baseLat, baseLon); 
+                updateSunClock(cachedLat, cachedLon); 
                 document.getElementById('location-text').innerText = "GPS disattivato.";
             }
         );
     } else {
         updateTimeForLocation();
-        updateSunClock(baseLat, baseLon);
+        updateSunClock(cachedLat, cachedLon);
     }
 }
 
@@ -409,8 +448,8 @@ function toggleMap() {
     } else {
         mapContainer.style.display = 'block';
         if (!map) {
-            const currentLat = parseFloat(document.getElementById('input-lat').value) || baseLat;
-            const currentLon = parseFloat(document.getElementById('input-lon').value) || baseLon;
+            const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
+            const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
             
             const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
                 maxZoom: 17,
@@ -510,10 +549,12 @@ function getUTCDateFromLocal(localDate) {
 }
 
 function updateSunClock(lat, lon) {
+    if (isTimezoneOnlyMode) return;
+
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
-    cachedTimes = SunCalc.getTimes(utcCalculationDate, baseLat, baseLon);
-    cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, baseLat, baseLon);
+    cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
@@ -529,8 +570,8 @@ function updateSunClock(lat, lon) {
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const tz = document.getElementById('timezone-preset').value;
-    const latFmt = parseFloat(baseLat).toFixed(2);
-    const lonFmt = parseFloat(baseLon).toFixed(2);
+    const latFmt = parseFloat(lat).toFixed(2);
+    const lonFmt = parseFloat(lon).toFixed(2);
     
     let isDstNowActive = getCurrentDstState();
     const totalOffset = parseFloat(tz) + (isDstNowActive ? 1 : 0);
@@ -551,7 +592,9 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    const totalOffset = getTotalOffsetHours();
+    const localDate = new Date(date.getTime() + (totalOffset * 3600000));
+    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -610,7 +653,7 @@ function drawSunSlicesSafe(times) {
     if (!hasValidSunset) {
         const testDate = getUTCDateFromLocal(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
-        const sunPos = SunCalc.getPosition(testDate, baseLat, baseLon);
+        const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         
         const isPolarNight = sunPos.altitude < 0;
         const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
@@ -786,7 +829,7 @@ function getIntervalColorSafe(h, times) {
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
         const testDate = getUTCDateFromLocal(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
-        const sunPos = SunCalc.getPosition(testDate, baseLat, baseLon);
+        const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
     }
 
@@ -829,6 +872,8 @@ function formatTime(date) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
+    if (isTimezoneOnlyMode) return;
+
     const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
@@ -911,8 +956,8 @@ function updateHands() {
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
-    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, baseLat, baseLon);
-    const sunPos = SunCalc.getPosition(utcCalculationDate, baseLat, baseLon);
+    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
+    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
     
     const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
     let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
