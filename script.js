@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo Corretto)
+// SunClock24 - script.js (Definitivo Allineato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -113,8 +113,6 @@ let cachedMoonTimes = null;
 let cachedMoonIllumination = null;
 let cachedLat = 45.05; 
 let cachedLon = 9.69;
-let originalLat = 45.05;
-let originalLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
 let map = null;
@@ -148,8 +146,6 @@ async function initClock() {
             async (error) => {
                 cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
                 cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-                originalLat = cachedLat;
-                originalLon = cachedLon;
                 currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
                 
                 document.getElementById('input-lat').value = cachedLat;
@@ -163,8 +159,6 @@ async function initClock() {
     } else {
         cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
         cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        originalLat = cachedLat;
-        originalLon = cachedLon;
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
 
         document.getElementById('input-lat').value = cachedLat;
@@ -250,14 +244,8 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    const refDate = new Date();
-    cachedTimes = SunCalc.getTimes(refDate, originalLat, originalLon);
-    
-    ctx.clearRect(0, 0, 500, 500);
-    drawSunSlicesSafe(cachedTimes);
-    drawMinuteRingSafe();
-    drawClockNumbers();
-    updatePageBackground(cachedTimes);
+    // Mantiene fissa la grafica solare calcolata sulla posizione corrente senza ruotare
+    updateSunClock(cachedLat, cachedLon);
 
     toggleSettingsModal(false);
 }
@@ -302,8 +290,6 @@ function onTimeChanged(val) {
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
-    originalLat = lat;
-    originalLon = lon;
     isTimezoneOnlyMode = false;
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
@@ -543,19 +529,17 @@ function getCompleteMoonTimes(date, lat, lon) {
     return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
 }
 
-function getUTCDateFromLocal(localDate) {
+function getReferenceSunDate(refDate) {
     const totalOffset = getTotalOffsetHours();
-    return new Date(localDate.getTime() - (totalOffset * 3600000));
+    return new Date(refDate.getTime() - (totalOffset * 3600000));
 }
 
 function updateSunClock(lat, lon) {
-    if (isTimezoneOnlyMode) return;
+    const sunCalcDate = getReferenceSunDate(selectedDate);
 
-    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
-
-    cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
-    cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    cachedTimes = SunCalc.getTimes(sunCalcDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(sunCalcDate, lat, lon);
+    cachedMoonIllumination = SunCalc.getMoonIllumination(sunCalcDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
@@ -576,18 +560,25 @@ function updateSunClock(lat, lon) {
     let isDstNowActive = getCurrentDstState();
     const totalOffset = parseFloat(tz) + (isDstNowActive ? 1 : 0);
 
-    document.getElementById('location-text').innerHTML = `
-        <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">
-            Lat: ${latFmt} | Lon: ${lonFmt}
-        </div>
-        <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-            Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
-        </div>
-    `;
-
-    document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-    document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+    if (isTimezoneOnlyMode) {
+        document.getElementById('location-text').innerHTML = `
+            <div style="font-size: 1.15rem;">Fuso UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}</div>
+        `;
+        document.getElementById('txt-sunrise').innerText = "----";
+        document.getElementById('txt-sunset').innerText = "----";
+    } else {
+        document.getElementById('location-text').innerHTML = `
+            <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
+            <div style="font-size: 0.95rem; opacity: 0.9;">
+                Lat: ${latFmt} | Lon: ${lonFmt}
+            </div>
+            <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
+                Fuso: UTC ${tz >= 0 ? "+" : ""}${tz}${isDstNowActive ? ` (Ora legale: UTC ${totalOffset >= 0 ? "+" : ""}${totalOffset})` : ""}
+            </div>
+        `;
+        document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+        document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+    }
 }
 
 function timeToHours(date) {
@@ -651,7 +642,7 @@ function drawSunSlicesSafe(times) {
     let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
     
     if (!hasValidSunset) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = getReferenceSunDate(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         
@@ -827,7 +818,7 @@ function getIntervalColorSafe(h, times) {
     const hSunset = timeToHours(times.sunset);
 
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = getReferenceSunDate(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -955,9 +946,9 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
-    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+    const sunCalcDate = getReferenceSunDate(selectedDate);
+    const moonPos = SunCalc.getMoonPosition(sunCalcDate, cachedLat, cachedLon);
+    const sunPos = SunCalc.getPosition(sunCalcDate, cachedLat, cachedLon);
     
     const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
     let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
