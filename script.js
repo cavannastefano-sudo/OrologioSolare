@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo Sbloccato e Corretto)
+// SunClock24 - script.js (Corretto, Sbloccato e Funzionante)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
