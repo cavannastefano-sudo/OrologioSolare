@@ -244,7 +244,7 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    const refDate = selectedDate;
+    const refDate = getUTCDateFromLocal(selectedDate);
     cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
@@ -306,11 +306,11 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                   geoData.address.town || 
-                                   geoData.address.village || 
-                                   geoData.address.municipality || 
-                                   geoData.address.county || 
-                                   geoData.address.state || '';
+                                     geoData.address.town || 
+                                     geoData.address.village || 
+                                     geoData.address.municipality || 
+                                     geoData.address.county || 
+                                     geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -411,11 +411,11 @@ async function getPlaceNameAndRedirect(lat, lon) {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                   geoData.address.town || 
-                                   geoData.address.village || 
-                                   geoData.address.municipality || 
-                                   geoData.address.county || 
-                                   geoData.address.state || '';
+                                     geoData.address.town || 
+                                     geoData.address.village || 
+                                     geoData.address.municipality || 
+                                     geoData.address.county || 
+                                     geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
