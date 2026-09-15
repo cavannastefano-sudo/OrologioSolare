@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto e Sbloccato)
+// SunClock24 - script.js (Corretto Definitivamente)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -220,9 +220,13 @@ function toggleMoonDropdown() {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = true;
+    isTimezoneOnlyMode = false; // Riattiva la modalità completa per ricalcolare correttamente il Sole con il nuovo offset fisso
+    
     if (!isCustomTime) {
         updateTimeForLocation();
+    } else {
+        // Se c'è un orario personalizzato, ricalcola la data effettiva in base al nuovo fuso selezionato
+        selectedDate = getEffectiveDate();
     }
 
     let isDstNowActive = getCurrentDstState();
@@ -235,22 +239,15 @@ function applyTimezonePreset() {
         fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
     }
 
-    document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
-    document.getElementById('txt-sunrise').innerText = "----";
-    document.getElementById('txt-sunset').innerText = "----";
+    document.getElementById('location-text').innerHTML = `
+        <div style="font-size: 1.15rem; margin-bottom: 4px;">${fusoText}</div>
+        <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
+            Fuso manuale impostato
+        </div>
+    `;
 
-    document.getElementById('moon-digital-icon').innerText = "🌕";
-    document.getElementById('moon-phase-name').innerText = "----";
-    document.getElementById('moon-rise').innerText = "----";
-    document.getElementById('moon-set').innerText = "----";
-
-    const refDate = getUTCDateFromLocal(selectedDate);
-    cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
-    ctx.clearRect(0, 0, 500, 500);
-    drawSunSlicesSafe(cachedTimes);
-    drawMinuteRingSafe();
-    drawClockNumbers();
-    updatePageBackground(cachedTimes);
+    // Esegue il calcolo completo aggiornando anche le tabelle e gli archi del sole/luna coerentemente
+    updateSunClock(cachedLat, cachedLon);
 
     toggleSettingsModal(false);
 }
@@ -280,7 +277,7 @@ function onDateChanged(val) {
     selectedDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     updateInputsVal();
-    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function onTimeChanged(val) {
@@ -289,7 +286,7 @@ function onTimeChanged(val) {
     selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
     updateInputsVal();
-    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
+    updateSunClock(cachedLat, cachedLon);
 }
 
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
@@ -540,8 +537,6 @@ function getUTCDateFromLocal(localDate) {
 }
 
 function updateSunClock(lat, lon) {
-    if (isTimezoneOnlyMode) return;
-
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -863,8 +858,6 @@ function formatTime(date) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
-    if (isTimezoneOnlyMode) return;
-
     const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
