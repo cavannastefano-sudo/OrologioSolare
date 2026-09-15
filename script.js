@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo con Correzione Fusi Estremi)
+// SunClock24 - script.js (Corretto e Sbloccato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -220,12 +220,9 @@ function toggleMoonDropdown() {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = false;
-    
+    isTimezoneOnlyMode = true;
     if (!isCustomTime) {
         updateTimeForLocation();
-    } else {
-        selectedDate = getEffectiveDate();
     }
 
     let isDstNowActive = getCurrentDstState();
@@ -238,14 +235,23 @@ function applyTimezonePreset() {
         fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
     }
 
-    document.getElementById('location-text').innerHTML = `
-        <div style="font-size: 1.15rem; margin-bottom: 4px;">${fusoText}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-            Fuso manuale impostato
-        </div>
-    `;
+    document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
+    document.getElementById('txt-sunrise').innerText = "----";
+    document.getElementById('txt-sunset').innerText = "----";
 
-    updateSunClock(cachedLat, cachedLon);
+    document.getElementById('moon-digital-icon').innerText = "🌕";
+    document.getElementById('moon-phase-name').innerText = "----";
+    document.getElementById('moon-rise').innerText = "----";
+    document.getElementById('moon-set').innerText = "----";
+
+    const refDate = selectedDate;
+    cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
+    ctx.clearRect(0, 0, 500, 500);
+    drawSunSlicesSafe(cachedTimes);
+    drawMinuteRingSafe();
+    drawClockNumbers();
+    updatePageBackground(cachedTimes);
+
     toggleSettingsModal(false);
 }
 
@@ -274,7 +280,7 @@ function onDateChanged(val) {
     selectedDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(cachedLat, cachedLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 function onTimeChanged(val) {
@@ -283,7 +289,7 @@ function onTimeChanged(val) {
     selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(cachedLat, cachedLon);
+    if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
 }
 
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
@@ -300,11 +306,11 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                     geoData.address.town || 
-                                     geoData.address.village || 
-                                     geoData.address.municipality || 
-                                     geoData.address.county || 
-                                     geoData.address.state || '';
+                                   geoData.address.town || 
+                                   geoData.address.village || 
+                                   geoData.address.municipality || 
+                                   geoData.address.county || 
+                                   geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -405,11 +411,11 @@ async function getPlaceNameAndRedirect(lat, lon) {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                     geoData.address.town || 
-                                     geoData.address.village || 
-                                     geoData.address.municipality || 
-                                     geoData.address.county || 
-                                     geoData.address.state || '';
+                                   geoData.address.town || 
+                                   geoData.address.village || 
+                                   geoData.address.municipality || 
+                                   geoData.address.county || 
+                                   geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -534,6 +540,8 @@ function getUTCDateFromLocal(localDate) {
 }
 
 function updateSunClock(lat, lon) {
+    if (isTimezoneOnlyMode) return;
+
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -577,17 +585,7 @@ function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const totalOffset = getTotalOffsetHours();
     const localDate = new Date(date.getTime() + (totalOffset * 3600000));
-    
-    // Normalizza rispetto alla mezzanotte del giorno selezionato corrente
-    const startOfDay = new Date(selectedDate);
-    startOfDay.setHours(0, 0, 0, 0);
-    
-    const diffMs = localDate - startOfDay;
-    let h = diffMs / 3600000;
-    
-    // Riporta sempre nel range 0 - 24 del quadrante circolare
-    h = (h % 24 + 24) % 24;
-    return h;
+    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -865,6 +863,8 @@ function formatTime(date) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
+    if (isTimezoneOnlyMode) return;
+
     const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
