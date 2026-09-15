@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Originale Ripristinato e Corretto)
+// SunClock24 - script.js (Corretto e Sbloccato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -93,12 +93,6 @@ function getTotalOffsetHours() {
     const baseTz = tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
     const isDstNowActive = getCurrentDstState();
     return baseTz + (isDstNowActive ? 1 : 0);
-}
-
-// Ritorna solo il fuso standard (senza ora legale) per mantenere fissa la grafica del sole sul quadrante
-function getStandardOffsetHours() {
-    const tzPresetEl = document.getElementById('timezone-preset');
-    return tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
 }
 
 function hoursToAngle(h) {
@@ -545,15 +539,10 @@ function getUTCDateFromLocal(localDate) {
     return new Date(localDate.getTime() - (totalOffset * 3600000));
 }
 
-function getBaseCalculationDate(localDate) {
-    const standardOffset = getStandardOffsetHours();
-    return new Date(localDate.getTime() - (standardOffset * 3600000));
-}
-
 function updateSunClock(lat, lon) {
     if (isTimezoneOnlyMode) return;
 
-    const utcCalculationDate = getBaseCalculationDate(selectedDate);
+    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
@@ -594,8 +583,8 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const standardOffset = getStandardOffsetHours();
-    const localDate = new Date(date.getTime() + (standardOffset * 3600000));
+    const totalOffset = getTotalOffsetHours();
+    const localDate = new Date(date.getTime() + (totalOffset * 3600000));
     return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
 }
 
@@ -604,9 +593,8 @@ function isValidDate(d) {
 }
 
 function drawMoonVisibilityArc(moonTimes, refDate) {
-    let standardOffset = getStandardOffsetHours();
-    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime() + (standardOffset * 3600000)) : null;
-    let set = moonTimes.set ? new Date(moonTimes.set.getTime() + (standardOffset * 3600000)) : null;
+    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime() + (getTotalOffsetHours() * 3600000)) : null;
+    let set = moonTimes.set ? new Date(moonTimes.set.getTime() + (getTotalOffsetHours() * 3600000)) : null;
 
     if (moonTimes.alwaysUp) {
         rise = new Date(refDate); rise.setHours(0,0,0,0);
@@ -654,7 +642,7 @@ function drawSunSlicesSafe(times) {
     let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
     
     if (!hasValidSunset) {
-        const testDate = getBaseCalculationDate(selectedDate);
+        const testDate = getUTCDateFromLocal(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         
@@ -830,7 +818,7 @@ function getIntervalColorSafe(h, times) {
     const hSunset = timeToHours(times.sunset);
 
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-        const testDate = getBaseCalculationDate(selectedDate);
+        const testDate = getUTCDateFromLocal(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -958,7 +946,7 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-    const utcCalculationDate = getBaseCalculationDate(selectedDate);
+    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
     const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
     const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
     
