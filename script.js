@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto Definitivamente)
+// SunClock24 - script.js (Definitivo con Correzione Fusi Estremi)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -220,12 +220,11 @@ function toggleMoonDropdown() {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = false; // Riattiva la modalità completa per ricalcolare correttamente il Sole con il nuovo offset fisso
+    isTimezoneOnlyMode = false;
     
     if (!isCustomTime) {
         updateTimeForLocation();
     } else {
-        // Se c'è un orario personalizzato, ricalcola la data effettiva in base al nuovo fuso selezionato
         selectedDate = getEffectiveDate();
     }
 
@@ -246,9 +245,7 @@ function applyTimezonePreset() {
         </div>
     `;
 
-    // Esegue il calcolo completo aggiornando anche le tabelle e gli archi del sole/luna coerentemente
     updateSunClock(cachedLat, cachedLon);
-
     toggleSettingsModal(false);
 }
 
@@ -580,7 +577,17 @@ function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
     const totalOffset = getTotalOffsetHours();
     const localDate = new Date(date.getTime() + (totalOffset * 3600000));
-    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+    
+    // Normalizza rispetto alla mezzanotte del giorno selezionato corrente
+    const startOfDay = new Date(selectedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const diffMs = localDate - startOfDay;
+    let h = diffMs / 3600000;
+    
+    // Riporta sempre nel range 0 - 24 del quadrante circolare
+    h = (h % 24 + 24) % 24;
+    return h;
 }
 
 function isValidDate(d) {
