@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Definitivo Sincronizzato con Fuso)
+// SunClock24 - script.js (Grafica Fusa Sincronizzata ma Dati Nascosti)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -175,7 +175,11 @@ function toggleAutoDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(cachedLat, cachedLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function toggleManualDST(checked) {
@@ -183,7 +187,11 @@ function toggleManualDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    updateSunClock(cachedLat, cachedLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function updateDstUI(isAuto) {
@@ -212,11 +220,9 @@ function toggleMoonDropdown() {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = false;
-    
-    // Aggiorna la data di riferimento basandosi sul nuovo fuso selezionato dalla tendina
+    isTimezoneOnlyMode = true; // Mantiene i dati testuali nascosti (----)
     if (!isCustomTime) {
-        selectedDate = getEffectiveDate();
+        updateTimeForLocation();
     }
 
     let isDstNowActive = getCurrentDstState();
@@ -229,15 +235,25 @@ function applyTimezonePreset() {
         fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
     }
 
-    document.getElementById('location-text').innerHTML = `
-        <div style="font-size: 1.15rem; margin-bottom: 4px;">${fusoText}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 2px;">
-            Fuso manuale impostato
-        </div>
-    `;
+    document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
+    document.getElementById('txt-sunrise').innerText = "----";
+    document.getElementById('txt-sunset').innerText = "----";
 
-    // Ricalcola completamente la grafica e i dati sul nuovo fuso
-    updateSunClock(cachedLat, cachedLon);
+    document.getElementById('moon-digital-icon').innerText = "🌕";
+    document.getElementById('moon-phase-name').innerText = "----";
+    document.getElementById('moon-rise').innerText = "----";
+    document.getElementById('moon-set').innerText = "----";
+
+    // Ricalcola la grafica sul fuso selezionato ma mantenendo la posizione bloccata
+    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
+    cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
+    
+    ctx.clearRect(0, 0, 500, 500);
+    drawSunSlicesSafe(cachedTimes);
+    drawMinuteRingSafe();
+    drawClockNumbers();
+    updatePageBackground(cachedTimes);
+
     toggleSettingsModal(false);
 }
 
@@ -266,7 +282,11 @@ function onDateChanged(val) {
     selectedDate.setFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(cachedLat, cachedLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function onTimeChanged(val) {
@@ -275,7 +295,11 @@ function onTimeChanged(val) {
     selectedDate.setHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
     updateInputsVal();
-    updateSunClock(cachedLat, cachedLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
@@ -333,7 +357,11 @@ function resetToNow() {
     isCustomTime = false;
     updateTimeForLocation();
     updateInputsVal();
-    updateSunClock(cachedLat, cachedLon);
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
 }
 
 function updateTimeForLocation() {
@@ -526,6 +554,8 @@ function getUTCDateFromLocal(localDate) {
 }
 
 function updateSunClock(lat, lon) {
+    if (isTimezoneOnlyMode) return;
+
     const utcCalculationDate = getUTCDateFromLocal(selectedDate);
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
@@ -847,6 +877,8 @@ function formatTime(date) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
+    if (isTimezoneOnlyMode) return;
+
     const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
