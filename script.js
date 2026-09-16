@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Grafica Fissa, Fuso Isolato, e Reset Completo con "Adesso")
+// SunClock24 - script.js (Completo + Comunicazione Nativa Android per Foldable)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -357,9 +357,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
 function resetToNow() {
     isCustomTime = false;
-    isTimezoneOnlyMode = false; // Riattiva la visualizzazione dei dati testuali completi
+    isTimezoneOnlyMode = false;
 
-    // Riporta la tendina del fuso sul fuso standard nativo della posizione salvata
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
@@ -839,6 +838,11 @@ function updatePageBackground(times) {
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', finalBg);
+    }
+
+    // Comunicazione diretta con l'app nativa Sketchware (supporto foldable e barre di sistema)
+    if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+        window.AndroidInterface.updateColors(finalBg);
     }
 }
 
