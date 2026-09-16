@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo + Comunicazione Nativa Android per Foldable)
+// SunClock24 - script.js (Senza scatti / Ottimizzato per Sketchware)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -122,6 +122,7 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
+let lastSentColor = null; // Memorizza l'ultimo colore inviato per evitare chiamate inutili
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -840,9 +841,12 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    // Comunicazione diretta con l'app nativa Sketchware (supporto foldable e barre di sistema)
-    if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-        window.AndroidInterface.updateColors(finalBg);
+    // Invia il colore a Sketchware SOLO SE il colore è effettivamente cambiato, eliminando gli scatti!
+    if (finalBg !== lastSentColor) {
+        lastSentColor = finalBg;
+        if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+            window.AndroidInterface.updateColors(finalBg);
+        }
     }
 }
 
