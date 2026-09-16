@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto e Sbloccato)
+// SunClock24 - script.js (Grafica Fissa + Ora Fuso Corretta)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -244,8 +244,8 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    const refDate = selectedDate;
-    cachedTimes = SunCalc.getTimes(refDate, cachedLat, cachedLon);
+    // Ridisegna la grafica usando sempre la data fissa della località geografica
+    cachedTimes = SunCalc.getTimes(selectedDate, cachedLat, cachedLon);
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
     drawMinuteRingSafe();
@@ -306,11 +306,11 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                   geoData.address.town || 
-                                   geoData.address.village || 
-                                   geoData.address.municipality || 
-                                   geoData.address.county || 
-                                   geoData.address.state || '';
+                                     geoData.address.town || 
+                                     geoData.address.village || 
+                                     geoData.address.municipality || 
+                                     geoData.address.county || 
+                                     geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -411,11 +411,11 @@ async function getPlaceNameAndRedirect(lat, lon) {
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
             const specificLocality = geoData.address.city || 
-                                   geoData.address.town || 
-                                   geoData.address.village || 
-                                   geoData.address.municipality || 
-                                   geoData.address.county || 
-                                   geoData.address.state || '';
+                                     geoData.address.town || 
+                                     geoData.address.village || 
+                                     geoData.address.municipality || 
+                                     geoData.address.county || 
+                                     geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
             } else {
@@ -542,11 +542,12 @@ function getUTCDateFromLocal(localDate) {
 function updateSunClock(lat, lon) {
     if (isTimezoneOnlyMode) return;
 
-    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
+    // Utilizza la data locale fissa della località per non spostare la grafica
+    const calculationDate = selectedDate;
 
-    cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
-    cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    cachedTimes = SunCalc.getTimes(calculationDate, lat, lon);
+    cachedMoonTimes = getCompleteMoonTimes(calculationDate, lat, lon);
+    cachedMoonIllumination = SunCalc.getMoonIllumination(calculationDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
