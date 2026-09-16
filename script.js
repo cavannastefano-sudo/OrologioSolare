@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Senza scatti / Ottimizzato per Sketchware)
+// SunClock24 - script.js (Completo + Gestione Foldable & Resize)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -122,7 +122,7 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
-let lastSentColor = null; // Memorizza l'ultimo colore inviato per evitare chiamate inutili
+let lastSentColor = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -172,6 +172,21 @@ async function initClock() {
         updateSunClock(cachedLat, cachedLon);
     }
 }
+
+// Gestione del ridimensionamento dinamico (Fondamentale per i dispositivi pieghevoli Fold)
+let resizeTimer;
+window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+        if (cachedTimes) {
+            ctx.clearRect(0, 0, 500, 500);
+            drawSunSlicesSafe(cachedTimes);
+            drawMinuteRingSafe();
+            drawClockNumbers();
+            updatePageBackground(cachedTimes);
+        }
+    }, 120);
+});
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
@@ -841,7 +856,6 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    // Invia il colore a Sketchware SOLO SE il colore è effettivamente cambiato, eliminando gli scatti!
     if (finalBg !== lastSentColor) {
         lastSentColor = finalBg;
         if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
