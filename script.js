@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Home Sincronizzata con Fuso e Grafica Fissa)
+// SunClock24 - script.js (Grafica Fissa + Lancette e Ora Mobili per Fuso)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -88,14 +88,12 @@ function getCurrentDstState() {
     return localStorage.getItem('sunclock_dst') === 'true';
 }
 
-// Restituisce il fuso nativo della posizione base (es. Piacenza)
 function getBaseLocationOffset() {
     const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     const isDstNowActive = getCurrentDstState();
     return standardTz + (isDstNowActive ? 1 : 0);
 }
 
-// Restituisce l'offset del fuso scelto nella tendina (se usato)
 function getTotalOffsetHours() {
     const tzPresetEl = document.getElementById('timezone-preset');
     if (!tzPresetEl) return getBaseLocationOffset();
@@ -226,9 +224,9 @@ function toggleMoonDropdown() {
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = true; 
-    if (!isCustomTime) {
-        updateTimeForLocation();
-    }
+    
+    selectedDate = getEffectiveDate();
+    updateInputsVal();
 
     let isDstNowActive = getCurrentDstState();
     const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
@@ -249,7 +247,6 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    // Mantiene la grafica fissa calcolata sul fuso nativo di base della posizione
     const baseOffset = getBaseLocationOffset();
     const utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     
@@ -265,8 +262,8 @@ function applyTimezonePreset() {
 }
 
 function getEffectiveDate() {
-    const cityOffsetHours = getBaseLocationOffset();
-    return new Date(Date.now() + (cityOffsetHours * 3600000));
+    const targetOffset = getTotalOffsetHours();
+    return new Date(Date.now() + (targetOffset * 3600000));
 }
 
 function updateInputsVal() {
@@ -967,7 +964,7 @@ function updateHands() {
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
     const baseOffset = getBaseLocationOffset();
-    let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
+    let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
 
     const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
     const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
