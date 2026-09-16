@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Grafica Fissa + Ora Fuso Corretta)
+// SunClock24 - script.js (Grafica Fissa + Cambio Fuso Isolato)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -244,7 +244,7 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    // Ridisegna la grafica usando sempre la data fissa della località geografica
+    // Ridisegna la grafica usando sempre la data pura della località (esulandola dal cambio fuso)
     cachedTimes = SunCalc.getTimes(selectedDate, cachedLat, cachedLon);
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
@@ -542,7 +542,6 @@ function getUTCDateFromLocal(localDate) {
 function updateSunClock(lat, lon) {
     if (isTimezoneOnlyMode) return;
 
-    // Utilizza la data locale fissa della località per non spostare la grafica
     const calculationDate = selectedDate;
 
     cachedTimes = SunCalc.getTimes(calculationDate, lat, lon);
@@ -584,9 +583,8 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const totalOffset = getTotalOffsetHours();
-    const localDate = new Date(date.getTime() + (totalOffset * 3600000));
-    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+    // La grafica usa direttamente l'ora pura della data di calcolo della località, esulando dal cambio fuso
+    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -594,8 +592,8 @@ function isValidDate(d) {
 }
 
 function drawMoonVisibilityArc(moonTimes, refDate) {
-    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime() + (getTotalOffsetHours() * 3600000)) : null;
-    let set = moonTimes.set ? new Date(moonTimes.set.getTime() + (getTotalOffsetHours() * 3600000)) : null;
+    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime()) : null;
+    let set = moonTimes.set ? new Date(moonTimes.set.getTime()) : null;
 
     if (moonTimes.alwaysUp) {
         rise = new Date(refDate); rise.setHours(0,0,0,0);
@@ -643,7 +641,7 @@ function drawSunSlicesSafe(times) {
     let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
     
     if (!hasValidSunset) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = new Date(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         
@@ -819,7 +817,7 @@ function getIntervalColorSafe(h, times) {
     const hSunset = timeToHours(times.sunset);
 
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = new Date(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
@@ -934,9 +932,12 @@ function updateHands() {
     
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString();
 
-    const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
-    const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
-    const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
+    // Le lancette leggono correttamente l'ora del fuso selezionato dalla tendina
+    const totalOffset = getTotalOffsetHours();
+    const shiftedDate = new Date(selectedDate.getTime() + (totalOffset * 3600000));
+    const h = shiftedDate.getUTCHours() + shiftedDate.getUTCMinutes() / 60 + shiftedDate.getUTCSeconds() / 3600;
+    const m = shiftedDate.getUTCMinutes() + shiftedDate.getUTCSeconds() / 60;
+    const s = shiftedDate.getUTCSeconds() + shiftedDate.getMilliseconds() / 1000;
 
     const hourDeg = (h / 24) * 360 - 180;
     document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
