@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Grafica Fusa Sincronizzata ma Dati Nascosti)
+// SunClock24 - script.js (Grafica Fissa + Fuso Isolato sulle Lancette)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -220,7 +220,7 @@ function toggleMoonDropdown() {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = true; // Mantiene i dati testuali nascosti (----)
+    isTimezoneOnlyMode = true; 
     if (!isCustomTime) {
         updateTimeForLocation();
     }
@@ -244,9 +244,8 @@ function applyTimezonePreset() {
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
 
-    // Ricalcola la grafica sul fuso selezionato ma mantenendo la posizione bloccata
-    const utcCalculationDate = getUTCDateFromLocal(selectedDate);
-    cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
+    // La grafica viene calcolata sulla data/ora pura della posizione (mantenendola fissa)
+    cachedTimes = SunCalc.getTimes(selectedDate, cachedLat, cachedLon);
     
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
@@ -597,9 +596,8 @@ function updateSunClock(lat, lon) {
 
 function timeToHours(date) {
     if (!date || !isValidDate(date)) return null;
-    const totalOffset = getTotalOffsetHours();
-    const localDate = new Date(date.getTime() + (totalOffset * 3600000));
-    return localDate.getUTCHours() + localDate.getUTCMinutes() / 60 + localDate.getUTCSeconds() / 3600;
+    // Grafica assolutamente fissa e ancorata all'ora UTC pura della località
+    return date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
 }
 
 function isValidDate(d) {
@@ -607,8 +605,8 @@ function isValidDate(d) {
 }
 
 function drawMoonVisibilityArc(moonTimes, refDate) {
-    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime() + (getTotalOffsetHours() * 3600000)) : null;
-    let set = moonTimes.set ? new Date(moonTimes.set.getTime() + (getTotalOffsetHours() * 3600000)) : null;
+    let rise = moonTimes.rise ? new Date(moonTimes.rise.getTime()) : null;
+    let set = moonTimes.set ? new Date(moonTimes.set.getTime()) : null;
 
     if (moonTimes.alwaysUp) {
         rise = new Date(refDate); rise.setHours(0,0,0,0);
@@ -656,7 +654,7 @@ function drawSunSlicesSafe(times) {
     let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
     
     if (!hasValidSunset) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = new Date(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         
@@ -832,7 +830,7 @@ function getIntervalColorSafe(h, times) {
     const hSunset = timeToHours(times.sunset);
 
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-        const testDate = getUTCDateFromLocal(selectedDate);
+        const testDate = new Date(selectedDate);
         testDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(testDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
