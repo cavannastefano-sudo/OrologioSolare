@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Grafica e Fuso Sincronizzati)
+// SunClock24 - script.js (Definitivo Sincronizzato con Fuso)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -175,11 +175,7 @@ function toggleAutoDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
-    } else {
-        updateSunClock(cachedLat, cachedLon);
-    }
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function toggleManualDST(checked) {
@@ -187,11 +183,7 @@ function toggleManualDST(checked) {
     if (!isCustomTime) {
         updateTimeForLocation();
     }
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
-    } else {
-        updateSunClock(cachedLat, cachedLon);
-    }
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function updateDstUI(isAuto) {
@@ -222,9 +214,8 @@ function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = false;
     
+    // Aggiorna la data di riferimento basandosi sul nuovo fuso selezionato dalla tendina
     if (!isCustomTime) {
-        updateTimeForLocation();
-    } else {
         selectedDate = getEffectiveDate();
     }
 
@@ -245,6 +236,7 @@ function applyTimezonePreset() {
         </div>
     `;
 
+    // Ricalcola completamente la grafica e i dati sul nuovo fuso
     updateSunClock(cachedLat, cachedLon);
     toggleSettingsModal(false);
 }
