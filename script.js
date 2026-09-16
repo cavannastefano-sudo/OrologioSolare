@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto e Ottimizzato per Pieghevoli)
+// SunClock24 - script.js (Grafica Fissa, Fuso Isolato, e Reset Completo con "Adesso")
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -122,7 +122,6 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
-let lastSentColor = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -172,21 +171,6 @@ async function initClock() {
         updateSunClock(cachedLat, cachedLon);
     }
 }
-
-// Gestione del ridimensionamento dinamico (Foldable)
-let resizeTimer;
-window.addEventListener('resize', function() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function() {
-        if (cachedTimes) {
-            ctx.clearRect(0, 0, 500, 500);
-            drawSunSlicesSafe(cachedTimes);
-            drawMinuteRingSafe();
-            drawClockNumbers();
-            updatePageBackground(cachedTimes);
-        }
-    }, 120);
-});
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
@@ -373,8 +357,9 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
 function resetToNow() {
     isCustomTime = false;
-    isTimezoneOnlyMode = false;
+    isTimezoneOnlyMode = false; // Riattiva la visualizzazione dei dati testuali completi
 
+    // Riporta la tendina del fuso sul fuso standard nativo della posizione salvata
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
@@ -854,14 +839,6 @@ function updatePageBackground(times) {
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', finalBg);
-    }
-
-    // Invia ad Android solo ed esclusivamente quando il colore cambia realmente, evitando sfarfallii o scatti continui
-    if (finalBg !== lastSentColor) {
-        lastSentColor = finalBg;
-        if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-            window.AndroidInterface.updateColors(finalBg);
-        }
     }
 }
 
