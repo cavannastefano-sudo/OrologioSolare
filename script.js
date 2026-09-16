@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo + Gestione Foldable & Resize)
+// SunClock24 - script.js (Funzionamento 100% originale + Fix Colore Pieghevoli)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -122,7 +122,6 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
-let lastSentColor = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -172,21 +171,6 @@ async function initClock() {
         updateSunClock(cachedLat, cachedLon);
     }
 }
-
-// Gestione del ridimensionamento dinamico (Fondamentale per i dispositivi pieghevoli Fold)
-let resizeTimer;
-window.addEventListener('resize', function() {
-    clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function() {
-        if (cachedTimes) {
-            ctx.clearRect(0, 0, 500, 500);
-            drawSunSlicesSafe(cachedTimes);
-            drawMinuteRingSafe();
-            drawClockNumbers();
-            updatePageBackground(cachedTimes);
-        }
-    }, 120);
-});
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
@@ -373,8 +357,9 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
 function resetToNow() {
     isCustomTime = false;
-    isTimezoneOnlyMode = false;
+    isTimezoneOnlyMode = false; // Riattiva la visualizzazione dei dati testuali completi
 
+    // Riletta il fuso orario nativo della posizione salvata (es. Piacenza)
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
@@ -856,11 +841,9 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    if (finalBg !== lastSentColor) {
-        lastSentColor = finalBg;
-        if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-            window.AndroidInterface.updateColors(finalBg);
-        }
+    // Forza sempre l'invio del colore ad Android in modo che i pieghevoli non perdano mai il tema
+    if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+        window.AndroidInterface.updateColors(finalBg);
     }
 }
 
