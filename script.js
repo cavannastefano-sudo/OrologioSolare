@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Grafica Fissa + Lancette e Ora Mobili per Fuso)
+// SunClock24 - script.js (Grafica Fissa, Fuso Isolato, e Reset Completo con "Adesso")
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -357,13 +357,23 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
 function resetToNow() {
     isCustomTime = false;
+    isTimezoneOnlyMode = false; // Riattiva la visualizzazione dei dati testuali completi
+
+    // Riporta la tendina del fuso sul fuso standard nativo della posizione salvata
+    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+    let selectEl = document.getElementById('timezone-preset');
+    if (selectEl) {
+        for(let opt of selectEl.options) {
+            if(parseFloat(opt.value) === preciseTz) {
+                selectEl.value = opt.value;
+                break;
+            }
+        }
+    }
+
     updateTimeForLocation();
     updateInputsVal();
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
-    } else {
-        updateSunClock(cachedLat, cachedLon);
-    }
+    updateSunClock(cachedLat, cachedLon);
 }
 
 function updateTimeForLocation() {
