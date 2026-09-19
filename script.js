@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Funzionamento 100% originale + Fix Colore Pieghevoli + Tabella Colorata)
+// SunClock24 - script.js (Completo, Intatto + Aggiornamento Dinamico Evento)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -123,6 +123,7 @@ let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastSentColor = null;
+let lastHighlightedEventIndex = -1;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -268,6 +269,9 @@ function applyTimezonePreset() {
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
     
+    // Aggiorna la tabella svuotandola con i trattini in modalità fuso
+    populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+
     ctx.clearRect(0, 0, 500, 500);
     drawSunSlicesSafe(cachedTimes);
     drawMinuteRingSafe();
@@ -594,6 +598,8 @@ function updateSunClock(lat, lon) {
     drawMinuteRingSafe();
     drawClockNumbers();
     updatePageBackground(cachedTimes);
+    
+    lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const standardTz = getPreciseStandardTimezone(lat, lon);
@@ -938,31 +944,109 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 }
 
+function getNextEventIndex(times, refDate) {
+    if (!times) return -1;
+    const events = [
+        { name: "Mezzanotte solare", date: times.nadir },
+        { name: "Alba astronomica", date: times.astronomicalDawn },
+        { name: "Alba Nautica", date: times.nauticalDawn },
+        { name: "Alba Civile", date: times.dawn },
+        { name: "Alba", date: times.sunrise },
+        { name: "Fine dell'alba", date: times.sunriseEnd },
+        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd },
+        { name: "Mezzogiorno solare", date: times.solarNoon },
+        { name: "Inizio dell'ora d'oro", date: times.goldenHour },
+        { name: "Inizio del tramonto", date: times.sunsetStart },
+        { name: "Tramonto", date: times.sunset },
+        { name: "Crepuscolo civile", date: times.dusk },
+        { name: "Crepuscolo nautico", date: times.nauticalDusk },
+        { name: "Crepuscolo astronomico", date: times.astronomicalDusk }
+    ];
+
+    const currentTimeMs = refDate.getTime();
+    for (let i = 0; i < events.length; i++) {
+        if (isValidDate(events[i].date)) {
+            const baseOffset = getBaseLocationOffset();
+            const eventUtc = events[i].date.getTime();
+            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
+                return i;
+            }
+        }
+    }
+    return 0;
+}
+
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
-    const phasePct = Math.round(illumination.fraction * 100);
+
+    // Se siamo nella modalità solo fuso orario, mostra tutti i campi con i trattini ----
+    if (isTimezoneOnlyMode) {
+        tbody.innerHTML = `
+            <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>----</td></tr>
+            
+            <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+            <tr style="background: rgba(30, 41, 59, 0.5);"><td>Mezzanotte solare</td><td>----</td></tr>
+            <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>----</td></tr>
+            <tr style="background: rgba(30, 58, 138, 0.6);"><td>Alba Nautica</td><td>----</td></tr>
+            <tr style="background: rgba(59, 130, 246, 0.4);"><td>Alba Civile</td><td>----</td></tr>
+            <tr style="background: rgba(249, 115, 22, 0.4);"><td>Alba</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.4);"><td>Fine dell'alba</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.5);"><td>Fine dell'ora d'oro</td><td>----</td></tr>
+            <tr style="background: rgba(186, 230, 253, 0.3); color: #ffffff;"><td>Mezzogiorno solare</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.5);"><td>Inizio dell'ora d'oro</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.4);"><td>Inizio del tramonto</td><td>----</td></tr>
+            <tr style="background: rgba(249, 115, 22, 0.4);"><td>Tramonto</td><td>----</td></tr>
+            <tr style="background: rgba(59, 130, 246, 0.4);"><td>Crepuscolo civile</td><td>----</td></tr>
+            <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
+            <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
+        `;
+        return;
+    }
+
+    const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
     
+    // Lista di tutti gli eventi solari con le rispettive date/orari
+    const events = [
+        { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
+        { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
+        { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.6)" },
+        { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.4)" },
+        { name: "Alba", date: times.sunrise, bg: "rgba(249, 115, 22, 0.4)" },
+        { name: "Fine dell'alba", date: times.sunriseEnd, bg: "rgba(234, 179, 8, 0.4)" },
+        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, bg: "rgba(234, 179, 8, 0.5)" },
+        { name: "Mezzogiorno solare", date: times.solarNoon, bg: "rgba(186, 230, 253, 0.3); color: #ffffff;" },
+        { name: "Inizio dell'ora d'oro", date: times.goldenHour, bg: "rgba(234, 179, 8, 0.5)" },
+        { name: "Inizio del tramonto", date: times.sunsetStart, bg: "rgba(234, 179, 8, 0.4)" },
+        { name: "Tramonto", date: times.sunset, bg: "rgba(249, 115, 22, 0.4)" },
+        { name: "Crepuscolo civile", date: times.dusk, bg: "rgba(59, 130, 246, 0.4)" },
+        { name: "Crepuscolo nautico", date: times.nauticalDusk, bg: "rgba(30, 58, 138, 0.6)" },
+        { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.6)" }
+    ];
+
+    let solarRowsHtml = "";
+    events.forEach((ev, idx) => {
+        const isNext = (idx === lastHighlightedEventIndex);
+        const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
+        
+        solarRowsHtml += `
+            <tr style="background: ${ev.bg}; ${borderStyle}">
+                <td>${ev.name} ${isNext ? '📍' : ''}</td>
+                <td>${formatTime(ev.date)}</td>
+            </tr>
+        `;
+    });
+
     tbody.innerHTML = `
         <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
-        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
+        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
+        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
         
         <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
-        <tr style="background: rgba(30, 41, 59, 0.5);"><td>Mezzanotte solare</td><td>${formatTime(times.nadir)}</td></tr>
-        <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>${formatTime(times.astronomicalDawn)}</td></tr>
-        <tr style="background: rgba(30, 58, 138, 0.6);"><td>Alba Nautica</td><td>${formatTime(times.nauticalDawn)}</td></tr>
-        <tr style="background: rgba(59, 130, 246, 0.4);"><td>Alba Civile</td><td>${formatTime(times.dawn)}</td></tr>
-        <tr style="background: rgba(249, 115, 22, 0.4);"><td>Alba</td><td>${formatTime(times.sunrise)}</td></tr>
-        <tr style="background: rgba(234, 179, 8, 0.4);"><td>Fine dell'alba</td><td>${formatTime(times.sunriseEnd)}</td></tr>
-        <tr style="background: rgba(234, 179, 8, 0.5);"><td>Fine dell'ora d'oro</td><td>${formatTime(times.goldenHourEnd)}</td></tr>
-        <tr style="background: rgba(186, 230, 253, 0.3); color: #ffffff;"><td>Mezzogiorno solare</td><td>${formatTime(times.solarNoon)}</td></tr>
-        <tr style="background: rgba(234, 179, 8, 0.5);"><td>Inizio dell'ora d'oro</td><td>${formatTime(times.goldenHour)}</td></tr>
-        <tr style="background: rgba(234, 179, 8, 0.4);"><td>Inizio del tramonto</td><td>${formatTime(times.sunsetStart)}</td></tr>
-        <tr style="background: rgba(249, 115, 22, 0.4);"><td>Tramonto</td><td>${formatTime(times.sunset)}</td></tr>
-        <tr style="background: rgba(59, 130, 246, 0.4);"><td>Crepuscolo civile</td><td>${formatTime(times.dusk)}</td></tr>
-        <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>${formatTime(times.nauticalDusk)}</td></tr>
-        <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>${formatTime(times.astronomicalDusk)}</td></tr>
+        ${solarRowsHtml}
     `;
 }
 
@@ -1010,8 +1094,15 @@ function updateHands() {
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-    if (cachedTimes) {
+    if (cachedTimes && cachedMoonTimes) {
         updatePageBackground(cachedTimes);
+        
+        // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
+        const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
+        if (currentHighlight !== lastHighlightedEventIndex) {
+            lastHighlightedEventIndex = currentHighlight;
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+        }
     }
 }
 
