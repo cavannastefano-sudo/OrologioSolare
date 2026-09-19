@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto + Bordo Bianco Evento Successivo)
+// SunClock24 - script.js (Completo, Intatto + Aggiornamento Dinamico Evento)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -123,6 +123,7 @@ let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastSentColor = null;
+let lastHighlightedEventIndex = -1;
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -597,6 +598,8 @@ function updateSunClock(lat, lon) {
     drawMinuteRingSafe();
     drawClockNumbers();
     updatePageBackground(cachedTimes);
+    
+    lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const standardTz = getPreciseStandardTimezone(lat, lon);
@@ -941,6 +944,38 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 }
 
+function getNextEventIndex(times, refDate) {
+    if (!times) return -1;
+    const events = [
+        { name: "Mezzanotte solare", date: times.nadir },
+        { name: "Alba astronomica", date: times.astronomicalDawn },
+        { name: "Alba Nautica", date: times.nauticalDawn },
+        { name: "Alba Civile", date: times.dawn },
+        { name: "Alba", date: times.sunrise },
+        { name: "Fine dell'alba", date: times.sunriseEnd },
+        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd },
+        { name: "Mezzogiorno solare", date: times.solarNoon },
+        { name: "Inizio dell'ora d'oro", date: times.goldenHour },
+        { name: "Inizio del tramonto", date: times.sunsetStart },
+        { name: "Tramonto", date: times.sunset },
+        { name: "Crepuscolo civile", date: times.dusk },
+        { name: "Crepuscolo nautico", date: times.nauticalDusk },
+        { name: "Crepuscolo astronomico", date: times.astronomicalDusk }
+    ];
+
+    const currentTimeMs = refDate.getTime();
+    for (let i = 0; i < events.length; i++) {
+        if (isValidDate(events[i].date)) {
+            const baseOffset = getBaseLocationOffset();
+            const eventUtc = events[i].date.getTime();
+            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
+                return i;
+            }
+        }
+    }
+    return 0;
+}
+
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
 
@@ -991,27 +1026,9 @@ function populateTable(times, moonTimes, illumination) {
         { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.6)" }
     ];
 
-    // Trova l'evento solare successivo rispetto all'ora selezionata (selectedDate)
-    let nextEventIndex = -1;
-    const currentTimeMs = selectedDate.getTime();
-    
-    for (let i = 0; i < events.length; i++) {
-        if (isValidDate(events[i].date)) {
-            const baseOffset = getBaseLocationOffset();
-            const eventUtc = events[i].date.getTime();
-            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
-                nextEventIndex = i;
-                break;
-            }
-        }
-    }
-    if (nextEventIndex === -1 && events.length > 0) {
-        nextEventIndex = 0;
-    }
-
     let solarRowsHtml = "";
     events.forEach((ev, idx) => {
-        const isNext = (idx === nextEventIndex);
+        const isNext = (idx === lastHighlightedEventIndex);
         const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
         
         solarRowsHtml += `
@@ -1077,8 +1094,15 @@ function updateHands() {
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
-    if (cachedTimes) {
+    if (cachedTimes && cachedMoonTimes) {
         updatePageBackground(cachedTimes);
+        
+        // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
+        const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
+        if (currentHighlight !== lastHighlightedEventIndex) {
+            lastHighlightedEventIndex = currentHighlight;
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+        }
     }
 }
 
