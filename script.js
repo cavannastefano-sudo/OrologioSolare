@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto + Aggiornamento Dinamico Evento)
+// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Barre Pieghevole)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -174,7 +174,7 @@ async function initClock() {
     }
 }
 
-// Gestione del ridimensionamento dinamico (Foldable)
+// Gestione del ridimensionamento dinamico (Foldable - Apertura/Chiusura Schermo)
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
@@ -185,6 +185,13 @@ window.addEventListener('resize', function() {
             drawMinuteRingSafe();
             drawClockNumbers();
             updatePageBackground(cachedTimes);
+            // Forza l'aggiornamento immediato delle barre Android al resize/apertura schermo
+            if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+                const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+                const currentColor = getIntervalColorSafe(h, cachedTimes);
+                const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+                window.AndroidInterface.updateColors(finalBg);
+            }
         }
     }, 120);
 });
@@ -862,11 +869,9 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    if (finalBg !== lastSentColor) {
-        lastSentColor = finalBg;
-        if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-            window.AndroidInterface.updateColors(finalBg);
-        }
+    // Aggiornamento continuo per AndroidInterface (funziona sia a schermo chiuso che aperto sul pieghevole)
+    if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+        window.AndroidInterface.updateColors(finalBg);
     }
 }
 
@@ -1095,6 +1100,7 @@ function updateHands() {
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
     if (cachedTimes && cachedMoonTimes) {
+        // Mantiene sempre aggiornato lo sfondo e le barre di sistema Android in tempo reale
         updatePageBackground(cachedTimes);
         
         // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
