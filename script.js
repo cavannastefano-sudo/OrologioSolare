@@ -966,9 +966,9 @@ function getNextEventIndex(times, refDate) {
     const currentTimeMs = refDate.getTime();
     for (let i = 0; i < events.length; i++) {
         if (isValidDate(events[i].date)) {
-            const baseOffset = getBaseLocationOffset();
-            const eventUtc = events[i].date.getTime();
-            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
+            const offset = getTotalOffsetHours(); // Usiamo getTotalOffsetHours per allinearlo perfettamente alla tabella
+            const eventTargetTimeMs = events[i].date.getTime() + (offset * 3600000);
+            if (eventTargetTimeMs >= currentTimeMs) {
                 return i;
             }
         }
