@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Sincronizzato e Preciso)
+// SunClock24 - script.js (Completo, Intatto + Aggiornamento Dinamico Evento)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -122,6 +122,7 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
+let lastSentColor = null;
 let lastHighlightedEventIndex = -1;
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -173,7 +174,7 @@ async function initClock() {
     }
 }
 
-// Gestione del ridimensionamento dinamico (Foldable - Apertura/Chiusura Schermo)
+// Gestione del ridimensionamento dinamico (Foldable)
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
@@ -184,12 +185,6 @@ window.addEventListener('resize', function() {
             drawMinuteRingSafe();
             drawClockNumbers();
             updatePageBackground(cachedTimes);
-            if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-                const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
-                const currentColor = getIntervalColorSafe(h, cachedTimes);
-                const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
-                window.AndroidInterface.updateColors(finalBg);
-            }
         }
     }, 120);
 });
@@ -274,6 +269,7 @@ function applyTimezonePreset() {
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
     
+    // Aggiorna la tabella svuotandola con i trattini in modalità fuso
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -631,8 +627,8 @@ function updateSunClock(lat, lon) {
 
 function toTargetTime(date) {
     if (!isValidDate(date)) return null;
-    const offset = getTotalOffsetHours(); // Sincronizzato con getTotalOffsetHours
-    return new Date(date.getTime() + (offset * 3600000));
+    const baseOffset = getBaseLocationOffset();
+    return new Date(date.getTime() + (baseOffset * 3600000));
 }
 
 function timeToHours(date) {
@@ -866,8 +862,11 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
-        window.AndroidInterface.updateColors(finalBg);
+    if (finalBg !== lastSentColor) {
+        lastSentColor = finalBg;
+        if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+            window.AndroidInterface.updateColors(finalBg);
+        }
     }
 }
 
@@ -967,9 +966,9 @@ function getNextEventIndex(times, refDate) {
     const currentTimeMs = refDate.getTime();
     for (let i = 0; i < events.length; i++) {
         if (isValidDate(events[i].date)) {
-            const offset = getTotalOffsetHours(); // Sincronizzato con getTotalOffsetHours per evitare scarti
-            const eventTargetTimeMs = events[i].date.getTime() + (offset * 3600000);
-            if (eventTargetTimeMs >= currentTimeMs) {
+            const baseOffset = getBaseLocationOffset();
+            const eventUtc = events[i].date.getTime();
+            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
                 return i;
             }
         }
@@ -980,6 +979,7 @@ function getNextEventIndex(times, refDate) {
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
 
+    // Se siamo nella modalità solo fuso orario, mostra tutti i campi con i trattini ----
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
             <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
@@ -1008,6 +1008,7 @@ function populateTable(times, moonTimes, illumination) {
 
     const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
     
+    // Lista di tutti gli eventi solari con le rispettive date/orari
     const events = [
         { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
         { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
@@ -1096,6 +1097,7 @@ function updateHands() {
     if (cachedTimes && cachedMoonTimes) {
         updatePageBackground(cachedTimes);
         
+        // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
         const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
         if (currentHighlight !== lastHighlightedEventIndex) {
             lastHighlightedEventIndex = currentHighlight;
