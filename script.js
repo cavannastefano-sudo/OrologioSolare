@@ -272,7 +272,8 @@ function applyTimezonePreset() {
     document.getElementById('moon-set').innerText = "----";
 
     const baseOffset = getBaseLocationOffset();
-    const utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
+    let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
+    utcCalculationDate.setUTCHours(12, 0, 0, 0);
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
     
@@ -601,6 +602,7 @@ function updateSunClock(lat, lon) {
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
+    utcCalculationDate.setUTCHours(12, 0, 0, 0); // Ancorato saldamente a mezzogiorno UTC per evitare sbalzi sulla Nadir
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
@@ -978,12 +980,13 @@ function getNextEventIndex(times, refDate) {
         { name: "Crepuscolo astronomico", date: times.astronomicalDusk }
     ];
 
-    const currentTimeMs = refDate.getTime();
+    const offsetMs = getTotalOffsetHours() * 3600000;
+    const currentUtcTimeMs = refDate.getTime() - offsetMs;
+
     for (let i = 0; i < events.length; i++) {
         if (isValidDate(events[i].date)) {
-            const offset = getTotalOffsetHours(); 
-            const eventTargetTimeMs = events[i].date.getTime() + (offset * 3600000);
-            if (eventTargetTimeMs >= currentTimeMs) {
+            const eventUtcTimeMs = events[i].date.getTime();
+            if (eventUtcTimeMs >= currentUtcTimeMs) {
                 return i;
             }
         }
@@ -1078,7 +1081,6 @@ function updateHands() {
         selectedDate = getEffectiveDate();
         updateInputsVal();
     } else {
-        // Se è impostato un orario personalizzato, il tempo continua a scorrere in avanti mantenendo il delta
         const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
         selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
     }
@@ -1100,6 +1102,7 @@ function updateHands() {
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
+    utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
     const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
     const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
