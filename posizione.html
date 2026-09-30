@@ -445,6 +445,7 @@
 
         let selectedDate = new Date();
         let isCustomTime = false;
+        let customTimeOffsetMs = 0; // Delta in millisecondi per far scorrere il tempo personalizzato
 
         function getPreciseStandardTimezone(lat, lon) {
             try {
@@ -541,6 +542,13 @@
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             if (!isCustomTime) {
                 updateTimeForLocation();
+            } else {
+                // Ricalcola il delta se cambia lo stato DST mentre si è in custom time
+                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+                const isDstNowActive = getCurrentDstState();
+                const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+                const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+                customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
             }
             updateSunClock(cachedLat, cachedLon);
         }
@@ -569,6 +577,13 @@
             const parts = val.split('-');
             selectedDate.setUTCFullYear(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             isCustomTime = true;
+            
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
@@ -578,12 +593,20 @@
             const parts = val.split(':');
             selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
             isCustomTime = true;
+            
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
         }
 
         function resetToNow() {
             isCustomTime = false;
+            customTimeOffsetMs = 0;
             updateTimeForLocation();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
@@ -1025,7 +1048,6 @@
             const tbody = document.getElementById('times-table-body');
             const phasePct = Math.round(illumination.fraction * 100);
             
-            // Lista di tutti gli eventi solari con le rispettive date/orari e sfondi originali
             const events = [
                 { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
                 { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
@@ -1072,9 +1094,17 @@
         }
 
         function updateHands() {
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const isDstNowActive = getCurrentDstState();
+            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+
             if (!isCustomTime) {
                 selectedDate = getEffectiveDate();
                 updateInputsVal();
+            } else {
+                // Se è impostato un orario personalizzato, il tempo continua a scorrere in avanti mantenendo il delta
+                const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+                selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
             }
             
             document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
@@ -1092,10 +1122,7 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
-            let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
+            let utcCalculationDate = new Date(selectedDate.getTime() - (cityOffsetHours * 3600000));
 
             const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
             const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -1112,7 +1139,6 @@
             if (cachedTimes && cachedMoonTimes) {
                 updatePageBackground(cachedTimes);
                 
-                // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
                 const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
                 if (currentHighlight !== lastHighlightedEventIndex) {
                     lastHighlightedEventIndex = currentHighlight;
