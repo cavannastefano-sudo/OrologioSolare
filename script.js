@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Barre Pieghevole)
+// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Perfetta Rettangolo)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -869,7 +869,6 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
-    // Aggiornamento continuo per AndroidInterface (funziona sia a schermo chiuso che aperto sul pieghevole)
     if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
         window.AndroidInterface.updateColors(finalBg);
     }
@@ -971,9 +970,9 @@ function getNextEventIndex(times, refDate) {
     const currentTimeMs = refDate.getTime();
     for (let i = 0; i < events.length; i++) {
         if (isValidDate(events[i].date)) {
-            const baseOffset = getBaseLocationOffset();
-            const eventUtc = events[i].date.getTime();
-            if (eventUtc >= (currentTimeMs - (baseOffset * 3600000))) {
+            const offset = getTotalOffsetHours(); // Sincronizzato con getTotalOffsetHours per azzerare lo scarto
+            const eventTargetTimeMs = events[i].date.getTime() + (offset * 3600000);
+            if (eventTargetTimeMs >= currentTimeMs) {
                 return i;
             }
         }
@@ -984,7 +983,6 @@ function getNextEventIndex(times, refDate) {
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
 
-    // Se siamo nella modalità solo fuso orario, mostra tutti i campi con i trattini ----
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
             <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
@@ -1013,7 +1011,6 @@ function populateTable(times, moonTimes, illumination) {
 
     const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
     
-    // Lista di tutti gli eventi solari con le rispettive date/orari
     const events = [
         { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
         { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
@@ -1050,7 +1047,7 @@ function populateTable(times, moonTimes, illumination) {
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
         
-        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
     `;
 }
@@ -1100,10 +1097,8 @@ function updateHands() {
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
     if (cachedTimes && cachedMoonTimes) {
-        // Mantiene sempre aggiornato lo sfondo e le barre di sistema Android in tempo reale
         updatePageBackground(cachedTimes);
         
-        // Aggiorna dinamicamente l'evento evidenziato se cambia in tempo reale
         const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
         if (currentHighlight !== lastHighlightedEventIndex) {
             lastHighlightedEventIndex = currentHighlight;
