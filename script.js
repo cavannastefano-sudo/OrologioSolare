@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Perfetta Rettangolo)
+// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Perfetta + Tempo in Scorrevolezza)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -118,6 +118,7 @@ let cachedLat = 45.05;
 let cachedLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
+let customTimeOffsetMs = 0; // Differenza in millisecondi per far scorrere il tempo personalizzato
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -185,7 +186,6 @@ window.addEventListener('resize', function() {
             drawMinuteRingSafe();
             drawClockNumbers();
             updatePageBackground(cachedTimes);
-            // Forza l'aggiornamento immediato delle barre Android al resize/apertura schermo
             if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
                 const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
                 const currentColor = getIntervalColorSafe(h, cachedTimes);
@@ -276,7 +276,6 @@ function applyTimezonePreset() {
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
     
-    // Aggiorna la tabella svuotandola con i trattini in modalità fuso
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -310,6 +309,11 @@ function onDateChanged(val) {
     const parts = val.split('-');
     selectedDate.setUTCFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
+    
+    const targetOffset = getTotalOffsetHours();
+    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
+    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
     updateInputsVal();
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
@@ -323,6 +327,11 @@ function onTimeChanged(val) {
     const parts = val.split(':');
     selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
+    
+    const targetOffset = getTotalOffsetHours();
+    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
+    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
     updateInputsVal();
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
@@ -377,6 +386,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     updateDstUI(isAuto);
 
     isCustomTime = false;
+    customTimeOffsetMs = 0;
     updateTimeForLocation();
     updateInputsVal();
     updateSunClock(cachedLat, cachedLon);
@@ -385,6 +395,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 function resetToNow() {
     isCustomTime = false;
     isTimezoneOnlyMode = false;
+    customTimeOffsetMs = 0;
 
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
@@ -970,7 +981,7 @@ function getNextEventIndex(times, refDate) {
     const currentTimeMs = refDate.getTime();
     for (let i = 0; i < events.length; i++) {
         if (isValidDate(events[i].date)) {
-            const offset = getTotalOffsetHours(); // Sincronizzato con getTotalOffsetHours per azzerare lo scarto
+            const offset = getTotalOffsetHours(); 
             const eventTargetTimeMs = events[i].date.getTime() + (offset * 3600000);
             if (eventTargetTimeMs >= currentTimeMs) {
                 return i;
@@ -1047,7 +1058,7 @@ function populateTable(times, moonTimes, illumination) {
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
         
-        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️️ Dati Solari e Crepuscoli</b></td></tr>
+        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
     `;
 }
@@ -1061,9 +1072,15 @@ function toggleSettingsModal(show) {
 }
 
 function updateHands() {
+    const targetOffset = getTotalOffsetHours();
+
     if (!isCustomTime) {
         selectedDate = getEffectiveDate();
         updateInputsVal();
+    } else {
+        // Se è impostato un orario personalizzato, il tempo continua a scorrere in avanti mantenendo il delta
+        const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
+        selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
     }
     
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
