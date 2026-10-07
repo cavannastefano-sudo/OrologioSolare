@@ -118,7 +118,7 @@ let cachedLat = 45.05;
 let cachedLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
-let customTimeOffsetMs = 0; // Differenza in millisecondi per far scorrere il tempo personalizzato
+let customTimeOffsetMs = 0; 
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -175,7 +175,6 @@ async function initClock() {
     }
 }
 
-// Gestione del ridimensionamento dinamico (Foldable - Apertura/Chiusura Schermo)
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
@@ -962,40 +961,31 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
 }
 
 function getNextEventIndex(times, refDate) {
-    if (!times) return -1;
-    
-    const offsetMs = getTotalOffsetHours() * 3600000;
-    const currentUtcTimeMs = refDate.getTime() - offsetMs;
+    if (!times) return 0;
 
-    const baseOffset = getBaseLocationOffset();
-    let utcNextDay = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
-    utcNextDay.setUTCDate(utcNextDay.getUTCDate() + 1);
-    utcNextDay.setUTCHours(12, 0, 0, 0);
-    
-    let nextTimes = SunCalc.getTimes(utcNextDay, cachedLat, cachedLon);
+    const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
 
     const events = [
-        { name: "Mezzanotte solare", date: times.nadir, index: 0 },
-        { name: "Alba astronomica", date: times.astronomicalDawn, index: 1 },
-        { name: "Alba Nautica", date: times.nauticalDawn, index: 2 },
-        { name: "Alba Civile", date: times.dawn, index: 3 },
-        { name: "Alba", date: times.sunrise, index: 4 },
-        { name: "Fine dell'alba", date: times.sunriseEnd, index: 5 },
-        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, index: 6 },
-        { name: "Mezzogiorno solare", date: times.solarNoon, index: 7 },
-        { name: "Inizio dell'ora d'oro", date: times.goldenHour, index: 8 },
-        { name: "Inizio del tramonto", date: times.sunsetStart, index: 9 },
-        { name: "Tramonto", date: times.sunset, index: 10 },
-        { name: "Crepuscolo civile", date: times.dusk, index: 11 },
-        { name: "Crepuscolo nautico", date: times.nauticalDusk, index: 12 },
-        { name: "Crepuscolo astronomico", date: times.astronomicalDusk, index: 13 },
-        { name: "Mezzanotte solare (Domani)", date: nextTimes.nadir, index: 0 }
+        { name: "Mezzanotte solare", hours: timeToHours(times.nadir), index: 0 },
+        { name: "Alba astronomica", hours: timeToHours(times.astronomicalDawn), index: 1 },
+        { name: "Alba Nautica", hours: timeToHours(times.nauticalDawn), index: 2 },
+        { name: "Alba Civile", hours: timeToHours(times.dawn), index: 3 },
+        { name: "Alba", hours: timeToHours(times.sunrise), index: 4 },
+        { name: "Fine dell'alba", hours: timeToHours(times.sunriseEnd), index: 5 },
+        { name: "Fine dell'ora d'oro", hours: timeToHours(times.goldenHourEnd), index: 6 },
+        { name: "Mezzogiorno solare", hours: timeToHours(times.solarNoon), index: 7 },
+        { name: "Inizio dell'ora d'oro", hours: timeToHours(times.goldenHour), index: 8 },
+        { name: "Inizio del tramonto", hours: timeToHours(times.sunsetStart), index: 9 },
+        { name: "Tramonto", hours: timeToHours(times.sunset), index: 10 },
+        { name: "Crepuscolo civile", hours: timeToHours(times.dusk), index: 11 },
+        { name: "Crepuscolo nautico", hours: timeToHours(times.nauticalDusk), index: 12 },
+        { name: "Crepuscolo astronomico", hours: timeToHours(times.astronomicalDusk), index: 13 }
     ];
 
     for (let i = 0; i < events.length; i++) {
-        if (isValidDate(events[i].date)) {
-            const eventUtcTimeMs = events[i].date.getTime();
-            if (eventUtcTimeMs >= currentUtcTimeMs) {
+        if (events[i].hours !== null && !isNaN(events[i].hours)) {
+            let evH = (events[i].hours + 24) % 24;
+            if (evH >= h) {
                 return events[i].index;
             }
         }
