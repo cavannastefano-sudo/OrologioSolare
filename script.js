@@ -118,7 +118,7 @@ let cachedLat = 45.05;
 let cachedLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
-let customTimeOffsetMs = 0; 
+let customTimeOffsetMs = 0; // Differenza in millisecondi per far scorrere il tempo personalizzato
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -175,6 +175,7 @@ async function initClock() {
     }
 }
 
+// Gestione del ridimensionamento dinamico (Foldable - Apertura/Chiusura Schermo)
 let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
@@ -961,44 +962,45 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
 }
 
 function getNextEventIndex(times, refDate) {
-    if (!times) return 0;
-
-    const targetRefDate = toTargetTime(refDate);
-    if (!isValidDate(targetRefDate)) return 0;
+    if (!times) return -1;
     
-    const currentHourDecimal = targetRefDate.getUTCHours() + 
-                               targetRefDate.getUTCMinutes() / 60 + 
-                               targetRefDate.getUTCSeconds() / 3600;
+    const offsetMs = getTotalOffsetHours() * 3600000;
+    const currentUtcTimeMs = refDate.getTime() - offsetMs;
 
-    const eventsHours = [
-        { name: "Mezzanotte solare", hours: timeToHours(times.nadir), index: 0 },
-        { name: "Alba astronomica", hours: timeToHours(times.astronomicalDawn), index: 1 },
-        { name: "Alba Nautica", hours: timeToHours(times.nauticalDawn), index: 2 },
-        { name: "Alba Civile", hours: timeToHours(times.dawn), index: 3 },
-        { name: "Alba", hours: timeToHours(times.sunrise), index: 4 },
-        { name: "Fine dell'alba", hours: timeToHours(times.sunriseEnd), index: 5 },
-        { name: "Fine dell'ora d'oro", hours: timeToHours(times.goldenHourEnd), index: 6 },
-        { name: "Mezzogiorno solare", hours: timeToHours(times.solarNoon), index: 7 },
-        { name: "Inizio dell'ora d'oro", hours: timeToHours(times.goldenHour), index: 8 },
-        { name: "Inizio del tramonto", hours: timeToHours(times.sunsetStart), index: 9 },
-        { name: "Tramonto", hours: timeToHours(times.sunset), index: 10 },
-        { name: "Crepuscolo civile", hours: timeToHours(times.dusk), index: 11 },
-        { name: "Crepuscolo nautico", hours: timeToHours(times.nauticalDusk), index: 12 },
-        { name: "Crepuscolo astronomico", hours: timeToHours(times.astronomicalDusk), index: 13 }
+    const baseOffset = getBaseLocationOffset();
+    let utcNextDay = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
+    utcNextDay.setUTCDate(utcNextDay.getUTCDate() + 1);
+    utcNextDay.setUTCHours(12, 0, 0, 0);
+    
+    let nextTimes = SunCalc.getTimes(utcNextDay, cachedLat, cachedLon);
+
+    const events = [
+        { name: "Mezzanotte solare", date: times.nadir, index: 0 },
+        { name: "Alba astronomica", date: times.astronomicalDawn, index: 1 },
+        { name: "Alba Nautica", date: times.nauticalDawn, index: 2 },
+        { name: "Alba Civile", date: times.dawn, index: 3 },
+        { name: "Alba", date: times.sunrise, index: 4 },
+        { name: "Fine dell'alba", date: times.sunriseEnd, index: 5 },
+        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, index: 6 },
+        { name: "Mezzogiorno solare", date: times.solarNoon, index: 7 },
+        { name: "Inizio dell'ora d'oro", date: times.goldenHour, index: 8 },
+        { name: "Inizio del tramonto", date: times.sunsetStart, index: 9 },
+        { name: "Tramonto", date: times.sunset, index: 10 },
+        { name: "Crepuscolo civile", date: times.dusk, index: 11 },
+        { name: "Crepuscolo nautico", date: times.nauticalDusk, index: 12 },
+        { name: "Crepuscolo astronomico", date: times.astronomicalDusk, index: 13 },
+        { name: "Mezzanotte solare (Domani)", date: nextTimes.nadir, index: 0 }
     ];
 
-    const validEvents = eventsHours.filter(ev => ev.hours !== null && !isNaN(ev.hours));
-    if (validEvents.length === 0) return 0;
-
-    validEvents.sort((a, b) => a.hours - b.hours);
-
-    for (let i = 0; i < validEvents.length; i++) {
-        if (validEvents[i].hours >= currentHourDecimal) {
-            return validEvents[i].index;
+    for (let i = 0; i < events.length; i++) {
+        if (isValidDate(events[i].date)) {
+            const eventUtcTimeMs = events[i].date.getTime();
+            if (eventUtcTimeMs >= currentUtcTimeMs) {
+                return events[i].index;
+            }
         }
     }
-
-    return validEvents[0].index;
+    return 0;
 }
 
 function populateTable(times, moonTimes, illumination) {
