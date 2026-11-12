@@ -147,7 +147,7 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        #btn-world, #btn-meteocweb, #btn-tv, #btn-settings {
+        #btn-world, #btn-settings {
             background: rgba(0,0,0,0.3); 
             color: #facc15; 
             border: 2px solid #334155;
@@ -164,7 +164,7 @@
             justify-content: center;
             text-decoration: none;
         }
-        #btn-world:hover, #btn-meteocweb:hover, #btn-tv:hover, #btn-settings:hover { 
+        #btn-world:hover, #btn-settings:hover { 
             background: rgba(0,0,0,0.5); 
         }
 
@@ -390,9 +390,6 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
-        <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i></a>
-        <!-- Pulsante TV con il link alla lista M3U -->
-        <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i></a>
         <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
@@ -450,6 +447,7 @@
         </div>
     </div>
 
+    <!-- Modale Impostazioni con i collegamenti a MeteoCWEB e IPTV -->
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -457,6 +455,16 @@
                 <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
             </div>
             
+            <!-- Sezione Collegamenti Rapidi (Meteo e IPTV) -->
+            <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569; display: flex; gap: 8px;">
+                <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" class="action-btn" style="flex: 1; text-align: center; background: #334155; color: #f8fafc; text-decoration: none; padding: 8px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fa-solid fa-cloud-sun text-amber-400"></i> MeteoCWEB
+                </a>
+                <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" class="action-btn" style="flex: 1; text-align: center; background: #334155; color: #f8fafc; text-decoration: none; padding: 8px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                    <i class="fa-solid fa-tv text-blue-400"></i> IPTV
+                </a>
+            </div>
+
             <div class="form-group">
                 <label>🌍 Fuso Orario Solare Base (UTC):</label>
                 <select id="timezone-preset" onchange="applyTimezonePreset()">
