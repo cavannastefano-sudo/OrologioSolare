@@ -48,22 +48,38 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            gap: 8px;
+            gap: 10px;
         }
 
-        /* Display di data e ora ingrandito ulteriormente e a larghezza piena */
+        /* Logo CavanWeb nella prima riga */
+        .logo-link {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Display di data e ora ingrandito senza rettangolo/sfondo */
         #header-time-display {
-            font-size: 1.15rem; /* Caratteri ben grandi e visibili */
+            font-size: 1.25rem; /* Caratteri ancora più grandi */
             font-weight: bold;
             color: #39ff14;
-            background: rgba(0, 0, 0, 0.5);
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid #334155;
+            background: transparent; /* Senza sfondo */
+            border: none; /* Senza rettangolo/bordo */
+            padding: 0;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             white-space: nowrap;
             text-align: center;
-            width: 100%;
+            flex-grow: 1;
         }
 
         /* Pulsanti della seconda riga */
@@ -118,8 +134,11 @@
 <body>
 
     <header>
-        <!-- Prima riga: Solo il display di data e ora ingrandito -->
+        <!-- Prima riga: Logo CavanWeb e Display Data/Ora pulito e ingrandito -->
         <div class="header-row">
+            <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                <img src="SfondoN-512.png" alt="CavanWeb Logo">
+            </a>
             <div id="header-time-display">Passa il mouse...</div>
         </div>
 
