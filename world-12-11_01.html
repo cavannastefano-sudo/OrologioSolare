@@ -1,4 +1,90 @@
-<script>
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mappa Mondiale - SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        html, body {
+            background-color: #000;
+            font-family: sans-serif;
+            color: #facc15;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        header {
+            width: 100%;
+            padding: 10px 15px;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-bottom: 1px solid #334155;
+        }
+        h1 { margin: 0; font-size: 1.1rem; text-shadow: 0 0 6px #ff0000; }
+        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9rem; }
+        .back-btn:hover { background: rgba(0,0,0,0.5); }
+        
+        #map {
+            width: 100%;
+            flex-grow: 1;
+            border: none;
+            z-index: 1;
+        }
+        #status-msg {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #38bdf8;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-top: 1px solid #334155;
+        }
+
+        /* Stile personalizzato per il box informativo al passaggio del mouse */
+        .map-tooltip-box {
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #334155;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-family: sans-serif;
+            font-size: 0.85rem;
+            color: #000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🌍 Mappa Mondiale</h1>
+        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
+    </header>
+
+    <div id="map"></div>
+    <div id="status-msg">Passa il mouse sulla mappa per vedere ora e data o clicca per selezionare.</div>
+
+    <script>
         // Definiamo i layer
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
@@ -29,8 +115,15 @@
 
         let geojsonLayer = null;
 
-        // Creiamo un popup di Leaflet riutilizzabile per il passaggio del mouse
-        const hoverPopup = L.popup({ closeButton: false, offset: [0, -10] });
+        // Creiamo un tooltip persistente che seguirà il puntatore
+        const hoverMarker = L.marker([0, 0], {
+            icon: L.divIcon({
+                className: 'custom-hover-icon',
+                html: '<div id="live-map-tooltip" class="map-tooltip-box" style="display:none;"></div>',
+                iconSize: [0, 0],
+                iconAnchor: [0, 0]
+            })
+        }).addTo(map);
 
         function getColor(name) {
             let hash = 0;
@@ -64,13 +157,10 @@
             }
         }
 
-        // Funzione per calcolare l'ora locale stimata in base alla longitudine del puntatore
+        // Funzione per calcolare l'ora e la data in base alla longitudine
         function getTimeForLongitude(lon) {
             const now = new Date();
-            // Ogni 15 gradi di longitudine = 1 ora di differenza rispetto a UTC
             const hoursOffset = lon / 15;
-            
-            // Creiamo la data basata sul tempo UTC attuale più lo spostamento di longitudine
             const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
             
             const hours = String(targetTime.getUTCHours()).padStart(2, '0');
@@ -86,29 +176,27 @@
             };
         }
 
-        // Evento di movimento del mouse sulla mappa per mostrare ora e data al volo
+        // Gestione del movimento del mouse per aggiornare ora, data e posizione del box
         map.on('mousemove', (e) => {
             const lat = e.latlng.lat.toFixed(2);
             const lon = e.latlng.lng.toFixed(2);
             const localInfo = getTimeForLongitude(e.latlng.lng);
 
-            const popupContent = `
-                <div style="font-family: sans-serif; font-size: 0.85rem; color: #000; text-align: center; line-height: 1.4;">
-                    <b>📅 ${localInfo.dateStr}</b><br>
-                    <b>⏰ ${localInfo.timeStr}</b><br>
+            hoverMarker.setLatLng(e.latlng);
+            const tooltipEl = document.getElementById('live-map-tooltip');
+            if (tooltipEl) {
+                tooltipEl.style.display = 'block';
+                tooltipEl.innerHTML = `
+                    <b>📅 ${localInfo.dateStr}</b> &nbsp;|&nbsp; <b>⏰ ${localInfo.timeStr}</b><br>
                     <span style="font-size: 0.75rem; color: #555;">Lat: ${lat}, Lon: ${lon}</span>
-                </div>
-            `;
-
-            hoverPopup.setLatLng(e.latlng).setContent(popupContent);
-            if (!map.hasLayer(hoverPopup)) {
-                hoverPopup.openOn(map);
+                `;
             }
         });
 
-        // Chiude il popup se il mouse esce dalla mappa
+        // Nasconde il box quando il mouse esce dalla mappa
         map.on('mouseout', () => {
-            map.closePopup(hoverPopup);
+            const tooltipEl = document.getElementById('live-map-tooltip');
+            if (tooltipEl) tooltipEl.style.display = 'none';
         });
 
         function handleMapClick(lat, lon) {
@@ -196,3 +284,5 @@
             handleMapClick(e.latlng.lat, e.latlng.lng);
         });
     </script>
+</body>
+</html>
