@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Libreria tz-lookup per i fusi orari -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+
     <style>
         html, body {
             background-color: #000;
@@ -27,18 +33,86 @@
         }
         header {
             width: 100%;
-            padding: 10px 15px;
-            background: rgba(0, 0, 0, 0.8);
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             box-sizing: border-box;
             z-index: 1000;
             border-bottom: 1px solid #334155;
+            gap: 6px;
         }
-        h1 { margin: 0; font-size: 1.1rem; text-shadow: 0 0 6px #ff0000; }
-        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.9rem; }
-        .back-btn:hover { background: rgba(0,0,0,0.5); }
+        
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 6px;
+        }
+
+        h1 { margin: 0; font-size: 0.95rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
+        
+        /* Logo CavanWeb */
+        .logo-link {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Display di data e ora dinamico nella prima riga */
+        #header-time-display {
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 3px 6px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 4px #ff0000;
+            white-space: nowrap;
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        /* Pulsanti della seconda riga */
+        #btn-meteocweb, #btn-tv, .back-btn {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 4px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.78rem; 
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            flex: 1;
+            text-align: center;
+        }
+        #btn-meteocweb:hover, #btn-tv:hover, .back-btn:hover { 
+            background: rgba(0,0,0,0.5); 
+        }
+
+        .back-btn {
+            color: #39ff14;
+            border: 1px solid #ff0000;
+        }
         
         #map {
             width: 100%;
@@ -48,12 +122,12 @@
         }
         #status-msg {
             width: 100%;
-            padding: 8px 10px;
+            padding: 6px 10px;
             background: rgba(0, 0, 0, 0.8);
             color: #38bdf8;
             font-weight: bold;
             text-align: center;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             box-sizing: border-box;
             z-index: 1000;
             border-top: 1px solid #334155;
@@ -63,15 +137,27 @@
 <body>
 
     <header>
-        <h1>🌍 Mappa Mondiale</h1>
-        <a href="index.html" class="back-btn">← Torna all'Orologio</a>
+        <!-- Prima riga: Logo, Titolo e Display Data/Ora -->
+        <div class="header-row">
+            <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                <img src="SfondoN-512.png" alt="CavanWeb Logo">
+            </a>
+            <h1>🌍 Mappa</h1>
+            <div id="header-time-display">Passa il mouse...</div>
+        </div>
+
+        <!-- Seconda riga: Pulsanti ottimizzati per smartphone -->
+        <div class="header-row">
+            <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i> Meteo</a>
+            <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i> IPTV</a>
+            <a href="index.html" class="back-btn">🏠 Indietro</a>
+        </div>
     </header>
 
     <div id="map"></div>
-    <div id="status-msg">Caricamento confini in corso...</div>
+    <div id="status-msg">Clicca su una località per selezionarla o esplora i fusi orari.</div>
 
     <script>
-        // Definiamo i layer
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -82,11 +168,9 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Controlla se hai salvato una preferenza precedente nel browser
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
         const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
-        // Creiamo la mappa impostando il layer corretto
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
@@ -100,6 +184,8 @@
         L.control.layers(baseMaps).addTo(map);
 
         let geojsonLayer = null;
+        let currentHoverLat = null;
+        let currentHoverLon = null;
 
         function getColor(name) {
             let hash = 0;
@@ -110,32 +196,142 @@
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
-        function isDstActiveForCoords(lat, lon) {
-            const now = new Date();
-            const month = now.getUTCMonth(); // 0 = Gennaio, 7 = Agosto, ecc.
-            
-            // Regola generale per l'emisfero boreale (mesi da marzo a ottobre circa)
-            let isSummer = (month >= 2 && month <= 9);
+        // Funzione di calcolo fuso standard identica a script.js
+        function getPreciseStandardTimezone(lat, lon) {
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
 
-            // Se ci troviamo in Europa Occidentale (Spagna, Portogallo, Francia, Regno Unito, Italia, ecc.)
-            // applichiamo la regola unificata dell'Unione Europea per l'ora legale (dall'ultima domenica di marzo all'ultima domenica di ottobre).
-            if (lat >= 35 && lat <= 70 && lon >= -25 && lon <= 45) {
-                if (month > 2 && month < 9) return true;
-                if (month === 2 || month === 9) {
-                    const day = now.getUTCDate();
-                    const lastSunday = 31 - ((5 + new Date(now.getFullYear(), month + 1, 0).getDay()) % 7);
-                    if (month === 2) return day >= (lastSunday - 6); // Dopo l'ultima domenica di marzo
-                    if (month === 9) return day < lastSunday;       // Prima dell'ultima domenica di ottobre
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = new Date();
+                    const janDate = new Date(now.getFullYear(), 0, 15);
+                    
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(janDate);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
                 }
-                return false;
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
             }
 
-            if (lat >= 0) {
-                return isSummer; 
-            } else {
-                return (month >= 9 || month <= 2); 
+            return Math.round(lon / 15);
+        }
+
+        // Calcolo dell'ora legale identico a script.js
+        function getCurrentDstStateForCoords(lat, lon, date) {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && !isNaN(lat) && !isNaN(lon)) {
+                try {
+                    if (typeof tzlookup === 'function') {
+                        const tzString = tzlookup(lat, lon);
+                        if (tzString.startsWith('Africa/')) return false;
+
+                        const dtf = new Intl.DateTimeFormat('en-US', {
+                            timeZone: tzString,
+                            timeZoneName: 'shortOffset'
+                        });
+                        const parts = dtf.formatToParts(date);
+                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                        if (offsetPart) {
+                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                            if (match) {
+                                const currentOffset = parseInt(match[1], 10);
+                                const standardBaseOffset = getPreciseStandardTimezone(lat, lon);
+                                return currentOffset > standardBaseOffset;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        function isDstActiveForCoords(lat, lon) {
+            return getCurrentDstStateForCoords(lat, lon, new Date());
+        }
+
+        // Funzione unificata per ottenere ora e data precise basate sul fuso reale
+        function getTimeForCoordinates(lat, lon) {
+            const now = new Date();
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const options = {
+                        timeZone: tzString,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+                    
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                }
+            } catch (e) {
+                console.warn("Fallback fuso orario geometrico", e);
+            }
+
+            let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
+            const hoursOffset = Math.round(normalizedLon / 15);
+            const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
+            
+            return {
+                timeStr: targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }),
+                dateStr: targetTime.toLocaleDateString('it-IT', { timeZone: 'UTC' })
+            };
+        }
+
+        map.on('mousemove', (e) => {
+            currentHoverLat = e.latlng.lat;
+            currentHoverLon = e.latlng.lng;
+            updateHeaderTime();
+        });
+
+        map.on('mouseout', () => {
+            currentHoverLat = null;
+            currentHoverLon = null;
+            const headerDisplay = document.getElementById('header-time-display');
+            if (headerDisplay) {
+                headerDisplay.innerHTML = `Passa il mouse sulla mappa...`;
+            }
+        });
+
+        function updateHeaderTime() {
+            if (currentHoverLat !== null && currentHoverLon !== null) {
+                const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
+                const headerDisplay = document.getElementById('header-time-display');
+                if (headerDisplay) {
+                    headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
+                }
             }
         }
+        setInterval(updateHeaderTime, 1000);
 
         function handleMapClick(lat, lon) {
             document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
@@ -198,7 +394,7 @@
                     geojsonLayer.addTo(map);
                 }
                 
-                document.getElementById('status-msg').innerText = "Clicca sulla mappa per selezionare una località.";
+                document.getElementById('status-msg').innerText = "Clicca su una località per selezionarla.";
             })
             .catch(() => {
                 document.getElementById('status-msg').innerText = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
