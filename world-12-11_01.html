@@ -14,6 +14,9 @@
     <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- Libreria per il calcolo dei fusi orari reali (tz-lookup) -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+
     <style>
         html, body {
             background-color: #000;
@@ -30,31 +33,35 @@
         }
         header {
             width: 100%;
-            padding: 8px 15px;
-            background: rgba(0, 0, 0, 0.9);
+            padding: 6px 10px;
+            background: rgba(0, 0, 0, 0.95);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
             box-sizing: border-box;
             z-index: 1000;
             border-bottom: 1px solid #334155;
-            gap: 8px;
+            gap: 6px;
         }
-        h1 { margin: 0; font-size: 1rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
         
-        /* Stile per il logo di CavanWeb nell'angolo sinistro */
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 6px;
+        }
+
+        h1 { margin: 0; font-size: 0.95rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
+        
+        /* Logo CavanWeb */
         .logo-link {
             display: inline-block;
-            width: 34px;
-            height: 34px;
+            width: 30px;
+            height: 30px;
             flex-shrink: 0;
             background: transparent;
             border-radius: 6px;
             overflow: hidden;
-            transition: transform 0.2s;
-        }
-        .logo-link:hover {
-            transform: scale(1.05);
         }
         .logo-link img {
             width: 100%;
@@ -63,32 +70,31 @@
             display: block;
         }
 
-        /* Display di data e ora dinamico nella barra superiore */
+        /* Display di data e ora dinamico nella prima riga */
         #header-time-display {
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: bold;
             color: #39ff14;
             background: rgba(0, 0, 0, 0.4);
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 6px;
             border: 1px solid #334155;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 4px #ff0000;
             white-space: nowrap;
             text-align: center;
             flex-grow: 1;
-            max-width: 260px;
         }
 
-        /* Pulsanti Meteo e TV */
+        /* Pulsanti della seconda riga */
         #btn-meteocweb, #btn-tv, .back-btn {
             background: rgba(0,0,0,0.3); 
             color: #facc15; 
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
-            padding: 5px 8px; 
+            padding: 4px 8px; 
             border-radius: 6px; 
             cursor: pointer; 
-            font-size: 0.8rem; 
+            font-size: 0.78rem; 
             font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
@@ -96,6 +102,8 @@
             align-items: center;
             justify-content: center;
             text-decoration: none;
+            flex: 1;
+            text-align: center;
         }
         #btn-meteocweb:hover, #btn-tv:hover, .back-btn:hover { 
             background: rgba(0,0,0,0.5); 
@@ -104,8 +112,6 @@
         .back-btn {
             color: #39ff14;
             border: 1px solid #ff0000;
-            padding: 5px 10px;
-            font-size: 0.85rem;
         }
         
         #map {
@@ -131,28 +137,27 @@
 <body>
 
     <header>
-        <!-- Logo CavanWeb sulla sinistra -->
-        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
-            <img src="SfondoN-512.png" alt="CavanWeb Logo">
-        </a>
+        <!-- Prima riga: Logo, Titolo e Display Data/Ora -->
+        <div class="header-row">
+            <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                <img src="SfondoN-512.png" alt="CavanWeb Logo">
+            </a>
+            <h1>🌍 Mappa</h1>
+            <div id="header-time-display">Passa il mouse...</div>
+        </div>
 
-        <h1>🌍 Mappa</h1>
-        
-        <!-- Display data e ora dinamico -->
-        <div id="header-time-display">Passa il mouse sulla mappa...</div>
-
-        <!-- Pulsanti Meteo e TV -->
-        <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i></a>
-        <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i></a>
-
-        <a href="index.html" class="back-btn">← Indietro</a>
+        <!-- Seconda riga: Pulsanti ben distribuiti anche su smartphone -->
+        <div class="header-row">
+            <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i> Meteo</a>
+            <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i> IPTV</a>
+            <a href="index.html" class="back-btn">🏠 Indietro</a>
+        </div>
     </header>
 
     <div id="map"></div>
     <div id="status-msg">Clicca su una località per selezionarla o esplora i fusi orari.</div>
 
     <script>
-        // Definiamo i layer
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -179,7 +184,8 @@
         L.control.layers(baseMaps).addTo(map);
 
         let geojsonLayer = null;
-        let currentHoverLon = null; // Memorizza la longitudine attuale del mouse
+        let currentHoverLat = null;
+        let currentHoverLon = null;
 
         function getColor(name) {
             let hash = 0;
@@ -213,38 +219,56 @@
             }
         }
 
-        // Funzione per calcolare data e ora in base alla longitudine con scorrimento continuo di secondi e minuti
-        function getTimeForLongitude(lon) {
+        // Calcola l'ora esatta basata sul fuso orario reale della località puntata (inclusi minuti specifici)
+        function getTimeForCoordinates(lat, lon) {
             const now = new Date();
-            
-            // Normalizziamo la longitudine tra -180 e +180 per evitare il loop infinito
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const options = {
+                        timeZone: tzString,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+                    
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                }
+            } catch (e) {
+                console.warn("Fallback fuso orario geometrico", e);
+            }
+
+            // Fallback geometrico pulito se tzlookup non è disponibile
             let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
-            const hoursOffset = normalizedLon / 15;
-            
-            // Aggiungiamo l'offset mantenendo i millisecondi attuali (così secondi e minuti scorrono fluidi)
+            const hoursOffset = Math.round(normalizedLon / 15);
             const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
             
-            const hours = String(targetTime.getUTCHours()).padStart(2, '0');
-            const minutes = String(targetTime.getUTCMinutes()).padStart(2, '0');
-            const seconds = String(targetTime.getUTCSeconds()).padStart(2, '0');
-            const day = String(targetTime.getUTCDate()).padStart(2, '0');
-            const month = String(targetTime.getUTCMonth() + 1).padStart(2, '0');
-            const year = targetTime.getUTCFullYear();
-
             return {
-                timeStr: `${hours}:${minutes}:${seconds}`,
-                dateStr: `${day}/${month}/${year}`
+                timeStr: targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }),
+                dateStr: targetTime.toLocaleDateString('it-IT', { timeZone: 'UTC' })
             };
         }
 
-        // Tracciamo la longitudine quando il mouse si muove sulla mappa
         map.on('mousemove', (e) => {
+            currentHoverLat = e.latlng.lat;
             currentHoverLon = e.latlng.lng;
             updateHeaderTime();
         });
 
-        // Ripristina la barra quando il mouse esce
         map.on('mouseout', () => {
+            currentHoverLat = null;
             currentHoverLon = null;
             const headerDisplay = document.getElementById('header-time-display');
             if (headerDisplay) {
@@ -252,10 +276,9 @@
             }
         });
 
-        // Funzione periodica per aggiornare in tempo reale i secondi e minuti sul punto puntato
         function updateHeaderTime() {
-            if (currentHoverLon !== null) {
-                const localInfo = getTimeForLongitude(currentHoverLon);
+            if (currentHoverLat !== null && currentHoverLon !== null) {
+                const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
                 const headerDisplay = document.getElementById('header-time-display');
                 if (headerDisplay) {
                     headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
