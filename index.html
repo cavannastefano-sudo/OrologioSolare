@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SunClock24</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -46,6 +46,29 @@
             -webkit-user-select: none;
             user-select: none;
         }
+        
+        /* Stile per il logo di CavanWeb nell'angolo sinistro */
+        .logo-link {
+            display: inline-block;
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: transparent;
+        }
+
         header {
             display: flex;
             flex-wrap: wrap;
@@ -124,7 +147,7 @@
             background: rgba(57, 255, 20, 0.3);
         }
 
-        #btn-world, #btn-meteocweb, #btn-settings {
+        #btn-world, #btn-meteocweb, #btn-tv, #btn-settings {
             background: rgba(0,0,0,0.3); 
             color: #facc15; 
             border: 2px solid #334155;
@@ -141,7 +164,7 @@
             justify-content: center;
             text-decoration: none;
         }
-        #btn-world:hover, #btn-meteocweb:hover, #btn-settings:hover { 
+        #btn-world:hover, #btn-meteocweb:hover, #btn-tv:hover, #btn-settings:hover { 
             background: rgba(0,0,0,0.5); 
         }
 
@@ -352,6 +375,11 @@
 <body>
 
     <header>
+        <!-- Logo CavanWeb nell'angolo sinistro -->
+        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+            <img src="SfondoN-512.png" alt="CavanWeb Logo">
+        </a>
+
         <h1>SunClock24</h1>
         <div style="display: flex; align-items: center; gap: 4px;">
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
@@ -363,6 +391,8 @@
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
         <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i></a>
+        <!-- Pulsante TV con il link alla lista M3U -->
+        <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i></a>
         <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
