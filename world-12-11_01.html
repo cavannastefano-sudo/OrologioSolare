@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
         html, body {
             background-color: #000;
@@ -35,13 +38,34 @@
             box-sizing: border-box;
             z-index: 1000;
             border-bottom: 1px solid #334155;
-            gap: 10px;
+            gap: 8px;
         }
         h1 { margin: 0; font-size: 1rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
         
-        /* Stile per il display di data e ora integrato nella barra superiore */
+        /* Stile per il logo di CavanWeb nell'angolo sinistro */
+        .logo-link {
+            display: inline-block;
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 6px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Display di data e ora dinamico nella barra superiore */
         #header-time-display {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: bold;
             color: #39ff14;
             background: rgba(0, 0, 0, 0.4);
@@ -52,11 +76,37 @@
             white-space: nowrap;
             text-align: center;
             flex-grow: 1;
-            max-width: 320px;
+            max-width: 260px;
         }
 
-        .back-btn { background: rgba(0,0,0,0.3); color: #39ff14; border: 1px solid #ff0000; padding: 5px 10px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 0.85rem; white-space: nowrap; }
-        .back-btn:hover { background: rgba(0,0,0,0.5); }
+        /* Pulsanti Meteo e TV */
+        #btn-meteocweb, #btn-tv, .back-btn {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        #btn-meteocweb:hover, #btn-tv:hover, .back-btn:hover { 
+            background: rgba(0,0,0,0.5); 
+        }
+
+        .back-btn {
+            color: #39ff14;
+            border: 1px solid #ff0000;
+            padding: 5px 10px;
+            font-size: 0.85rem;
+        }
         
         #map {
             width: 100%;
@@ -81,9 +131,20 @@
 <body>
 
     <header>
+        <!-- Logo CavanWeb sulla sinistra -->
+        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+            <img src="SfondoN-512.png" alt="CavanWeb Logo">
+        </a>
+
         <h1>🌍 Mappa</h1>
-        <!-- Display data e ora dinamico al passaggio del mouse -->
+        
+        <!-- Display data e ora dinamico -->
         <div id="header-time-display">Passa il mouse sulla mappa...</div>
+
+        <!-- Pulsanti Meteo e TV -->
+        <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i></a>
+        <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i></a>
+
         <a href="index.html" class="back-btn">← Indietro</a>
     </header>
 
@@ -102,11 +163,9 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Controlla se hai salvato una preferenza precedente nel browser
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
         const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
-        // Creiamo la mappa impostando il layer corretto
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
@@ -120,6 +179,7 @@
         L.control.layers(baseMaps).addTo(map);
 
         let geojsonLayer = null;
+        let currentHoverLon = null; // Memorizza la longitudine attuale del mouse
 
         function getColor(name) {
             let hash = 0;
@@ -153,17 +213,15 @@
             }
         }
 
-        // Funzione per calcolare data e ora bloccata entro il giorno precedente/successivo corretto
+        // Funzione per calcolare data e ora in base alla longitudine con scorrimento continuo di secondi e minuti
         function getTimeForLongitude(lon) {
             const now = new Date();
             
-            // Normalizziamo la longitudine tra -180 e +180 gradi per evitare lo scorrimento infinito
+            // Normalizziamo la longitudine tra -180 e +180 per evitare il loop infinito
             let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
-            
-            // Ogni 15 gradi = 1 ora di differenza
             const hoursOffset = normalizedLon / 15;
             
-            // Calcoliamo il target temporale basato sul fuso orario della longitudine
+            // Aggiungiamo l'offset mantenendo i millisecondi attuali (così secondi e minuti scorrono fluidi)
             const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
             
             const hours = String(targetTime.getUTCHours()).padStart(2, '0');
@@ -179,25 +237,32 @@
             };
         }
 
-        // Aggiorna la barra in alto al movimento del mouse sulla mappa
+        // Tracciamo la longitudine quando il mouse si muove sulla mappa
         map.on('mousemove', (e) => {
-            const lat = e.latlng.lat.toFixed(1);
-            const lon = e.latlng.lng.toFixed(1);
-            const localInfo = getTimeForLongitude(e.latlng.lng);
-
-            const headerDisplay = document.getElementById('header-time-display');
-            if (headerDisplay) {
-                headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
-            }
+            currentHoverLon = e.latlng.lng;
+            updateHeaderTime();
         });
 
-        // Ripristina il messaggio di default quando il mouse esce dalla mappa
+        // Ripristina la barra quando il mouse esce
         map.on('mouseout', () => {
+            currentHoverLon = null;
             const headerDisplay = document.getElementById('header-time-display');
             if (headerDisplay) {
                 headerDisplay.innerHTML = `Passa il mouse sulla mappa...`;
             }
         });
+
+        // Funzione periodica per aggiornare in tempo reale i secondi e minuti sul punto puntato
+        function updateHeaderTime() {
+            if (currentHoverLon !== null) {
+                const localInfo = getTimeForLongitude(currentHoverLon);
+                const headerDisplay = document.getElementById('header-time-display');
+                if (headerDisplay) {
+                    headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
+                }
+            }
+        }
+        setInterval(updateHeaderTime, 1000);
 
         function handleMapClick(lat, lon) {
             document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
