@@ -33,14 +33,14 @@
         }
         header {
             width: 100%;
-            padding: 6px 10px;
+            padding: 10px 14px; /* Aumentato lo spazio sopra e sotto */
             background: rgba(0, 0, 0, 0.95);
             display: flex;
             flex-direction: column;
             box-sizing: border-box;
             z-index: 1000;
             border-bottom: 1px solid #334155;
-            gap: 6px;
+            gap: 8px; /* Maggiore spaziatura tra le righe */
         }
         
         .header-row {
@@ -48,16 +48,16 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
-            gap: 6px;
+            gap: 8px;
         }
 
-        h1 { margin: 0; font-size: 0.95rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
+        h1 { margin: 0; font-size: 1.05rem; text-shadow: 0 0 6px #ff0000; white-space: nowrap; }
         
         /* Logo CavanWeb */
         .logo-link {
             display: inline-block;
-            width: 30px;
-            height: 30px;
+            width: 34px;
+            height: 34px;
             flex-shrink: 0;
             background: transparent;
             border-radius: 6px;
@@ -70,13 +70,13 @@
             display: block;
         }
 
-        /* Display di data e ora dinamico nella prima riga */
+        /* Display di data e ora dinamico ingrandito */
         #header-time-display {
-            font-size: 0.82rem;
+            font-size: 0.98rem; /* Caratteri più grandi e visibili */
             font-weight: bold;
             color: #39ff14;
             background: rgba(0, 0, 0, 0.4);
-            padding: 3px 6px;
+            padding: 5px 10px; /* Più spazio interno */
             border-radius: 6px;
             border: 1px solid #334155;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 4px #ff0000;
@@ -85,16 +85,16 @@
             flex-grow: 1;
         }
 
-        /* Pulsanti della seconda riga */
+        /* Pulsanti della seconda riga con più respiro */
         #btn-meteocweb, #btn-tv, .back-btn {
             background: rgba(0,0,0,0.3); 
             color: #facc15; 
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
-            padding: 4px 8px; 
+            padding: 6px 10px; /* Spaziatura interna maggiore */
             border-radius: 6px; 
             cursor: pointer; 
-            font-size: 0.78rem; 
+            font-size: 0.85rem; /* Testo leggermente più grande */
             font-weight: bold;
             white-space: nowrap;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
@@ -122,12 +122,12 @@
         }
         #status-msg {
             width: 100%;
-            padding: 6px 10px;
-            background: rgba(0, 0, 0, 0.8);
+            padding: 9px 12px; /* Spazio maggiore in basso */
+            background: rgba(0, 0, 0, 0.85);
             color: #38bdf8;
             font-weight: bold;
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             box-sizing: border-box;
             z-index: 1000;
             border-top: 1px solid #334155;
