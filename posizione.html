@@ -8,6 +8,9 @@
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
@@ -36,6 +39,29 @@
             -webkit-user-select: none;
             user-select: none;
         }
+        
+        /* Stile per il logo di CavanWeb nell'angolo sinistro */
+        .logo-link {
+            display: inline-block;
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: transparent;
+        }
+
         header {
             display: flex;
             flex-wrap: wrap;
@@ -113,6 +139,28 @@
         }
         #btn-now:hover {
             background: rgba(57, 255, 20, 0.3);
+        }
+
+        /* Stile per i pulsanti Meteo e TV nell'header */
+        #btn-meteocweb, #btn-tv {
+            background: rgba(0,0,0,0.3); 
+            color: #facc15; 
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 5px 8px; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        #btn-meteocweb:hover, #btn-tv:hover { 
+            background: rgba(0,0,0,0.5); 
         }
 
         .top-action-bar {
@@ -354,6 +402,11 @@
     </div>
 
     <header>
+        <!-- Logo CavanWeb nell'angolo sinistro -->
+        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+            <img src="SfondoN-512.png" alt="CavanWeb Logo">
+        </a>
+
         <h1>SunClock24</h1>
         <div style="display: flex; align-items: center; gap: 4px;">
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
@@ -364,6 +417,9 @@
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
+        <!-- Pulsanti MeteoCWEB e IPTV TV -->
+        <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun text-amber-400"></i></a>
+        <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv text-blue-400"></i></a>
     </header>
 
     <div id="clock-wrapper">
@@ -543,7 +599,6 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             } else {
-                // Ricalcola il delta se cambia lo stato DST mentre si è in custom time
                 const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
                 const isDstNowActive = getCurrentDstState();
                 const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
@@ -1102,7 +1157,6 @@
                 selectedDate = getEffectiveDate();
                 updateInputsVal();
             } else {
-                // Se è impostato un orario personalizzato, il tempo continua a scorrere in avanti mantenendo il delta
                 const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
                 selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
             }
