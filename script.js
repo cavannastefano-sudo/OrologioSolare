@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo, Intatto + Sincronizzazione Perfetta + Tempo in Scorrevolezza)
+// SunClock24 - script.js (Corretto con gestione prioritaria Isole Diomede)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -13,6 +13,15 @@ const cy = 250;
 const radius = 248;
 
 function getPreciseStandardTimezone(lat, lon) {
+    // Controllo prioritario assoluto per le Isole Diomede (Stretto di Bering)
+    if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+        if (lon < -168.9) {
+            return 12; // Grande Diomede (Russia) -> UTC+12 (avanti di un giorno)
+        } else {
+            return -9; // Piccola Diomede (USA/Alaska) -> UTC-9 (indietro di un giorno)
+        }
+    }
+
     if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
     if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
     if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
