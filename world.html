@@ -192,14 +192,14 @@
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
-        // Funzione per gestire i fusi specifici (Stretto di Bering - Isole Diomede per prime)
+        // Funzione per gestire i fusi specifici (Stretto di Bering - Isole Diomede invertite correttamente)
         function getPreciseStandardTimezone(lat, lon) {
-            // Controllo prioritario per le Isole Diomede (Lat ~65.5 a 66.0, Lon ~ -169.5 a -168.5)
+            // Controllo prioritario per le Isole Diomede (Lat ~65.5 a 66.0, Lon ~ -169.5 a -168.3)
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 if (lon < -168.9) {
-                    return 12; // Grande Diomede (Russia) -> UTC+12 (avanti di un giorno)
+                    return -9; // Piccola Diomede (USA/Alaska) -> Indietro di un giorno
                 } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9 (indietro di un giorno)
+                    return 12; // Grande Diomede (Russia) -> Avanti di un giorno
                 }
             }
 
@@ -272,13 +272,13 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        // Funzione unificata per ottenere ora e data precise (gestione Diomede prioritaria)
+        // Funzione unificata per ottenere ora e data precise (gestione Diomede corretta)
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
 
-            // Controllo prioritario assoluto per le Isole Diomede
+            // Controllo prioritario assoluto per le Isole Diomede con i fusi invertiti correttamente
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-                const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
+                const targetTz = (lon < -168.9) ? 'America/Nome' : 'Asia/Anadyr';
                 try {
                     const options = {
                         timeZone: targetTz,
