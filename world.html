@@ -70,11 +70,11 @@
 
         /* Display di data e ora ingrandito senza rettangolo/sfondo */
         #header-time-display {
-            font-size: 1.25rem; /* Caratteri ancora più grandi */
+            font-size: 1.25rem;
             font-weight: bold;
             color: #39ff14;
-            background: transparent; /* Senza sfondo */
-            border: none; /* Senza rettangolo/bordo */
+            background: transparent;
+            border: none;
             padding: 0;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             white-space: nowrap;
@@ -192,12 +192,22 @@
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
-        // Funzione di calcolo fuso standard identica a script.js
+        // Funzione per gestire i fusi specifici e correzioni (inclusa la correzione per le Isole Diomede)
         function getPreciseStandardTimezone(lat, lon) {
+            // Europa Occidentale
             if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
             if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
             if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
             if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
+
+            // Correzione Stretto di Bering - Isole Diomede (circa Lat 65.75 - 65.80)
+            if (lat >= 65.7 && lat >= 65.7 && lat <= 65.9 && lon >= -169.0 && lon <= -168.7) {
+                if (lon < -168.9) {
+                    return 12; // Grande Diomede (Russia) -> Avanti di un giorno (UTC+12)
+                } else {
+                    return -9; // Piccola Diomede (USA/Alaska) -> Indietro di un giorno (UTC-9)
+                }
+            }
 
             try {
                 if (typeof tzlookup === 'function') {
@@ -227,7 +237,7 @@
             return Math.round(lon / 15);
         }
 
-        // Calcolo dell'ora legale identico a script.js
+        // Calcolo dell'ora legale
         function getCurrentDstStateForCoords(lat, lon, date) {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (isAuto && !isNaN(lat) && !isNaN(lon)) {
@@ -262,9 +272,31 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        // Funzione unificata per ottenere ora e data precise basate sul fuso reale
+        // Funzione unificata per ottenere ora e data precise basate sul fuso reale (con gestione speciale Diomede)
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
+
+            // Gestione forzata per le Isole Diomede per garantire il corretto salto di data (Ieri vs Domani)
+            if (lat >= 65.7 && lat <= 65.9 && lon >= -169.0 && lon <= -168.7) {
+                const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
+                try {
+                    const options = {
+                        timeZone: targetTz,
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                } catch(e) {}
+            }
+
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
