@@ -11,10 +11,6 @@
     <!-- Libreria per i calcoli solari e lunari -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     
-    <!-- Libreria per la mappa -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
     <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -362,13 +358,12 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        #map-container {
-            width: 100%;
-            height: 250px;
-            border-radius: 8px;
-            margin-top: 8px;
-            display: none;
-            border: 1px solid #475569;
+        /* Campi informativi non modificabili per Lat e Lon */
+        .form-group input[readonly] {
+            background: #1e293b;
+            color: #38bdf8;
+            border-color: #334155;
+            cursor: not-allowed;
         }
     </style>
 </head>
@@ -519,24 +514,19 @@
                 <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
             </div>
 
-            <div class="form-group" style="margin-top: 8px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #38bdf8; border: 1px solid #475569;" onclick="toggleMap()">🗺️ Apri / Chiudi Mappa</button>
-                <div id="map-container"></div>
-            </div>
-
             <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
 
             <div class="form-group">
                 <label>Latitudine:</label>
-                <input type="number" step="any" id="input-lat" value="45.05">
+                <input type="number" step="any" id="input-lat" value="45.05" readonly>
             </div>
             <div class="form-group">
                 <label>Longitudine:</label>
-                <input type="number" step="any" id="input-lon" value="9.69">
+                <input type="number" step="any" id="input-lon" value="9.69" readonly>
             </div>
-            <div style="display: flex; gap: 8px; margin-top: 15px;">
-                <button class="action-btn" style="flex:1;" onclick="applyManualLocation()">Salva</button>
-                <button class="action-btn" style="flex:1; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS</button>
+            
+            <div style="margin-top: 15px;">
+                <button class="action-btn" style="width: 100%; background: #334155; color: #f8fafc;" onclick="useGPSLocation()">Usa GPS (Posizione Attuale)</button>
             </div>
         </div>
     </div>
