@@ -192,22 +192,22 @@
             return `hsl(${hue}, 85%, 55%)`; 
         }
 
-        // Funzione per gestire i fusi specifici e correzioni (inclusa la correzione per le Isole Diomede)
+        // Funzione per gestire i fusi specifici (Stretto di Bering - Isole Diomede per prime)
         function getPreciseStandardTimezone(lat, lon) {
+            // Controllo prioritario per le Isole Diomede (Lat ~65.5 a 66.0, Lon ~ -169.5 a -168.5)
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                if (lon < -168.9) {
+                    return 12; // Grande Diomede (Russia) -> UTC+12 (avanti di un giorno)
+                } else {
+                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9 (indietro di un giorno)
+                }
+            }
+
             // Europa Occidentale
             if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
             if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
             if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
             if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
-
-            // Correzione Stretto di Bering - Isole Diomede (circa Lat 65.75 - 65.80)
-            if (lat >= 65.7 && lat >= 65.7 && lat <= 65.9 && lon >= -169.0 && lon <= -168.7) {
-                if (lon < -168.9) {
-                    return 12; // Grande Diomede (Russia) -> Avanti di un giorno (UTC+12)
-                } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> Indietro di un giorno (UTC-9)
-                }
-            }
 
             try {
                 if (typeof tzlookup === 'function') {
@@ -272,12 +272,12 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        // Funzione unificata per ottenere ora e data precise basate sul fuso reale (con gestione speciale Diomede)
+        // Funzione unificata per ottenere ora e data precise (gestione Diomede prioritaria)
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
 
-            // Gestione forzata per le Isole Diomede per garantire il corretto salto di data (Ieri vs Domani)
-            if (lat >= 65.7 && lat <= 65.9 && lon >= -169.0 && lon <= -168.7) {
+            // Controllo prioritario assoluto per le Isole Diomede
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
                 try {
                     const options = {
