@@ -504,8 +504,8 @@
 
         function getPreciseStandardTimezone(lat, lon) {
             // Controllo prioritario assoluto per le Isole Diomede (Stretto di Bering)
-            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-                if (lon < -168.9) {
+            if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
+                if (lon < -168.8) {
                     return 12; // Grande Diomede (Russia) -> UTC+12
                 } else {
                     return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
@@ -549,38 +549,7 @@
             if (urlDst !== null) {
                 return urlDst === 'true';
             }
-
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (isAuto) {
-                try {
-                    if (typeof tzlookup === 'function') {
-                        const tzString = tzlookup(cachedLat, cachedLon);
-                        if (tzString.startsWith('Africa/')) return false;
-
-                        const now = selectedDate || new Date();
-                        const dtf = new Intl.DateTimeFormat('en-US', {
-                            timeZone: tzString,
-                            timeZoneName: 'shortOffset'
-                        });
-                        const parts = dtf.formatToParts(now);
-                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                        if (offsetPart) {
-                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                            if (match) {
-                                const currentOffset = parseInt(match[1], 10);
-                                const standardBaseOffset = getPreciseStandardTimezone(cachedLat, cachedLon);
-                                return currentOffset > standardBaseOffset;
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale", e);
-                }
-                if (typeof getEffectiveDST === 'function') {
-                    return getEffectiveDST(cachedLat, cachedLon, selectedDate);
-                }
-            }
-            return localStorage.getItem('sunclock_dst') === 'true';
+            return document.getElementById('chk-dst').checked;
         }
 
         function initClock() {
