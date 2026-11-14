@@ -1007,11 +1007,6 @@ function populateTable(times, moonTimes, illumination) {
 
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
-            <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>----</td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>----</td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>----</td></tr>
-            
             <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.5);"><td>Mezzanotte solare</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>----</td></tr>
@@ -1027,6 +1022,11 @@ function populateTable(times, moonTimes, illumination) {
             <tr style="background: rgba(59, 130, 246, 0.4);"><td>Crepuscolo civile</td><td>----</td></tr>
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
+            
+            <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>----</td></tr>
         `;
         return;
     }
@@ -1063,14 +1063,15 @@ function populateTable(times, moonTimes, illumination) {
         `;
     });
 
+    // Dati solari in alto, Dati lunari in basso (in fondo)
     tbody.innerHTML = `
+        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+        ${solarRowsHtml}
+
         <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
         <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
-        
-        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
-        ${solarRowsHtml}
     `;
 }
 
