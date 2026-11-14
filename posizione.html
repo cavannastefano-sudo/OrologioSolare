@@ -1125,14 +1125,15 @@
                 `;
             });
 
+            // Struttura corretta: Dati solari in alto, Dati lunari in basso (in fondo)
             tbody.innerHTML = `
+                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+                ${solarRowsHtml}
+
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
                 <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${formatTime(moonTimes.rise)}</td></tr>
                 <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${formatTime(moonTimes.set)}</td></tr>
-                
-                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
-                ${solarRowsHtml}
             `;
         }
 
