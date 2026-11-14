@@ -359,14 +359,18 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Unificato Sole e Luna -->
+        <!-- Pannello Unificato Sole e Luna con Icona Fase -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Ricerca posizione in corso...</div>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 6px 0 2px 0;">
+                <span id="moon-digital-icon" style="font-size: 1.2rem;">🌕</span>
+                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15;">Caricamento...</span>
+            </div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
-                <div>Sorge (Luna):<br><span id="moon-rise">--:--</span></div>
-                <div>Tramonta (Luna):<br><span id="moon-set">--:--</span></div>
+                <div>Sorge:<br><span id="moon-rise">--:--</span></div>
+                <div>Tramonta:<br><span id="moon-set">--:--</span></div>
             </div>
         </div>
     </div>
