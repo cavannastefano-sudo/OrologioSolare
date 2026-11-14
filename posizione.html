@@ -433,7 +433,9 @@
         </div>
     </div>
 
+    <!-- PANNELLI IN BASSO ORDINATI: SOLE SOPRA, LUNA IN FONDO -->
     <div id="bottom-panels-container">
+        <!-- 1. Dati Principali del Sole (Sopra) -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Posizione...</div>
             <div class="info-grid">
@@ -442,6 +444,7 @@
             </div>
         </div>
 
+        <!-- 2. Dati Lunari (In Basso / in fondo) -->
         <div class="moon-dropdown-wrapper">
             <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
                 <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
@@ -503,19 +506,18 @@
         let customTimeOffsetMs = 0;
 
         function getPreciseStandardTimezone(lat, lon) {
-            // Controllo prioritario assoluto per le Isole Diomede (Stretto di Bering)
             if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
                 if (lon < -168.8) {
-                    return 12; // Grande Diomede (Russia) -> UTC+12
+                    return 12; 
                 } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
+                    return -9; 
                 }
             }
 
-            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
-            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
-            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
-            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   
 
             try {
                 if (typeof tzlookup === 'function') {
