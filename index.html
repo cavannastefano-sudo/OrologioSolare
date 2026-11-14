@@ -285,54 +285,12 @@
             grid-template-columns: repeat(2, 1fr);
             gap: 6px;
             margin-top: 8px;
-            font-size: 1.25rem;
+            font-size: 1.15rem;
         }
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-        }
-
-        /* Sezione Tendina Luna */
-        .moon-dropdown-wrapper {
-            width: min(90vw, 480px);
-            margin-top: 4px;
-            box-sizing: border-box;
-        }
-        .dropdown-toggle-btn {
-            width: 100%;
-            background: rgba(0,0,0,0.25);
-            border: 2px solid #334155;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
-            color: #facc15;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
-            text-align: center;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            transition: background 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .dropdown-toggle-btn:hover {
-            background: rgba(0,0,0,0.4);
-        }
-        .dropdown-content {
-            display: none;
-            margin-top: 6px;
-            animation: fadeIn 0.3s ease;
-        }
-        .dropdown-content.show {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
         }
 
         .modal {
@@ -358,7 +316,6 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        /* Campi informativi non modificabili per Lat e Lon */
         .form-group input[readonly] {
             background: #1e293b;
             color: #38bdf8;
@@ -402,29 +359,14 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Sole e Info Principali Ingranditi -->
+        <!-- Pannello Unificato Sole e Luna -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
                 <div>Alba:<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonto:<br><span id="txt-sunset">--:--</span></div>
-            </div>
-        </div>
-
-        <!-- Sezione Tendina Luna -->
-        <div class="moon-dropdown-wrapper">
-            <button class="dropdown-toggle-btn" onclick="toggleMoonDropdown()">
-                <span id="moon-digital-icon" style="font-size: 1.3rem;">🌕</span>
-                <span id="moon-phase-name" style="font-size: 1rem;">Caricamento...</span>
-                <span id="dropdown-arrow" style="margin-left: auto; font-size: 0.8rem;">▼</span>
-            </button>
-            <div id="moon-dropdown-content" class="dropdown-content">
-                <div class="info-panel-box" onclick="toggleTimesModal(true)">
-                    <div class="info-grid" style="margin-top: 0;">
-                        <div>Sorge:<br><span id="moon-rise">--:--</span></div>
-                        <div>Tramonta:<br><span id="moon-set">--:--</span></div>
-                    </div>
-                </div>
+                <div>Sorge (Luna):<br><span id="moon-rise">--:--</span></div>
+                <div>Tramonta (Luna):<br><span id="moon-set">--:--</span></div>
             </div>
         </div>
     </div>
