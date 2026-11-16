@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Definitivo)
+// SunClock24 - script.js (Con Sole e Luna Fotorealistici in Canvas Pieni)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -151,6 +151,7 @@ async function initClock() {
     if (manualToggle) manualToggle.checked = isManualDst;
     updateDstUI(isAuto);
 
+    // Disegna subito il sole pieno sulla lancetta delle ore
     drawRealisticSun('sun-clock-canvas');
 
     if (navigator.geolocation && !urlParams.has('lat')) {
@@ -497,31 +498,26 @@ async function getPlaceNameAndRedirect(lat, lon) {
 }
 
 function getCompleteMoonTimes(date, lat, lon) {
-    let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
-    
-    let times = SunCalc.getMoonTimes(targetDate, lat, lon);
+    let times = SunCalc.getMoonTimes(date, lat, lon);
     let rise = times.rise;
     let set = times.set;
 
-    let startDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
-    let endDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
-
-    if ((rise && (rise < startDay || rise > endDay)) || times.alwaysUp || times.alwaysDown) {
-        let dPrev = new Date(targetDate);
-        dPrev.setUTCDate(targetDate.getUTCDate() - 1);
+    if (!rise || !set || times.alwaysUp || times.alwaysDown) {
+        let dPrev = new Date(date);
+        dPrev.setDate(date.getDate() - 1);
         let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
 
-        let dNext = new Date(targetDate);
-        dNext.setUTCDate(targetDate.getUTCDate() + 1);
+        let dNext = new Date(date);
+        dNext.setDate(date.getDate() + 1);
         let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
 
-        if (!rise || rise < startDay || rise > endDay) {
-            if (pTimes.rise && pTimes.rise >= startDay && pTimes.rise <= endDay) rise = pTimes.rise;
-            else if (nTimes.rise && nTimes.rise >= startDay && nTimes.rise <= endDay) rise = nTimes.rise;
+        if (!rise) {
+            if (pTimes.rise && pTimes.rise > dPrev) rise = pTimes.rise;
+            else if (nTimes.rise) rise = nTimes.rise;
         }
-        if (!set || set < startDay || set > endDay) {
-            if (pTimes.set && pTimes.set >= startDay && pTimes.set <= endDay) set = pTimes.set;
-            else if (nTimes.set && nTimes.set >= startDay && nTimes.set <= endDay) set = nTimes.set;
+        if (!set) {
+            if (pTimes.set && pTimes.set > dPrev) set = pTimes.set;
+            else if (nTimes.set) set = nTimes.set;
         }
     }
     return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
@@ -538,6 +534,9 @@ function updateSunClock(lat, lon) {
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
+    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+    drawRealisticSun('sun-clock-canvas');
+
     ctx.clearRect(0, 0, 500, 500);
 
     drawSunSlicesSafe(cachedTimes);
@@ -547,8 +546,6 @@ function updateSunClock(lat, lon) {
     drawClockNumbers();
     updatePageBackground(cachedTimes);
     
-    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
-
     lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
@@ -864,6 +861,7 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
+// Funzione avanzata per disegnare il Sole fotorealistico pieno (32x32)
 function drawRealisticSun(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -884,9 +882,11 @@ function drawRealisticSun(canvasId) {
     ctxSun.closePath();
     ctxSun.clip();
 
+    // Riempimento solido di base
     ctxSun.fillStyle = '#f59e0b';
     ctxSun.fillRect(0, 0, width, height);
 
+    // Gradiente radiale solare pieno e brillante
     let sunGrad = ctxSun.createRadialGradient(width / 2 - 4, height / 2 - 4, 2, width / 2, height / 2, r);
     sunGrad.addColorStop(0, '#ffffff');
     sunGrad.addColorStop(0.25, '#fef08a');
@@ -898,12 +898,14 @@ function drawRealisticSun(canvasId) {
     ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
     ctxSun.fill();
 
+    // Dettagli superficiali morbidi
     ctxSun.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctxSun.beginPath(); ctxSun.arc(width * 0.38, height * 0.38, r * 0.25, 0, Math.PI * 2); ctxSun.fill();
     ctxSun.beginPath(); ctxSun.arc(width * 0.62, height * 0.62, r * 0.2, 0, Math.PI * 2); ctxSun.fill();
 
     ctxSun.restore();
 
+    // Bordo esterno luminoso della corona solare
     ctxSun.strokeStyle = 'rgba(254, 240, 138, 0.9)';
     ctxSun.lineWidth = 1.5;
     ctxSun.beginPath();
@@ -911,6 +913,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
+// Funzione avanzata per disegnare la Luna con dettagli realistici (32x32)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -950,48 +953,21 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
-    let phase = illumination.phase;       
-    let fraction = illumination.fraction; 
+    let phase = illumination.phase;
+    let cosineValue = Math.cos(2 * Math.PI * phase);
 
-    if (phase < 0.02 || phase > 0.98 || fraction <= 0.02) {
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
-        ctxMoon.fillRect(0, 0, width, height);
-    } 
-    else if ((phase >= 0.48 && phase <= 0.52) || fraction >= 0.98) {
-        // Piena (nessuna ombra)
-    } 
-    else {
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
-        ctxMoon.beginPath();
-
-        let cxCenter = width / 2;
-        let cyCenter = height / 2;
-
-        let isWaxing = phase < 0.5; 
-        let isGibbous = fraction > 0.5; 
-        let termRadius = r * Math.abs(2 * fraction - 1);
-
-        if (isWaxing) {
-            if (!isGibbous) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, true);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            }
-        } else {
-            if (!isGibbous) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, true);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
-            }
-        }
-
-        ctxMoon.closePath();
-        ctxMoon.fill();
+    ctxMoon.save();
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)';
+    ctxMoon.beginPath();
+    ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+    if (phase < 0.5) {
+        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue > 0);
+    } else {
+        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue < 0);
     }
+    ctxMoon.closePath();
+    ctxMoon.fill();
+    ctxMoon.restore();
 
     ctxMoon.restore();
 
