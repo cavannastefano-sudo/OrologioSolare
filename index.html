@@ -194,7 +194,7 @@
             background: transparent !important;
         }
 
-        /* Stile ingrandito e trasparente per la luna sulla lancetta dell'orologio */
+        /* Stile trasparente e dimensionato per la luna sulla lancetta */
         #moon-clock-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -213,6 +213,26 @@
             transform: translateX(-50%) !important;
             z-index: 15 !important;
         }
+
+        /* Stile trasparente e dimensionato per il sole sulla lancetta delle ore */
+        #sun-clock-canvas {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            border-radius: 50% !important;
+            border: 2px solid rgba(255, 215, 0, 0.6) !important;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.7) !important;
+            background: transparent !important;
+            display: block !important;
+            position: absolute !important;
+            top: -16px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 16 !important;
+        }
         
         .hand {
             position: absolute; bottom: 50%; left: 50%;
@@ -228,21 +248,7 @@
             z-index: 12; 
         } 
         #hand-hour::after {
-            content: "☀️";
-            position: absolute;
-            top: -22px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 22px;
-            width: 28px;
-            height: 28px;
-            background: #ffd700;
-            border: 2px solid #000000;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 10px #ffcc00;
+            content: none !important;
         }
 
         #hand-minute { 
@@ -373,11 +379,13 @@
         <div id="clock-face">
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             
-            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-hour">
+                <!-- Canvas del sole fotorealistico al posto dell'emoji sulla lancetta delle ore -->
+                <canvas id="sun-clock-canvas" width="32" height="32"></canvas>
+            </div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-moon">
-                <!-- Canvas della luna veritiera grande e trasparente sopra la lancetta dell'orologio -->
                 <canvas id="moon-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div id="center-dot"></div>
@@ -387,7 +395,6 @@
     <div id="bottom-panels-container">
         <!-- Pannello Unificato Sole e Luna -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <!-- Luna veritiera e nome fase in alto sopra alla località -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
                 <canvas id="moon-canvas" width="32" height="32"></canvas>
                 <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15;">Caricamento...</span>
