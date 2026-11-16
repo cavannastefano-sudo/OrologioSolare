@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Definitivo)
+// SunClock24 - script.js (Completo e Corretto Definitivo)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -981,23 +981,26 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    let phase = illumination.phase;       // Da 0.0 a 1.0
-    let fraction = illumination.fraction; // Da 0.0 a 1.0
+    let phase = illumination.phase;       
+    let fraction = illumination.fraction; 
+
+    // Tolleranza pulita per azzerare i micro-salti sui bordi estremi
+    if (fraction < 0.005) fraction = 0;
+    if (fraction > 0.995) fraction = 1;
 
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
-    if (fraction < 0.01) {
+    if (fraction === 0) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction > 0.99) {
+    else if (fraction === 1) {
         // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
-        // Logica geometrica continua basata su Math.cos (ispirata a Sun Clock)
         let cosX = Math.abs(Math.cos(phase * tau));
         let rx1 = (phase < 0.50) ? r * cosX : r;
         let rx2 = (phase < 0.50) ? r : r * cosX;
@@ -1192,13 +1195,9 @@ function updateHands() {
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
-    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-    
-    const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
-    let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
-    
-    let moonEquivalentHour = (h + moonHourOffset) % 24;
+    // FIX DEFINITIVO: Uso della fase continua per evitare scatti della lancetta della luna
+    const illumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    let moonEquivalentHour = (h + (illumination.phase * 24)) % 24;
     if (moonEquivalentHour < 0) moonEquivalentHour += 24;
 
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
