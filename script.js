@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Versione con Arco Lunare e Sorge/Tramonta Corretti)
+// SunClock24 - script.js (Dati lunari originali con orari in bianco e grassetto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -652,7 +652,6 @@ function isValidDate(d) {
     return d instanceof Date && !isNaN(d);
 }
 
-// ARCO ESTERNO DELLA LUNA CORRETTO ED ESATTO
 function drawMoonVisibilityArc(moonTimes, refDate) {
     if (moonTimes.alwaysUp) {
         ctx.save();
@@ -1100,9 +1099,9 @@ function populateTable(times, moonTimes, illumination) {
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
             
             <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>----</td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>----</td></tr>
-            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>----</td></tr>
+            <tr style="background: transparent; color: #ffffff;"><td>Fase Lunare</td><td>----</td></tr>
+            <tr style="background: transparent; color: #ffffff;"><td>Sorge (luna):</td><td><b>----</b></td></tr>
+            <tr style="background: transparent; color: #ffffff;"><td>Tramonta (luna):</td><td><b>----</b></td></tr>
         `;
         return;
     }
@@ -1144,9 +1143,9 @@ function populateTable(times, moonTimes, illumination) {
         ${solarRowsHtml}
 
         <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
-        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
-        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
+        <tr style="background: transparent; color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+        <tr style="background: transparent; color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
+        <tr style="background: transparent; color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
     `;
 }
 
