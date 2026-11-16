@@ -1,5 +1,6 @@
 // ==========================================
-// SunClock24 - script.js (Testo Tabella in Bianco Grassetto Senza Bordi)
+// SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+// SunClock24 - script.js (Calcoli originali intatti + Luna Piena visiva)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -972,6 +973,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
+// DISEGNO FISSA DELLA LUNA PIENA (Senza calcoli di ombre che possono fallire)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1132,7 +1134,6 @@ function populateTable(times, moonTimes, illumination) {
     let solarRowsHtml = "";
     events.forEach((ev, idx) => {
         const isNext = (idx === lastHighlightedEventIndex);
-        // Nessun bordo, testo bianco e grassetto per tutti (con indicatore discreto 📍 se è l'evento successivo)
         solarRowsHtml += `
             <tr style="background: transparent; color: #ffffff; font-weight: bold;">
                 <td>${ev.name} ${isNext ? '📍' : ''}</td>
