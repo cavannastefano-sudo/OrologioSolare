@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Versione con Timeout GPS Sicuro)
+// SunClock24 - script.js (Versione con Timeout GPS Sicuro + Luna allineata a Sorge/Tramonta)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -1187,18 +1187,30 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-    const baseOffset = getBaseLocationOffset();
-    let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
-    utcCalculationDate.setUTCHours(12, 0, 0, 0);
+    // LANCETTA LUNA CORRETTA E ALLINEATA A SORGE / TRAMONTA
+    let moonEquivalentHour = h;
+    if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
+        let riseH = timeToHours(cachedMoonTimes.rise);
+        let setH = timeToHours(cachedMoonTimes.set);
+        if (riseH !== null && setH !== null) {
+            let transitH = (riseH + setH) / 2;
+            if (setH < riseH) transitH = (riseH + setH + 24) / 2;
+            moonEquivalentHour = transitH % 24;
+        }
+    } else {
+        const baseOffset = getBaseLocationOffset();
+        let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
+        utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
-    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-    
-    const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
-    let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
-    
-    let moonEquivalentHour = (h + moonHourOffset) % 24;
-    if (moonEquivalentHour < 0) moonEquivalentHour += 24;
+        const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
+        const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+        
+        const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
+        let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
+        
+        moonEquivalentHour = (h + moonHourOffset) % 24;
+        if (moonEquivalentHour < 0) moonEquivalentHour += 24;
+    }
 
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
