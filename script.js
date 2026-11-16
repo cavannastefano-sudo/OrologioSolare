@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Corretto Definitivo)
+// SunClock24 - script.js (Completo e Definitivo)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -987,34 +987,29 @@ function drawRealisticMoon(canvasId, illumination) {
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
-    // CORREZIONE ROBUSTA ANTISALTO: Sincronizzazione continua basata su semi-ciclo e fase
-    let isWaxing = phase <= 0.5;
-
-    if (fraction < 0.01) {
+    if (fraction <= 0.02) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction > 0.99) {
+    else if (fraction >= 0.98) {
         // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
-        let rx = r * Math.abs(Math.cos(phase * tau));
-        let rx1, rx2, sweep1, sweep2;
+        let isWaxing = (phase <= 0.5);
+        let terminatorRadius = r * Math.abs(1 - (fraction * 2));
+        
+        let rx1 = r;
+        let rx2 = terminatorRadius;
+        let sweep1 = isWaxing ? 0 : 1;
+        let sweep2 = isWaxing ? 0 : 1;
 
-        if (isWaxing) {
-            if (phase < 0.25) {
-                rx1 = rx; rx2 = r; sweep1 = 0; sweep2 = 1;
-            } else {
-                rx1 = r; rx2 = rx; sweep1 = 1; sweep2 = 1;
-            }
-        } else {
-            if (phase < 0.75) {
-                rx1 = r; rx2 = rx; sweep1 = 0; sweep2 = 0;
-            } else {
-                rx1 = rx; rx2 = r; sweep1 = 1; sweep2 = 0;
-            }
+        if (fraction > 0.5) {
+            rx1 = terminatorRadius;
+            rx2 = r;
+            sweep1 = isWaxing ? 1 : 0;
+            sweep2 = isWaxing ? 1 : 0;
         }
 
         ctxMoon.beginPath();
