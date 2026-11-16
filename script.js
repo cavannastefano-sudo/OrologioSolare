@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Con Calcolo Lunare Graduale e Continuo)
+// SunClock24 - script.js (Con Correzione Fasi Lunari e Sole Pieno)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -276,9 +276,7 @@ function applyTimezonePreset() {
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
     
-    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -467,6 +465,35 @@ async function searchCity() {
     } catch (e) {
         statusEl.innerText = "Errore di connessione.";
     }
+}
+
+async function getPlaceNameAndRedirect(lat, lon) {
+    let placeName = "Posizione";
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+        const geoData = await res.json();
+        if (geoData && geoData.address) {
+            const country = geoData.address.country || '';
+            const specificLocality = geoData.address.city || 
+                                     geoData.address.town || 
+                                     geoData.address.village || 
+                                     geoData.address.municipality || 
+                                     geoData.address.county || 
+                                     geoData.address.state || '';
+            if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                placeName = `${country} - ${specificLocality}`;
+            } else {
+                placeName = specificLocality || country || "Posizione";
+            }
+        }
+    } catch (err) {
+        placeName = "Posizione";
+    }
+
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    const activeDst = getCurrentDstState();
+
+    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}&auto=${isAuto}&dst=${activeDst}`;
 }
 
 function getCompleteMoonTimes(date, lat, lon) {
@@ -833,6 +860,7 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
+// Funzione avanzata per disegnare il Sole fotorealistico pieno (32x32)
 function drawRealisticSun(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -880,7 +908,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione corretta per calcolare e disegnare la fase lunare in modo fluido e coerente nel tempo
+// Funzione avanzata per disegnare la Luna con fasi corrette e realistiche (32x32)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -901,7 +929,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Superficie base della luna piena (luminosa)
+    // Sfondo di base luminoso della luna piena
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -922,43 +950,38 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
-    let phase = illumination.phase; // 0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto
-    let fraction = illumination.fraction; // 0.0 a 1.0
+    // Calcolo preciso della fase lunare (0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto)
+    let phase = illumination.phase;
+    let cosineValue = Math.cos(2 * Math.PI * phase);
+    let isWaxing = phase < 0.5; // True se crescente, False se calante
 
-    // Applicazione dell'ombra calibrata in base alla fase reale
-    if (fraction > 0.03 && fraction < 0.97) {
-        let angle = 2 * Math.PI * phase;
-        let cosineValue = Math.cos(angle);
-        let isWaxing = phase < 0.5; // Crescente vs Calante
-
-        ctxMoon.save();
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.94)'; // Ombra scura
-        ctxMoon.beginPath();
+    ctxMoon.save();
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra scura
+    ctxMoon.beginPath();
+    
+    if (phase > 0.02 && phase < 0.98) {
+        // Disegno corretto dell'ombra in base alla fase e alla curvatura
+        ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
         
-        // Corretta proiezione geometrica dell'ombra lunare per evitare inversioni
+        let ellipseRadius = Math.abs(r * cosineValue);
+        let sweepFlag = isWaxing ? (phase > 0.25 ? 1 : 0) : (phase > 0.75 ? 1 : 0);
+        let largeArcFlag = phase > 0.25 && phase < 0.75 ? 1 : 0;
+        
         if (isWaxing) {
-            ctxMoon.arc(width / 2, height / 2, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            let ellipseRadius = Math.abs(r * cosineValue);
-            let sweep = phase > 0.25 ? 0 : 1;
-            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep);
+            // Crescente (copre la parte destra o sinistra correttamente)
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue > 0);
         } else {
-            ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-            let ellipseRadius = Math.abs(r * cosineValue);
-            let sweep = phase > 0.75 ? 0 : 1;
-            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep);
+            // Calante
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue < 0);
         }
-        
-        ctxMoon.closePath();
-        ctxMoon.fill();
-        ctxMoon.restore();
-    } 
-    else if (fraction <= 0.03) {
+    } else if (phase >= 0.98 || phase <= 0.02) {
         // Luna Nuova (completamente in ombra)
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
-        ctxMoon.beginPath();
-        ctxMoon.arc(width / 2, height / 2, r + 2, 0, Math.PI * 2);
-        ctxMoon.fill();
+        ctxMoon.arc(width / 2, height / 2, r + 1, 0, Math.PI * 2);
     }
+    
+    ctxMoon.closePath();
+    ctxMoon.fill();
+    ctxMoon.restore();
 
     ctxMoon.restore();
 
@@ -1151,11 +1174,6 @@ function updateHands() {
 
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
-
-    // Aggiornamento dinamico e continuo della fase lunare in base alla data selezionata
-    const currentIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
-    const currentMoonTimes = getCompleteMoonTimes(utcCalculationDate, cachedLat, cachedLon);
-    updateMoonDigitalPanel(currentIllumination, currentMoonTimes);
 
     if (cachedTimes && cachedMoonTimes) {
         updatePageBackground(cachedTimes);
