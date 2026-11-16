@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Con Luna Fotorealistica Doppia)
+// SunClock24 - script.js (Con Sole e Luna Fotorealistici in Canvas)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -150,6 +150,9 @@ async function initClock() {
     if (autoToggle) autoToggle.checked = isAuto;
     if (manualToggle) manualToggle.checked = isManualDst;
     updateDstUI(isAuto);
+
+    // Disegna subito il sole fotorealistico sulla lancetta delle ore
+    drawRealisticSun('sun-clock-canvas');
 
     if (navigator.geolocation && !urlParams.has('lat')) {
         navigator.geolocation.getCurrentPosition(
@@ -532,6 +535,7 @@ function updateSunClock(lat, lon) {
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+    drawRealisticSun('sun-clock-canvas');
 
     ctx.clearRect(0, 0, 500, 500);
 
@@ -857,6 +861,47 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
+// Funzione avanzata per disegnare il Sole fotorealistico sul canvas della lancetta
+function drawRealisticSun(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctxSun = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const r = width / 2 - 2;
+
+    ctxSun.clearRect(0, 0, width, height);
+
+    ctxSun.save();
+    ctxSun.beginPath();
+    ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxSun.closePath();
+    ctxSun.clip();
+
+    // Gradiente radiale solare brillante
+    let sunGrad = ctxSun.createRadialGradient(width / 2 - 3, height / 2 - 3, 2, width / 2, height / 2, r);
+    sunGrad.addColorStop(0, '#ffffff');
+    sunGrad.addColorStop(0.3, '#fde047');
+    sunGrad.addColorStop(0.7, '#f59e0b');
+    sunGrad.addColorStop(1, '#c2410c');
+    ctxSun.fillStyle = sunGrad;
+    ctxSun.fillRect(0, 0, width, height);
+
+    // Dettagli superficiali morbidi
+    ctxSun.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    ctxSun.beginPath(); ctxSun.arc(width * 0.4, height * 0.4, r * 0.25, 0, Math.PI * 2); ctxSun.fill();
+    ctxSun.beginPath(); ctxSun.arc(width * 0.65, height * 0.65, r * 0.2, 0, Math.PI * 2); ctxSun.fill();
+
+    ctxSun.restore();
+
+    // Bordo corona solare luminoso
+    ctxSun.strokeStyle = 'rgba(255, 237, 74, 0.8)';
+    ctxSun.lineWidth = 1.5;
+    ctxSun.beginPath();
+    ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxSun.stroke();
+}
+
 // Funzione avanzata per disegnare la Luna con dettagli realistici di mari e crateri
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
@@ -874,7 +919,6 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo lunare testurizzato tridimensionale
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -883,7 +927,6 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Mari lunari realistici
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
@@ -891,12 +934,10 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
 
-    // Crateri in rilievo chiaro
     ctxMoon.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
-    // Calcolo della fase e dell'ombra geometrica esatta da SunCalc
     let phase = illumination.phase;
     let cosineValue = Math.cos(2 * Math.PI * phase);
 
@@ -915,7 +956,6 @@ function drawRealisticMoon(canvasId, illumination) {
 
     ctxMoon.restore();
 
-    // Bordo esterno luminoso della luna
     ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
@@ -946,9 +986,9 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
-    // Aggiorna ENTRAMBI i canvas della luna (pannello in alto e lancetta dell'orologio)
     drawRealisticMoon('moon-canvas', illumination);
     drawRealisticMoon('moon-clock-canvas', illumination);
+    drawRealisticSun('sun-clock-canvas');
 }
 
 function getNextEventIndex(times, refDate) {
