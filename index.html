@@ -178,7 +178,7 @@
         
         #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Stile fisso per il canvas della luna nel pannello in basso */
+        /* Stile per il canvas della luna nel pannello in basso */
         #moon-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -191,23 +191,24 @@
             object-fit: cover;
             flex-shrink: 0;
             position: static !important;
+            background: transparent !important;
         }
 
-        /* Stile fisso, isolato e blindato per il canvas della luna sopra la lancetta dell'orologio */
+        /* Stile ingrandito e trasparente per la luna sulla lancetta dell'orologio */
         #moon-clock-canvas {
-            width: 28px !important;
-            height: 28px !important;
-            min-width: 28px !important;
-            min-height: 28px !important;
-            max-width: 28px !important;
-            max-height: 28px !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
             border-radius: 50% !important;
-            border: 2px solid #000000 !important;
-            box-shadow: 0 0 10px #cbd5e1 !important;
-            background: #000 !important;
+            border: 2px solid rgba(255, 255, 255, 0.4) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
+            background: transparent !important;
             display: block !important;
             position: absolute !important;
-            top: -14px !important;
+            top: -16px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
             z-index: 15 !important;
@@ -376,8 +377,8 @@
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-moon">
-                <!-- Canvas della luna veritiera sopra la lancetta dell'orologio -->
-                <canvas id="moon-clock-canvas" width="28" height="28"></canvas>
+                <!-- Canvas della luna veritiera grande e trasparente sopra la lancetta dell'orologio -->
+                <canvas id="moon-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div id="center-dot"></div>
         </div>
@@ -386,7 +387,7 @@
     <div id="bottom-panels-container">
         <!-- Pannello Unificato Sole e Luna -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <!-- Luna veritiera e nome fase spostati in alto sopra alla località -->
+            <!-- Luna veritiera e nome fase in alto sopra alla località -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
                 <canvas id="moon-canvas" width="32" height="32"></canvas>
                 <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15;">Caricamento...</span>
