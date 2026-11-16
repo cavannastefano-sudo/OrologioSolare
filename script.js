@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Corretto con gestione prioritaria Isole Diomede)
+// SunClock24 - script.js (Con Luna Fotorealistica Dinamica)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -274,7 +274,6 @@ function applyTimezonePreset() {
     document.getElementById('txt-sunrise').innerText = "----";
     document.getElementById('txt-sunset').innerText = "----";
 
-    document.getElementById('moon-digital-icon').innerText = "🌕";
     document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
@@ -942,31 +941,88 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
+// Funzione per disegnare la Luna Fotorealistica su un Canvas dinamico
+function drawRealisticMoon(canvasId, illumination) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    const ctxMoon = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const r = width / 2 - 2;
+
+    ctxMoon.clearRect(0, 0, width, height);
+
+    ctxMoon.save();
+    ctxMoon.beginPath();
+    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxMoon.closePath();
+    ctxMoon.clip();
+
+    // Sfondo lunare testurizzato (gradiente craterizzato realistico)
+    let bgGrad = ctxMoon.createRadialGradient(width / 2 - 4, height / 2 - 4, 2, width / 2, height / 2, r);
+    bgGrad.addColorStop(0, '#f1f5f9');
+    bgGrad.addColorStop(0.5, '#cbd5e1');
+    bgGrad.addColorStop(1, '#475569');
+    ctxMoon.fillStyle = bgGrad;
+    ctxMoon.fillRect(0, 0, width, height);
+
+    // Macchie e mari lunari stilizzati
+    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.45)';
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.4, height * 0.4, r * 0.35, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.65, height * 0.6, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.3, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
+
+    let phase = illumination.phase;
+    let cosineValue = Math.cos(2 * Math.PI * phase);
+
+    ctxMoon.save();
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.92)'; // Ombra profonda
+    ctxMoon.beginPath();
+    ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+    if (phase < 0.5) {
+        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue > 0);
+    } else {
+        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue < 0);
+    }
+    ctxMoon.closePath();
+    ctxMoon.fill();
+    ctxMoon.restore();
+
+    ctxMoon.restore();
+
+    // Bordo luminoso esterno della luna
+    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctxMoon.lineWidth = 1.5;
+    ctxMoon.beginPath();
+    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxMoon.stroke();
+}
+
 function updateMoonDigitalPanel(illumination, moonTimes) {
     if (isTimezoneOnlyMode) return;
 
-    const iconEl = document.getElementById('moon-digital-icon');
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
     const setEl = document.getElementById('moon-set');
     const phase = illumination.phase;
 
     let phaseName = "";
-    let iconSymbol = "🌕";
 
-    if (phase < 0.03 || phase > 0.97) { iconSymbol = "🌑"; phaseName = "Luna Nuova"; }
-    else if (phase < 0.22) { iconSymbol = "🌒"; phaseName = "Crescente"; }
-    else if (phase < 0.28) { iconSymbol = "🌓"; phaseName = "Primo Quarto"; }
-    else if (phase < 0.47) { iconSymbol = "🌔"; phaseName = "Gibbosa Crescente"; }
-    else if (phase < 0.53) { iconSymbol = "🌕"; phaseName = "Luna Piena"; }
-    else if (phase < 0.72) { iconSymbol = "🌖"; phaseName = "Gibbosa Calante"; }
-    else if (phase < 0.78) { iconSymbol = "🌗"; phaseName = "Ultimo Quarto"; }
-    else { iconSymbol = "🌘"; phaseName = "Calante"; }
+    if (phase < 0.03 || phase > 0.97) { phaseName = "Luna Nuova"; }
+    else if (phase < 0.22) { phaseName = "Crescente"; }
+    else if (phase < 0.28) { phaseName = "Primo Quarto"; }
+    else if (phase < 0.47) { phaseName = "Gibbosa Crescente"; }
+    else if (phase < 0.53) { phaseName = "Luna Piena"; }
+    else if (phase < 0.72) { phaseName = "Gibbosa Calante"; }
+    else if (phase < 0.78) { phaseName = "Ultimo Quarto"; }
+    else { phaseName = "Calante"; }
 
-    iconEl.innerText = iconSymbol;
-    phaseNameEl.innerText = phaseName;
+    phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
     riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+
+    // Disegna la luna fotorealistica sul canvas dedicato
+    drawRealisticMoon('moon-canvas', illumination);
 }
 
 function getNextEventIndex(times, refDate) {
@@ -1063,7 +1119,6 @@ function populateTable(times, moonTimes, illumination) {
         `;
     });
 
-    // Dati solari in alto, Dati lunari in basso (in fondo)
     tbody.innerHTML = `
         <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
