@@ -194,7 +194,7 @@
             background: transparent !important;
         }
 
-        /* Stile trasparente e dimensionato per la luna sulla lancetta */
+        /* Stile per il canvas della luna sulla lancetta */
         #moon-clock-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -214,7 +214,7 @@
             z-index: 15 !important;
         }
 
-        /* Stile trasparente e dimensionato per il sole sulla lancetta delle ore */
+        /* Stile per il canvas del sole sulla lancetta delle ore */
         #sun-clock-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -380,12 +380,13 @@
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             
             <div class="hand" id="hand-hour">
-                <!-- Canvas del sole fotorealistico al posto dell'emoji sulla lancetta delle ore -->
+                <!-- Canvas del sole fotorealistico sulla lancetta delle ore -->
                 <canvas id="sun-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-moon">
+                <!-- Canvas della luna fotorealistica sulla lancetta -->
                 <canvas id="moon-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div id="center-dot"></div>
