@@ -941,7 +941,7 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
-// Funzione per disegnare la Luna Fotorealistica su un Canvas dinamico
+// Funzione avanzata per disegnare la Luna con dettagli realistici di mari e crateri
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -958,25 +958,34 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo lunare testurizzato (gradiente craterizzato realistico)
-    let bgGrad = ctxMoon.createRadialGradient(width / 2 - 4, height / 2 - 4, 2, width / 2, height / 2, r);
+    // Sfondo lunare testurizzato tridimensionale
+    let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
-    bgGrad.addColorStop(0.5, '#cbd5e1');
-    bgGrad.addColorStop(1, '#475569');
+    bgGrad.addColorStop(0.4, '#cbd5e1');
+    bgGrad.addColorStop(0.8, '#64748b');
+    bgGrad.addColorStop(1, '#334155');
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Macchie e mari lunari stilizzati
-    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.45)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.4, height * 0.4, r * 0.35, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.65, height * 0.6, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.3, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
+    // Mari lunari realistici (le grandi macchie scure della superficie)
+    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill(); // Mare di Tranquillità / Serenitatis
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill(); // Oceanus Procellarum
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, Math.PI * 2); ctxMoon.fill(); // Mare Imbrium
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();   // Mare Nubium
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill(); // Mare Fecunditatis
 
+    // Crateri in rilievo chiaro
+    ctxMoon.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
+
+    // Calcolo della fase e dell'ombra geometrica esatta da SunCalc
     let phase = illumination.phase;
     let cosineValue = Math.cos(2 * Math.PI * phase);
 
     ctxMoon.save();
-    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.92)'; // Ombra profonda
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra dello spazio profondo
     ctxMoon.beginPath();
     ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
     if (phase < 0.5) {
@@ -990,8 +999,8 @@ function drawRealisticMoon(canvasId, illumination) {
 
     ctxMoon.restore();
 
-    // Bordo luminoso esterno della luna
-    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    // Bordo esterno luminoso della luna
+    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
     ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
@@ -1021,7 +1030,7 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
-    // Disegna la luna fotorealistica sul canvas dedicato
+    // Aggiorna il canvas della luna veritiera
     drawRealisticMoon('moon-canvas', illumination);
 }
 
