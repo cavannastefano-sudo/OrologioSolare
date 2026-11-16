@@ -956,12 +956,13 @@ function drawRealisticMoon(canvasId, illumination) {
     const width = canvas.width;
     const height = canvas.height;
     const r = width / 2 - 2;
+    const tau = Math.PI * 2;
 
     ctxMoon.clearRect(0, 0, width, height);
 
     ctxMoon.save();
     ctxMoon.beginPath();
-    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxMoon.arc(width / 2, height / 2, r, 0, tau);
     ctxMoon.closePath();
     ctxMoon.clip();
 
@@ -974,55 +975,39 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillRect(0, 0, width, height);
 
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    ctxMoon.fillStyle = 'rgba(255, 255, 255, 0.25)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
-
-    let phase = illumination.phase;       
-    let fraction = illumination.fraction; 
+    let phase = illumination.phase;       // Da 0.0 a 1.0
+    let fraction = illumination.fraction; // Da 0.0 a 1.0
 
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
-    if (fraction < 0.02) {
+    if (fraction < 0.01) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction > 0.98) {
+    else if (fraction > 0.99) {
         // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
+
+        // Logica geometrica continua basata su Math.cos (ispirata a Sun Clock)
+        let cosX = Math.abs(Math.cos(phase * tau));
+        let rx1 = (phase < 0.50) ? r * cosX : r;
+        let rx2 = (phase < 0.50) ? r : r * cosX;
+        let sweep1 = (phase < 0.25) ? 0 : 1;
+        let sweep2 = (phase < 0.75) ? 1 : 0;
+
         ctxMoon.beginPath();
-
-        let isWaxing = phase <= 0.5; 
-        let isGibbous = fraction > 0.5; 
-        let termRadius = r * Math.abs(2 * fraction - 1);
-
-        if (isWaxing) {
-            if (!isGibbous) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            }
-        } else {
-            if (!isGibbous) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
-            }
-        }
-
+        ctxMoon.moveTo(cxCenter, cyCenter - r);
+        ctxMoon.ellipse(cxCenter, cyCenter, rx1, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep1 === 0);
+        ctxMoon.ellipse(cxCenter, cyCenter, rx2, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep2 === 0);
         ctxMoon.closePath();
         ctxMoon.fill();
     }
@@ -1032,7 +1017,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
-    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+    ctxMoon.arc(width / 2, height / 2, r, 0, tau);
     ctxMoon.stroke();
 }
 
