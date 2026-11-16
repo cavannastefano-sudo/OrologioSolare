@@ -178,7 +178,7 @@
         
         #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Stile per il canvas della luna nel pannello in basso (più piccolo e compatto) */
+        /* Stile per il canvas della luna nel pannello in basso (mantenuto delle dimensioni attuali) */
         #moon-canvas {
             width: 24px !important;
             height: 24px !important;
@@ -322,6 +322,18 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
+        /* Stile in piccolo per i dati di sorge/tramonta della luna nella griglia */
+        .moon-grid-item {
+            font-size: 0.82rem;
+            font-weight: normal;
+            opacity: 0.9;
+            line-height: 1.25;
+        }
+        .moon-grid-item span {
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
@@ -394,19 +406,19 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Unificato Sole e Luna con stile compatto -->
+        <!-- Pannello Unificato Sole e Luna con titolo fase grande e dati luna in piccolo -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 4px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
                 <canvas id="moon-canvas" width="24" height="24"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.85rem; color: #facc15; font-weight: normal;">Caricamento...</span>
+                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
             </div>
 
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
                 <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
-                <div>Sorge (luna):<br><span id="moon-rise">--:--</span></div>
-                <div>Tramonta (luna):<br><span id="moon-set">--:--</span></div>
+                <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
+                <div class="moon-grid-item">Tramonta (luna):<br><span id="moon-set">--:--</span></div>
             </div>
         </div>
     </div>
