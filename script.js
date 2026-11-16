@@ -341,7 +341,6 @@ function onTimeChanged(val) {
     }
 }
 
-// Funzioni per incrementare/decrementare data e ora con i pulsanti < >
 function changeDate(days) {
     selectedDate.setUTCDate(selectedDate.getUTCDate() + days);
     isCustomTime = true;
