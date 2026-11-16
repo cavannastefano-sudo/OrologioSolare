@@ -308,8 +308,6 @@ function updateInputsVal() {
 function onDateChanged(val) {
     if (!val) return;
     const parts = val.split('-');
-    
-    // Aggiorna la parte della data UTC mantenendo l'orario corrente impostato
     selectedDate.setUTCFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
     isCustomTime = true;
     
@@ -328,8 +326,6 @@ function onDateChanged(val) {
 function onTimeChanged(val) {
     if (!val) return;
     const parts = val.split(':');
-    
-    // Aggiorna l'orario UTC mantenendo la data corrente impostata
     selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
     
@@ -338,6 +334,41 @@ function onTimeChanged(val) {
     customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
     updateInputsVal();
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
+}
+
+// Funzioni per incrementare/decrementare data e ora con i pulsanti < >
+function changeDate(days) {
+    selectedDate.setUTCDate(selectedDate.getUTCDate() + days);
+    isCustomTime = true;
+
+    const targetOffset = getTotalOffsetHours();
+    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
+    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+    updateInputsVal();
+
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+    } else {
+        updateSunClock(cachedLat, cachedLon);
+    }
+}
+
+function changeHour(hours) {
+    selectedDate.setUTCHours(selectedDate.getUTCHours() + hours);
+    isCustomTime = true;
+
+    const targetOffset = getTotalOffsetHours();
+    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
+    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+    updateInputsVal();
+
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
     } else {
