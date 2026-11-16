@@ -1000,14 +1000,15 @@ function drawRealisticMoon(canvasId, illumination) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
         let angle = phase * tau;
-        let rx = r * Math.cos(angle);
+        // CORRETTO: Math.abs() assicura che il raggio sia sempre positivo, prevenendo il bug della luna nera/sballata
+        let rx = r * Math.abs(Math.cos(angle));
         
         let cx = cxCenter;
         let cy = cyCenter;
 
         ctxMoon.beginPath();
         ctxMoon.arc(cx, cy, r, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.5);
-        ctxMoon.arc(cx, cy, Math.abs(rx), 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
+        ctxMoon.arc(cx, cy, rx, 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
         ctxMoon.closePath();
         ctxMoon.fill();
     }
