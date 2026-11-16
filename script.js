@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Con Sole e Luna Fotorealistici in Canvas Pieni)
+// SunClock24 - script.js (Con Correzione Fasi Lunari e Sole Pieno)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -151,7 +151,6 @@ async function initClock() {
     if (manualToggle) manualToggle.checked = isManualDst;
     updateDstUI(isAuto);
 
-    // Disegna subito il sole pieno sulla lancetta delle ore
     drawRealisticSun('sun-clock-canvas');
 
     if (navigator.geolocation && !urlParams.has('lat')) {
@@ -882,11 +881,9 @@ function drawRealisticSun(canvasId) {
     ctxSun.closePath();
     ctxSun.clip();
 
-    // Riempimento solido di base
     ctxSun.fillStyle = '#f59e0b';
     ctxSun.fillRect(0, 0, width, height);
 
-    // Gradiente radiale solare pieno e brillante
     let sunGrad = ctxSun.createRadialGradient(width / 2 - 4, height / 2 - 4, 2, width / 2, height / 2, r);
     sunGrad.addColorStop(0, '#ffffff');
     sunGrad.addColorStop(0.25, '#fef08a');
@@ -898,14 +895,12 @@ function drawRealisticSun(canvasId) {
     ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
     ctxSun.fill();
 
-    // Dettagli superficiali morbidi
     ctxSun.fillStyle = 'rgba(255, 255, 255, 0.25)';
     ctxSun.beginPath(); ctxSun.arc(width * 0.38, height * 0.38, r * 0.25, 0, Math.PI * 2); ctxSun.fill();
     ctxSun.beginPath(); ctxSun.arc(width * 0.62, height * 0.62, r * 0.2, 0, Math.PI * 2); ctxSun.fill();
 
     ctxSun.restore();
 
-    // Bordo esterno luminoso della corona solare
     ctxSun.strokeStyle = 'rgba(254, 240, 138, 0.9)';
     ctxSun.lineWidth = 1.5;
     ctxSun.beginPath();
@@ -913,7 +908,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione avanzata per disegnare la Luna con dettagli realistici (32x32)
+// Funzione avanzata per disegnare la Luna con fasi corrette e realistiche (32x32)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -934,6 +929,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
+    // Sfondo di base luminoso della luna piena
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -942,6 +938,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
+    // Mari lunari
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
@@ -953,18 +950,35 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
+    // Calcolo preciso della fase lunare (0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto)
     let phase = illumination.phase;
     let cosineValue = Math.cos(2 * Math.PI * phase);
+    let isWaxing = phase < 0.5; // True se crescente, False se calante
 
     ctxMoon.save();
-    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)';
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra scura
     ctxMoon.beginPath();
-    ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-    if (phase < 0.5) {
-        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue > 0);
-    } else {
-        ctxMoon.ellipse(width / 2, height / 2, Math.abs(r * cosineValue), r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue < 0);
+    
+    if (phase > 0.02 && phase < 0.98) {
+        // Disegno corretto dell'ombra in base alla fase e alla curvatura
+        ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+        
+        let ellipseRadius = Math.abs(r * cosineValue);
+        let sweepFlag = isWaxing ? (phase > 0.25 ? 1 : 0) : (phase > 0.75 ? 1 : 0);
+        let largeArcFlag = phase > 0.25 && phase < 0.75 ? 1 : 0;
+        
+        if (isWaxing) {
+            // Crescente (copre la parte destra o sinistra correttamente)
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue > 0);
+        } else {
+            // Calante
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, cosineValue < 0);
+        }
+    } else if (phase >= 0.98 || phase <= 0.02) {
+        // Luna Nuova (completamente in ombra)
+        ctxMoon.arc(width / 2, height / 2, r + 1, 0, Math.PI * 2);
     }
+    
     ctxMoon.closePath();
     ctxMoon.fill();
     ctxMoon.restore();
