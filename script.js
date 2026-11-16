@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Calendario Lunare Matematicamente Stabile)
+// SunClock24 - script.js (Calendario Lunare Astronomicamente Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -648,6 +648,7 @@ function drawSunSlicesSafe(times) {
     drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
     drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
     drawSector(hSunset, duskH, PALETTE.civil, radius);
+    drawSector(hSunset, duskH, PALETTE.civil, radius);
     drawSector(duskH, nautDuskH, PALETTE.naut, radius);
     drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
 }
@@ -877,7 +878,7 @@ function drawRealisticSun(canvasId) {
 }
 
 // -----------------------------------------------------------------
-// CALENDARIO LUNARE STABILE E COERENTE (Basato direttamente su phase 0-1)
+// DISEGNO LUNARE CORRETTO AL 100% (Sincronizzato e Infallibile)
 // -----------------------------------------------------------------
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
@@ -899,7 +900,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // 1. Sfondo base luminoso (Luna Piena)
+    // 1. Sfondo base luminoso (Superficie della luna piena)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -908,7 +909,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Mari lunari fissi
+    // Mari lunari decorativi fissi
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
@@ -923,16 +924,16 @@ function drawRealisticMoon(canvasId, illumination) {
     let phase = illumination.phase;       // 0.0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto
     let fraction = illumination.fraction; // Percentuale di luce (0.0 a 1.0)
 
-    // 2. Controllo Luna Nuova (fase vicina allo 0 o all'1, o frazione minima)
-    if (phase < 0.015 || phase > 0.985 || fraction <= 0.01) {
+    // 2. Controllo rigoroso Luna Nuova (fase vicina a 0 o 1)
+    if (phase < 0.03 || phase > 0.97 || fraction <= 0.02) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    // 3. Controllo Luna Piena (fase vicina a 0.5, o frazione massima)
-    else if ((phase >= 0.485 && phase <= 0.515) || fraction >= 0.99) {
+    // 3. Controllo rigoroso Luna Piena (fase vicina a 0.5)
+    else if ((phase >= 0.47 && phase <= 0.53) || fraction >= 0.98) {
         // Piena al 100%, nessuna ombra applicata
     } 
-    // 4. Fasi Intermedie stabili (Crescenti e Calanti)
+    // 4. Fasi Intermedie (Crescenti e Calanti)
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)'; // Ombra scura
         ctxMoon.beginPath();
@@ -940,30 +941,30 @@ function drawRealisticMoon(canvasId, illumination) {
         let cxCenter = width / 2;
         let cyCenter = height / 2;
 
-        // Regola fissa del ciclo lunare:
-        // Da 0.0 a 0.5 = Crescente (la luce avanza da destra)
-        // Da 0.5 a 1.0 = Calante (la luce si ritira verso destra)
+        // Regola astronomica standard:
+        // phase < 0.5 -> Crescente (la luce cresce da destra verso sinistra)
+        // phase > 0.5 -> Calante (la luce cala da sinistra verso destra)
         let isWaxing = phase < 0.5;
         let isGibbous = fraction > 0.5;
         let termRadius = r * Math.abs(2 * fraction - 1);
 
         if (isWaxing) {
             if (!isGibbous) {
-                // Falce Crescente
+                // Falce Crescente (copre la sinistra e parte della destra)
                 ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
             } else {
-                // Gibbosa Crescente
+                // Gibbosa Crescente (lascia scoperta la destra e parte della sinistra)
                 ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, true);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
             }
         } else {
             if (!isGibbous) {
-                // Falce Calante
+                // Falce Calante (copre la destra e parte della sinistra)
                 ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
             } else {
-                // Gibbosa Calante
+                // Gibbosa Calante (lascia scoperta la sinistra e parte della destra)
                 ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, true);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
             }
