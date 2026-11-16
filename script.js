@@ -966,7 +966,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo disco lunare (illuminato)
+    // Sfondo del disco lunare (illuminato)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -983,13 +983,15 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    let phase = illumination.phase;       // 0.0 (Nuova) -> 0.5 (Piena) -> 1.0 (Nuova)
+    let phase = illumination.phase;       // 0.0 -> 1.0
     let fraction = illumination.fraction; // 0.0 -> 1.0
 
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
+    // Gestione estremi pulita
     if (fraction < 0.01) {
+        // Luna Nuova (completamente scura)
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
@@ -999,15 +1001,28 @@ function drawRealisticMoon(canvasId, illumination) {
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
-        let angle = phase * tau;
-        let rx = r * Math.cos(angle);
+        // Distinguiamo se la luna è crescente (0 - 0.5) o calante (0.5 - 1.0)
+        let isWaxing = (phase <= 0.5);
         
-        let cx = cxCenter;
-        let cy = cyCenter;
+        // Raggio del terminatore basato sulla frazione lineare (evita i rimbalzi del coseno)
+        let terminatorRadius = r * Math.abs(1 - (fraction * 2));
+        
+        let rx1 = r;
+        let rx2 = terminatorRadius;
+        let sweep1 = isWaxing ? 0 : 1;
+        let sweep2 = isWaxing ? 0 : 1;
+
+        if (fraction > 0.5) {
+            rx1 = terminatorRadius;
+            rx2 = r;
+            sweep1 = isWaxing ? 1 : 0;
+            sweep2 = isWaxing ? 1 : 0;
+        }
 
         ctxMoon.beginPath();
-        ctxMoon.arc(cx, cy, r, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.5);
-        ctxMoon.arc(cx, cy, Math.abs(rx), 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
+        ctxMoon.moveTo(cxCenter, cyCenter - r);
+        ctxMoon.ellipse(cxCenter, cyCenter, rx1, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep1 === 0);
+        ctxMoon.ellipse(cxCenter, cyCenter, rx2, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep2 === 0);
         ctxMoon.closePath();
         ctxMoon.fill();
     }
