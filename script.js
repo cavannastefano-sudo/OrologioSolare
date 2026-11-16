@@ -1,6 +1,5 @@
 // ==========================================
-// SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
-// SunClock24 - script.js (Calcoli originali intatti + Luna Piena visiva)
+// SunClock24 - script.js (Versione con Timeout GPS Sicuro)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -973,7 +972,6 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// DISEGNO FISSA DELLA LUNA PIENA (Senza calcoli di ombre che possono fallire)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1088,26 +1086,26 @@ function populateTable(times, moonTimes, illumination) {
 
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td colspan="2">☀️ Dati Solari e Crepuscoli</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Mezzanotte solare</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Alba astronomica</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Alba Nautica</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Alba Civile</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Alba</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Fine dell'alba</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Fine dell'ora d'oro</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Mezzogiorno solare</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Inizio dell'ora d'oro</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Inizio del tramonto</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Tramonto</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Crepuscolo civile</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Crepuscolo nautico</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Crepuscolo astronomico</td><td>----</td></tr>
+            <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+            <tr style="background: rgba(30, 41, 59, 0.5);"><td>Mezzanotte solare</td><td>----</td></tr>
+            <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>----</td></tr>
+            <tr style="background: rgba(30, 58, 138, 0.6);"><td>Alba Nautica</td><td>----</td></tr>
+            <tr style="background: rgba(59, 130, 246, 0.4);"><td>Alba Civile</td><td>----</td></tr>
+            <tr style="background: rgba(249, 115, 22, 0.4);"><td>Alba</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.4);"><td>Fine dell'alba</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.5);"><td>Fine dell'ora d'oro</td><td>----</td></tr>
+            <tr style="background: rgba(186, 230, 253, 0.3); color: #ffffff;"><td>Mezzogiorno solare</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.5);"><td>Inizio dell'ora d'oro</td><td>----</td></tr>
+            <tr style="background: rgba(234, 179, 8, 0.4);"><td>Inizio del tramonto</td><td>----</td></tr>
+            <tr style="background: rgba(249, 115, 22, 0.4);"><td>Tramonto</td><td>----</td></tr>
+            <tr style="background: rgba(59, 130, 246, 0.4);"><td>Crepuscolo civile</td><td>----</td></tr>
+            <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
+            <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
             
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td colspan="2">🌙 Dati Lunari</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Fase Lunare</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Sorge la Luna</td><td>----</td></tr>
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Tramonta la Luna</td><td>----</td></tr>
+            <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>----</td></tr>
+            <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>----</td></tr>
         `;
         return;
     }
@@ -1115,27 +1113,29 @@ function populateTable(times, moonTimes, illumination) {
     const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
     
     const events = [
-        { name: "Mezzanotte solare", date: times.nadir },
-        { name: "Alba astronomica", date: times.astronomicalDawn },
-        { name: "Alba Nautica", date: times.nauticalDawn },
-        { name: "Alba Civile", date: times.dawn },
-        { name: "Alba", date: times.sunrise },
-        { name: "Fine dell'alba", date: times.sunriseEnd },
-        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd },
-        { name: "Mezzogiorno solare", date: times.solarNoon },
-        { name: "Inizio dell'ora d'oro", date: times.goldenHour },
-        { name: "Inizio del tramonto", date: times.sunsetStart },
-        { name: "Tramonto", date: times.sunset },
-        { name: "Crepuscolo civile", date: times.dusk },
-        { name: "Crepuscolo nautico", date: times.nauticalDusk },
-        { name: "Crepuscolo astronomico", date: times.astronomicalDusk }
+        { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
+        { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
+        { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.6)" },
+        { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.4)" },
+        { name: "Alba", date: times.sunrise, bg: "rgba(249, 115, 22, 0.4)" },
+        { name: "Fine dell'alba", date: times.sunriseEnd, bg: "rgba(234, 179, 8, 0.4)" },
+        { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, bg: "rgba(234, 179, 8, 0.5)" },
+        { name: "Mezzogiorno solare", date: times.solarNoon, bg: "rgba(186, 230, 253, 0.3); color: #ffffff;" },
+        { name: "Inizio dell'ora d'oro", date: times.goldenHour, bg: "rgba(234, 179, 8, 0.5)" },
+        { name: "Inizio del tramonto", date: times.sunsetStart, bg: "rgba(234, 179, 8, 0.4)" },
+        { name: "Tramonto", date: times.sunset, bg: "rgba(249, 115, 22, 0.4)" },
+        { name: "Crepuscolo civile", date: times.dusk, bg: "rgba(59, 130, 246, 0.4)" },
+        { name: "Crepuscolo nautico", date: times.nauticalDusk, bg: "rgba(30, 58, 138, 0.6)" },
+        { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.6)" }
     ];
 
     let solarRowsHtml = "";
     events.forEach((ev, idx) => {
         const isNext = (idx === lastHighlightedEventIndex);
+        const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
+        
         solarRowsHtml += `
-            <tr style="background: transparent; color: #ffffff; font-weight: bold;">
+            <tr style="background: ${ev.bg}; ${borderStyle}">
                 <td>${ev.name} ${isNext ? '📍' : ''}</td>
                 <td>${formatTime(ev.date)}</td>
             </tr>
@@ -1143,13 +1143,13 @@ function populateTable(times, moonTimes, illumination) {
     });
 
     tbody.innerHTML = `
-        <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td colspan="2">☀️ Dati Solari e Crepuscoli</td></tr>
+        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
 
-        <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td colspan="2">🌙 Dati Lunari</td></tr>
-        <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-        <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
-        <tr style="background: transparent; color: #ffffff; font-weight: bold;"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
+        <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Sorge la Luna</td><td>${moonTimes ? formatTime(moonTimes.rise) : '----'}</td></tr>
+        <tr style="background: rgba(15, 23, 42, 0.6);"><td>Tramonta la Luna</td><td>${moonTimes ? formatTime(moonTimes.set) : '----'}</td></tr>
     `;
 }
 
