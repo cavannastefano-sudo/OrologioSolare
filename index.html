@@ -176,22 +176,34 @@
             position: relative; overflow: hidden;
         }
         
-        /* Regola generale per il canvas principale dell'orologio */
         #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Regola fissa e pulita per il canvas della luna piccolina nel pannello in basso */
+        /* Stile fisso per il canvas della luna nel pannello in basso */
         #moon-canvas {
-            width: 36px !important;
-            height: 36px !important;
-            min-width: 36px !important;
-            min-height: 36px !important;
-            max-width: 36px !important;
-            max-height: 36px !important;
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
             border-radius: 50%;
-            box-shadow: 0 0 8px rgba(255,255,255,0.3);
+            box-shadow: 0 0 6px rgba(255,255,255,0.3);
             object-fit: cover;
             flex-shrink: 0;
             position: static !important;
+        }
+
+        /* Stile fisso per il canvas della luna sopra la lancetta dell'orologio */
+        #moon-clock-canvas {
+            width: 28px !important;
+            height: 28px !important;
+            min-width: 28px !important;
+            min-height: 28px !important;
+            border-radius: 50%;
+            border: 2px solid #000000;
+            box-shadow: 0 0 10px #cbd5e1;
+            background: #000;
+            display: block;
         }
         
         .hand {
@@ -240,21 +252,17 @@
             z-index: 9; 
         }
         #hand-moon::after {
-            content: "🌙";
+            content: "";
             position: absolute;
-            top: -22px;
+            top: -24px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 22px;
             width: 28px;
             height: 28px;
-            background: #f1f5f9;
-            border: 2px solid #000000;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 10px #cbd5e1;
+            padding: 0;
+            margin: 0;
+            background: transparent;
         }
 
         #center-dot {
@@ -370,7 +378,10 @@
             <div class="hand" id="hand-hour"></div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
-            <div class="hand" id="hand-moon"></div>
+            <div class="hand" id="hand-moon">
+                <!-- Canvas della luna veritiera sopra la lancetta dell'orologio -->
+                <canvas id="moon-clock-canvas" width="28" height="28"></canvas>
+            </div>
             <div id="center-dot"></div>
         </div>
     </div>
@@ -378,17 +389,18 @@
     <div id="bottom-panels-container">
         <!-- Pannello Unificato Sole e Luna -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
+            <!-- Luna veritiera e nome fase spostati in alto sopra alla località -->
+            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
+                <canvas id="moon-canvas" width="32" height="32"></canvas>
+                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15;">Caricamento...</span>
+            </div>
+
             <div id="location-text">Ricerca posizione in corso...</div>
             <div class="info-grid">
                 <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
                 <div>Sorge (luna):<br><span id="moon-rise">--:--</span></div>
                 <div>Tramonta (luna):<br><span id="moon-set">--:--</span></div>
-            </div>
-            <!-- Canvas della Luna Fotorealistica in formato tondo e compatto -->
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; border-top: 1px solid rgba(51,65,85,0.6); padding-top: 6px;">
-                <canvas id="moon-canvas" width="36" height="36"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.9rem; color: #facc15;">Caricamento...</span>
             </div>
         </div>
     </div>
@@ -484,7 +496,7 @@
                 <label>Latitudine:</label>
                 <input type="number" step="any" id="input-lat" value="45.05" readonly>
             </div>
-            <div class="info-group" style="margin-bottom: 12px;">
+            <div class="form-group">
                 <label>Longitudine:</label>
                 <input type="number" step="any" id="input-lon" value="9.69" readonly>
             </div>
