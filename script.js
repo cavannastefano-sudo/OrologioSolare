@@ -24,7 +24,7 @@ function getPreciseStandardTimezone(lat, lon) {
     if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
     if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
     if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
-    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;    
+    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   
 
     try {
         if (typeof tzlookup === 'function') {
@@ -334,40 +334,6 @@ function onTimeChanged(val) {
     customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
     updateInputsVal();
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
-    } else {
-        updateSunClock(cachedLat, cachedLon);
-    }
-}
-
-function changeDate(days) {
-    selectedDate.setUTCDate(selectedDate.getUTCDate() + days);
-    isCustomTime = true;
-
-    const targetOffset = getTotalOffsetHours();
-    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
-    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
-
-    updateInputsVal();
-
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
-    } else {
-        updateSunClock(cachedLat, cachedLon);
-    }
-}
-
-function changeHour(hours) {
-    selectedDate.setUTCHours(selectedDate.getUTCHours() + hours);
-    isCustomTime = true;
-
-    const targetOffset = getTotalOffsetHours();
-    const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
-    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
-
-    updateInputsVal();
-
     if (isTimezoneOnlyMode) {
         applyTimezonePreset();
     } else {
@@ -956,17 +922,15 @@ function drawRealisticMoon(canvasId, illumination) {
     const width = canvas.width;
     const height = canvas.height;
     const r = width / 2 - 2;
-    const tau = Math.PI * 2;
 
     ctxMoon.clearRect(0, 0, width, height);
 
     ctxMoon.save();
     ctxMoon.beginPath();
-    ctxMoon.arc(width / 2, height / 2, r, 0, tau);
+    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo disco lunare (illuminato)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -975,40 +939,56 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Crateri stilizzati
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
 
-    let phase = illumination.phase;       // 0.0 (Nuova) -> 0.5 (Piena) -> 1.0 (Nuova)
-    let fraction = illumination.fraction; // 0.0 -> 1.0
+    ctxMoon.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
-    let cxCenter = width / 2;
-    let cyCenter = height / 2;
+    let phase = illumination.phase;       
+    let fraction = illumination.fraction; 
 
-    if (fraction < 0.01) {
+    if (phase < 0.02 || phase > 0.98 || fraction <= 0.02) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction > 0.99) {
-        // Luna Piena (nessuna ombra)
+    else if ((phase >= 0.48 && phase <= 0.52) || fraction >= 0.98) {
+        // Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
-
-        let angle = phase * tau;
-        // CORRETTO: Math.abs() assicura che il raggio sia sempre positivo, prevenendo il bug della luna nera/sballata
-        let rx = r * Math.abs(Math.cos(angle));
-        
-        let cx = cxCenter;
-        let cy = cyCenter;
-
         ctxMoon.beginPath();
-        ctxMoon.arc(cx, cy, r, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.5);
-        ctxMoon.arc(cx, cy, rx, 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
+
+        let cxCenter = width / 2;
+        let cyCenter = height / 2;
+
+        let isWaxing = phase < 0.5; 
+        let isGibbous = fraction > 0.5; 
+        let termRadius = r * Math.abs(2 * fraction - 1);
+
+        if (isWaxing) {
+            if (!isGibbous) {
+                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
+            } else {
+                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, true);
+                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            }
+        } else {
+            if (!isGibbous) {
+                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
+            } else {
+                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, true);
+                ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
+            }
+        }
+
         ctxMoon.closePath();
         ctxMoon.fill();
     }
@@ -1018,7 +998,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
-    ctxMoon.arc(width / 2, height / 2, r, 0, tau);
+    ctxMoon.arc(width / 2, height / 2, r, 0, Math.PI * 2);
     ctxMoon.stroke();
 }
 
@@ -1193,8 +1173,13 @@ function updateHands() {
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
-    const illumination = SunCalc.getMoonIllumination(utcCalculationDate);
-    let moonEquivalentHour = (h + (illumination.phase * 24)) % 24;
+    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
+    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+    
+    const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
+    let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
+    
+    let moonEquivalentHour = (h + moonHourOffset) % 24;
     if (moonEquivalentHour < 0) moonEquivalentHour += 24;
 
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
