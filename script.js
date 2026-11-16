@@ -984,28 +984,38 @@ function drawRealisticMoon(canvasId, illumination) {
     let phase = illumination.phase;       
     let fraction = illumination.fraction; 
 
-    // Tolleranza pulita per azzerare i micro-salti sui bordi estremi
-    if (fraction < 0.005) fraction = 0;
-    if (fraction > 0.995) fraction = 1;
-
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
-    if (fraction === 0) {
+    // CORREZIONE ROBUSTA ANTISALTO: Sincronizzazione continua basata su semi-ciclo e fase
+    let isWaxing = phase <= 0.5;
+
+    if (fraction < 0.01) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction === 1) {
+    else if (fraction > 0.99) {
         // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
-        let cosX = Math.abs(Math.cos(phase * tau));
-        let rx1 = (phase < 0.50) ? r * cosX : r;
-        let rx2 = (phase < 0.50) ? r : r * cosX;
-        let sweep1 = (phase < 0.25) ? 0 : 1;
-        let sweep2 = (phase < 0.75) ? 1 : 0;
+        let rx = r * Math.abs(Math.cos(phase * tau));
+        let rx1, rx2, sweep1, sweep2;
+
+        if (isWaxing) {
+            if (phase < 0.25) {
+                rx1 = rx; rx2 = r; sweep1 = 0; sweep2 = 1;
+            } else {
+                rx1 = r; rx2 = rx; sweep1 = 1; sweep2 = 1;
+            }
+        } else {
+            if (phase < 0.75) {
+                rx1 = r; rx2 = rx; sweep1 = 0; sweep2 = 0;
+            } else {
+                rx1 = rx; rx2 = r; sweep1 = 1; sweep2 = 0;
+            }
+        }
 
         ctxMoon.beginPath();
         ctxMoon.moveTo(cxCenter, cyCenter - r);
@@ -1195,7 +1205,6 @@ function updateHands() {
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
-    // FIX DEFINITIVO: Uso della fase continua per evitare scatti della lancetta della luna
     const illumination = SunCalc.getMoonIllumination(utcCalculationDate);
     let moonEquivalentHour = (h + (illumination.phase * 24)) % 24;
     if (moonEquivalentHour < 0) moonEquivalentHour += 24;
