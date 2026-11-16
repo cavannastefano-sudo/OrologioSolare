@@ -987,19 +987,20 @@ function drawRealisticMoon(canvasId, illumination) {
     let phase = illumination.phase;       
     let fraction = illumination.fraction; 
 
-    if (phase < 0.02 || phase > 0.98 || fraction <= 0.02) {
+    let cxCenter = width / 2;
+    let cyCenter = height / 2;
+
+    // Gestione fluida basata sulla percentuale reale (senza tagli netti a scatto di 2 giorni)
+    if (fraction < 0.01) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if ((phase >= 0.48 && phase <= 0.52) || fraction >= 0.98) {
-        // Piena (nessuna ombra)
+    else if (fraction > 0.99) {
+        // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
         ctxMoon.beginPath();
-
-        let cxCenter = width / 2;
-        let cyCenter = height / 2;
 
         let isWaxing = phase < 0.5; 
         let isGibbous = fraction > 0.5; 
