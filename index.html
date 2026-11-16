@@ -178,16 +178,16 @@
         
         #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Stile per il canvas della luna nel pannello in basso */
+        /* Stile per il canvas della luna nel pannello in basso (più piccolo e compatto) */
         #moon-canvas {
-            width: 32px !important;
-            height: 32px !important;
-            min-width: 32px !important;
-            min-height: 32px !important;
-            max-width: 32px !important;
-            max-height: 32px !important;
+            width: 24px !important;
+            height: 24px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
+            max-width: 24px !important;
+            max-height: 24px !important;
             border-radius: 50%;
-            box-shadow: 0 0 6px rgba(255,255,255,0.3);
+            box-shadow: 0 0 4px rgba(255,255,255,0.3);
             object-fit: cover;
             flex-shrink: 0;
             position: static !important;
@@ -380,7 +380,7 @@
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             
             <div class="hand" id="hand-hour">
-                <!-- Canvas del sole fotorealistico sulla lancetta delle ore -->
+                <!-- Canvas del sole fotorealistico pieno sulla lancetta delle ore -->
                 <canvas id="sun-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div class="hand" id="hand-minute"></div>
@@ -394,11 +394,11 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Unificato Sole e Luna -->
+        <!-- Pannello Unificato Sole e Luna con stile compatto -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
-                <canvas id="moon-canvas" width="32" height="32"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15;">Caricamento...</span>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 4px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 4px;">
+                <canvas id="moon-canvas" width="24" height="24"></canvas>
+                <span id="moon-phase-name" style="font-size: 0.85rem; color: #facc15; font-weight: normal;">Caricamento...</span>
             </div>
 
             <div id="location-text">Ricerca posizione in corso...</div>
