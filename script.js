@@ -151,7 +151,7 @@ async function initClock() {
     if (manualToggle) manualToggle.checked = isManualDst;
     updateDstUI(isAuto);
 
-    // Disegna subito il sole fotorealistico sulla lancetta delle ore
+    // Disegna subito il sole sulla lancetta delle ore
     drawRealisticSun('sun-clock-canvas');
 
     if (navigator.geolocation && !urlParams.has('lat')) {
@@ -861,10 +861,14 @@ function formatTime(date) {
     return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 }
 
-// Funzione avanzata per disegnare il Sole fotorealistico sul canvas della lancetta
+// Funzione avanzata per disegnare il Sole fotorealistico sul canvas della lancetta (32x32)
 function drawRealisticSun(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
+    
+    canvas.width = 32;
+    canvas.height = 32;
+    
     const ctxSun = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
@@ -878,7 +882,6 @@ function drawRealisticSun(canvasId) {
     ctxSun.closePath();
     ctxSun.clip();
 
-    // Gradiente radiale solare brillante
     let sunGrad = ctxSun.createRadialGradient(width / 2 - 3, height / 2 - 3, 2, width / 2, height / 2, r);
     sunGrad.addColorStop(0, '#ffffff');
     sunGrad.addColorStop(0.3, '#fde047');
@@ -887,14 +890,12 @@ function drawRealisticSun(canvasId) {
     ctxSun.fillStyle = sunGrad;
     ctxSun.fillRect(0, 0, width, height);
 
-    // Dettagli superficiali morbidi
     ctxSun.fillStyle = 'rgba(255, 255, 255, 0.2)';
     ctxSun.beginPath(); ctxSun.arc(width * 0.4, height * 0.4, r * 0.25, 0, Math.PI * 2); ctxSun.fill();
     ctxSun.beginPath(); ctxSun.arc(width * 0.65, height * 0.65, r * 0.2, 0, Math.PI * 2); ctxSun.fill();
 
     ctxSun.restore();
 
-    // Bordo corona solare luminoso
     ctxSun.strokeStyle = 'rgba(255, 237, 74, 0.8)';
     ctxSun.lineWidth = 1.5;
     ctxSun.beginPath();
@@ -902,10 +903,14 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione avanzata per disegnare la Luna con dettagli realistici di mari e crateri
+// Funzione avanzata per disegnare la Luna con dettagli realistici di mari e crateri (32x32)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
+    
+    canvas.width = 32;
+    canvas.height = 32;
+    
     const ctxMoon = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
