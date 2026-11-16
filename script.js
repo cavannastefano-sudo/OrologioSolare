@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Corretto)
+// SunClock24 - script.js (Completo e Definitivo)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -945,7 +945,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione con la correzione definitiva per la fase lunare
+// Funzione fotorealistica della luna corretta nei 4 quadranti del ciclo
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -967,6 +967,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
+    // Sfondo disco lunare
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -975,6 +976,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
+    // Crateri stilizzati
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
@@ -986,6 +988,7 @@ function drawRealisticMoon(canvasId, illumination) {
     let fraction = illumination.fraction; 
 
     if (fraction < 0.01) {
+        // Luna Nuova
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } else if (fraction > 0.99) {
@@ -1000,14 +1003,22 @@ function drawRealisticMoon(canvasId, illumination) {
         let rx = Math.abs(r * cosVal);
 
         ctxMoon.beginPath();
-        if (phase < 0.5) {
-            ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-            let sweep = (phase < 0.25) ? 1 : 0;
-            ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep);
+        if (phase <= 0.5) {
+            if (phase <= 0.25) {
+                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
+            } else {
+                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
+            }
         } else {
-            ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            let sweep = (phase < 0.75) ? 1 : 0;
-            ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep);
+            if (phase <= 0.75) {
+                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            } else {
+                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
+                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
+            }
         }
         ctxMoon.closePath();
         ctxMoon.fill();
