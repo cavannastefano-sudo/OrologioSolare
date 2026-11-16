@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Il tuo codice originale intatto + correzione lancetta luna)
+// SunClock24 - script.js (Completo e Corretto)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -945,6 +945,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
+// Funzione con la correzione definitiva per la fase lunare
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -984,31 +985,30 @@ function drawRealisticMoon(canvasId, illumination) {
     let phase = illumination.phase;       
     let fraction = illumination.fraction; 
 
-    if (fraction < 0.005) fraction = 0;
-    if (fraction > 0.995) fraction = 1;
-
-    let cxCenter = width / 2;
-    let cyCenter = height / 2;
-
-    if (fraction === 0) {
+    if (fraction < 0.01) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
-    } 
-    else if (fraction === 1) {
+    } else if (fraction > 0.99) {
         // Luna Piena
-    } 
-    else {
+    } else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
-
-        let angle = phase * tau;
-        let rx = r * Math.abs(Math.cos(angle));
         
-        let cx = cxCenter;
-        let cy = cyCenter;
+        let cxCenter = width / 2;
+        let cyCenter = height / 2;
+        
+        let cosVal = Math.cos(phase * tau);
+        let rx = Math.abs(r * cosVal);
 
         ctxMoon.beginPath();
-        ctxMoon.arc(cx, cy, r, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.5);
-        ctxMoon.arc(cx, cy, rx, 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
+        if (phase < 0.5) {
+            ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
+            let sweep = (phase < 0.25) ? 1 : 0;
+            ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep);
+        } else {
+            ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            let sweep = (phase < 0.75) ? 1 : 0;
+            ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep);
+        }
         ctxMoon.closePath();
         ctxMoon.fill();
     }
@@ -1193,12 +1193,10 @@ function updateHands() {
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
-    const illumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
+    const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
     
-    // QUI AGGIUNGIAMO IL CALCOLO CORRETTO DELLA POSIZIONE DELLA LUNA SUL QUADRANTE DELLE 24 ORE
-    let moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-    let sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-    let diffAzimuth = moonPos.azimuth - sunPos.azimuth;
+    const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
     let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
     
     let moonEquivalentHour = (h + moonHourOffset) % 24;
