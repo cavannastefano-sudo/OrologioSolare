@@ -87,7 +87,7 @@
             font-weight: bold;
             color: #39ff14;
             background: rgba(0,0,0,0.3);
-            padding: 3px 5px;
+            padding: 3px 6px;
             border-radius: 6px;
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
@@ -100,6 +100,27 @@
             background: rgba(0,0,0,0.5);
         }
 
+        /* Stile per i pulsanti freccia < > */
+        .step-btn {
+            background: rgba(0,0,0,0.3);
+            color: #facc15;
+            border: 2px solid #334155;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .step-btn:hover {
+            background: rgba(0,0,0,0.5);
+            color: #39ff14;
+        }
+
         .header-box {
             background: rgba(0,0,0,0.25);
             padding: 6px 10px;
@@ -107,7 +128,7 @@
             border: 2px solid #334155;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
         }
@@ -178,7 +199,6 @@
         
         #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
         
-        /* Stile per il canvas della luna nel pannello in basso (mantenuto delle dimensioni attuali) */
         #moon-canvas {
             width: 24px !important;
             height: 24px !important;
@@ -194,7 +214,6 @@
             background: transparent !important;
         }
 
-        /* Stile per il canvas della luna sulla lancetta */
         #moon-clock-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -214,7 +233,6 @@
             z-index: 15 !important;
         }
 
-        /* Stile per il canvas del sole sulla lancetta delle ore */
         #sun-clock-canvas {
             width: 32px !important;
             height: 32px !important;
@@ -322,7 +340,6 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Stile in piccolo per i dati di sorge/tramonta della luna nella griglia */
         .moon-grid-item {
             font-size: 0.82rem;
             font-weight: normal;
@@ -374,15 +391,24 @@
         </a>
 
         <h1>SunClock24</h1>
-        <div style="display: flex; align-items: center; gap: 4px;">
+
+        <!-- Controllo Ora con frecce < > -->
+        <div style="display: flex; align-items: center; gap: 3px;">
+            <button class="step-btn" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
             <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+            <button class="step-btn" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
         </div>
+
+        <!-- Controllo Data con frecce < > -->
         <div class="header-box">
+            <button class="step-btn" onclick="changeDate(-1)" title="Un giorno indietro">&lt;</button>
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button class="step-btn" onclick="changeDate(1)" title="Un giorno in avanti">&gt;</button>
             <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
+
         <button id="btn-world" onclick="window.location.href='world.html'">🌍</button>
         <button id="btn-settings" onclick="toggleSettingsModal(true)">⚙️</button>
     </header>
@@ -392,13 +418,11 @@
             <canvas id="clockCanvas" width="500" height="500"></canvas>
             
             <div class="hand" id="hand-hour">
-                <!-- Canvas del sole fotorealistico pieno sulla lancetta delle ore -->
                 <canvas id="sun-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div class="hand" id="hand-minute"></div>
             <div class="hand" id="hand-second"></div>
             <div class="hand" id="hand-moon">
-                <!-- Canvas della luna fotorealistica sulla lancetta -->
                 <canvas id="moon-clock-canvas" width="32" height="32"></canvas>
             </div>
             <div id="center-dot"></div>
@@ -406,7 +430,6 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Pannello Unificato Sole e Luna con titolo fase grande e dati luna in piccolo -->
         <div class="info-panel-box" onclick="toggleTimesModal(true)">
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
                 <canvas id="moon-canvas" width="24" height="24"></canvas>
@@ -436,7 +459,6 @@
         </div>
     </div>
 
-    <!-- Modale Impostazioni con i collegamenti a MeteoCWEB e IPTV -->
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -444,7 +466,6 @@
                 <button class="close-btn" onclick="toggleSettingsModal(false)">✕</button>
             </div>
             
-            <!-- Sezione Collegamenti Rapidi (Meteo e IPTV) -->
             <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569; display: flex; gap: 8px;">
                 <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" class="action-btn" style="flex: 1; text-align: center; background: #334155; color: #f8fafc; text-decoration: none; padding: 8px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
                     <i class="fa-solid fa-cloud-sun text-amber-400"></i> MeteoCWEB
@@ -487,7 +508,6 @@
                 </select>
             </div>
 
-            <!-- Pannello Ora Legale Auto/Manuale -->
             <div class="form-group" style="background: #0f172a; padding: 10px; border-radius: 6px; border: 1px solid #475569;">
                 <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold;">
                     <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 18px; height: 18px; cursor: pointer;">
