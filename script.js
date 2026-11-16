@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Completo e Definitivo)
+// SunClock24 - script.js (Testo Dinamico + Luna Piena Visiva)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -242,7 +242,7 @@ function updateDstUI(isAuto) {
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
-        manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
+        manualInput.checked = localStorage.getItem('sunclock_dst'] === 'true';
     }
 }
 
@@ -570,6 +570,8 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
+    
+    // Ripristiniamo il calcolo reale della fase per i testi digitali e la tabella
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -945,7 +947,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione drawRealisticMoon stabile con controllo a 4 quadranti
+// DISEGNO FISSA DELLA LUNA PIENA (Grafica pulita e senza errori di ombre)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -969,7 +971,6 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo disco lunare
     let bgGrad = ctxMoon.createRadialGradient(cxCenter - 5, cyCenter - 5, 2, cxCenter, cyCenter, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -978,62 +979,23 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Crateri di texture
-    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
+    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.35)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    let phase = illumination.phase;       
-    let fraction = illumination.fraction; 
-
-    if (fraction < 0.01) {
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
-        ctxMoon.fillRect(0, 0, width, height);
-    } else if (fraction > 0.99) {
-        // Luna Piena
-    } else {
-        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
-
-        let isCrescent = (phase < 0.5);
-        let cosFactor = Math.cos(phase * tau);
-        let rx = Math.abs(r * cosFactor);
-
-        ctxMoon.beginPath();
-        
-        if (isCrescent) {
-            if (phase <= 0.25) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
-            }
-        } else {
-            if (phase <= 0.75) {
-                ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            } else {
-                ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                ctxMoon.ellipse(cxCenter, cyCenter, rx, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
-            }
-        }
-        
-        ctxMoon.closePath();
-        ctxMoon.fill();
-    }
-
     ctxMoon.restore();
 
-    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.8)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
     ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
     ctxMoon.stroke();
 }
 
+// TESTO DINAMICO RIPRISTINATO (Mostra la fase e percentuale reale)
 function updateMoonDigitalPanel(illumination, moonTimes) {
     if (isTimezoneOnlyMode) return;
 
@@ -1053,10 +1015,11 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     else if (phase < 0.78) { phaseName = "Ultimo Quarto"; }
     else { phaseName = "Calante"; }
 
-    phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
-    riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-    setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+    if (phaseNameEl) phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+    if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+    if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
+    // Disegna la luna piena nei canvas visivi
     drawRealisticMoon('moon-canvas', illumination);
     drawRealisticMoon('moon-clock-canvas', illumination);
     drawRealisticSun('sun-clock-canvas');
@@ -1097,6 +1060,7 @@ function getNextEventIndex(times, refDate) {
 
 function populateTable(times, moonTimes, illumination) {
     const tbody = document.getElementById('times-table-body');
+    if (!tbody) return;
 
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
