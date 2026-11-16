@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Con Calendario Lunare Ridisegnato e Affidabile)
+// SunClock24 - script.js (Calendario Lunare Sincronizzato e Continuo)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -273,7 +273,6 @@ function applyTimezonePreset() {
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
-    utcCalculationDate.setUTCHours(12, 0, 0, 0);
     
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
@@ -499,8 +498,7 @@ function updateSunClock(lat, lon) {
     if (isTimezoneOnlyMode) return;
 
     const baseOffset = getBaseLocationOffset();
-    let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
-    utcCalculationDate.setUTCHours(12, 0, 0, 0);
+    let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
@@ -612,7 +610,6 @@ function drawSunSlicesSafe(times) {
     if (!hasValidSunset) {
         const baseOffset = getBaseLocationOffset();
         let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
-        utcCalculationDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
         
         const isPolarNight = sunPos.altitude < 0;
@@ -793,7 +790,6 @@ function getIntervalColorSafe(h, times) {
     if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
         const baseOffset = getBaseLocationOffset();
         let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
-        utcCalculationDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
         return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
     }
@@ -881,7 +877,7 @@ function drawRealisticSun(canvasId) {
 }
 
 // ----------------------------------------------------
-// NUOVA FUNZIONE LUNARE RISCRITTA DA ZERO (Stabile e Coerente)
+// CALENDARIO LUNARE RIDISEGNATO E SINCRONIZZATO
 // ----------------------------------------------------
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
@@ -903,7 +899,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // 1. Sfondo base: Superficie lunare illuminata (Piena)
+    // 1. Sfondo base luminoso (Luna Piena)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -912,7 +908,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Mari lunari decorativi
+    // Mari lunari fissi per realismo
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
@@ -924,49 +920,48 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.6, height * 0.75, r * 0.1, 0, Math.PI * 2); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
-    let phase = illumination.phase;       // 0.0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto
     let fraction = illumination.fraction; // Da 0.0 a 1.0
+    let phase = illumination.phase;       // Da 0.0 a 1.0 (0=Nuova, 0.25=Primo Quarto, 0.5=Piena, 0.75=Ultimo Quarto)
 
-    // 2. Se siamo in Luna Nuova pura
+    // 2. Gestione Luna Nuova
     if (fraction <= 0.02) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    // 3. Se siamo in fase parziale (Crescente, Quarti, Gibbose)
-    else if (fraction < 0.98) {
-        let isWaxing = phase < 0.5; // True = Crescente, False = Calante
-        let isGibbous = fraction > 0.5; // True = Gibbosa (>50%), False = Falce (<50%)
-        
+    // 3. Gestione Luna Piena pura
+    else if (fraction >= 0.98) {
+        // Nessuna ombra, resta interamente luminosa
+    } 
+    // 4. Fasi Parziali (Crescenti e Calanti)
+    else {
+        let isWaxing = phase <= 0.5; // Crescente vs Calante
+        let isGibbous = fraction > 0.5; // Gibbosa vs Falce
+
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra scura
         ctxMoon.beginPath();
 
         let cxCenter = width / 2;
         let cyCenter = height / 2;
+        let termRadius = r * Math.abs(2 * fraction - 1);
 
         if (isWaxing) {
-            // FASI CRESCENTI (Da Nuova a Piena)
             if (!isGibbous) {
-                // Falce Crescente (copre la metà destra e una parte della sinistra)
+                // Falce Crescente
                 ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
-                let termRadius = r * Math.abs(2 * fraction - 1);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, true);
             } else {
-                // Gibbosa Crescente (lascia scoperta la metà destra e parte della sinistra)
+                // Gibbosa Crescente
                 ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, true);
-                let termRadius = r * Math.abs(2 * fraction - 1);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, false);
             }
         } else {
-            // FASI CALANTI (Da Piena a Nuova)
             if (!isGibbous) {
-                // Falce Calante (copre la metà sinistra e parte della destra)
+                // Falce Calante
                 ctxMoon.arc(cxCenter, cyCenter, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-                let termRadius = r * Math.abs(2 * fraction - 1);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, true);
             } else {
-                // Gibbosa Calante (lascia scoperta la metà sinistra e parte della destra)
+                // Gibbosa Calante
                 ctxMoon.arc(cxCenter, cyCenter, r, 0.5 * Math.PI, 1.5 * Math.PI, true);
-                let termRadius = r * Math.abs(2 * fraction - 1);
                 ctxMoon.ellipse(cxCenter, cyCenter, termRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, false);
             }
         }
@@ -974,11 +969,10 @@ function drawRealisticMoon(canvasId, illumination) {
         ctxMoon.closePath();
         ctxMoon.fill();
     }
-    // Se fraction >= 0.98 la luna rimane interamente piena e luminosa senza alcuna ombra.
 
     ctxMoon.restore();
 
-    // Bordo esterno circolare pulito
+    // Bordo esterno del cerchio lunare
     ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
@@ -1155,7 +1149,6 @@ function updateHands() {
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
-    utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
     const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
     const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -1169,6 +1162,7 @@ function updateHands() {
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
     document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
 
+    // Sincronizzazione in tempo reale della luna con l'esatta data/ora selezionata o corrente
     const currentIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
     const currentMoonTimes = getCompleteMoonTimes(utcCalculationDate, cachedLat, cachedLon);
     updateMoonDigitalPanel(currentIllumination, currentMoonTimes);
