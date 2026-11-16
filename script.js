@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Con Luna Fotorealistica Dinamica)
+// SunClock24 - script.js (Con Luna Fotorealistica Doppia)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -13,19 +13,18 @@ const cy = 250;
 const radius = 248;
 
 function getPreciseStandardTimezone(lat, lon) {
-    // Controllo prioritario assoluto per le Isole Diomede (Stretto di Bering)
     if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
         if (lon < -168.9) {
-            return 12; // Grande Diomede (Russia) -> UTC+12 (avanti di un giorno)
+            return 12; 
         } else {
-            return -9; // Piccola Diomede (USA/Alaska) -> UTC-9 (indietro di un giorno)
+            return -9; 
         }
     }
 
-    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
-    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
-    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
-    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
+    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
+    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
+    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
+    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   
 
     try {
         if (typeof tzlookup === 'function') {
@@ -132,7 +131,6 @@ let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
-let lastSentColor = null;
 let lastHighlightedEventIndex = -1;
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -244,13 +242,6 @@ function updateDstUI(isAuto) {
         manualInput.disabled = false;
         manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
     }
-}
-
-function toggleMoonDropdown() {
-    const content = document.getElementById('moon-dropdown-content');
-    const arrow = document.getElementById('dropdown-arrow');
-    content.classList.toggle('show');
-    arrow.innerText = content.classList.contains('show') ? '▲' : '▼';
 }
 
 function applyTimezonePreset() {
@@ -501,81 +492,6 @@ async function getPlaceNameAndRedirect(lat, lon) {
     const activeDst = getCurrentDstState();
 
     window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(placeName)}&auto=${isAuto}&dst=${activeDst}`;
-}
-
-function toggleMap() {
-    const mapContainer = document.getElementById('map-container');
-    if (mapContainer.style.display === 'block') {
-        mapContainer.style.display = 'none';
-    } else {
-        mapContainer.style.display = 'block';
-        if (!map) {
-            const currentLat = parseFloat(document.getElementById('input-lat').value) || cachedLat;
-            const currentLon = parseFloat(document.getElementById('input-lon').value) || cachedLon;
-            
-            const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-                maxZoom: 17,
-                attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, SRTM | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
-            });
-
-            const political = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            });
-
-            let savedLayer = localStorage.getItem('sunclock_map_layer') === 'political' ? political : topo;
-
-            map = L.map('map-container', {
-                center: [currentLat, currentLon],
-                zoom: 6,
-                layers: [savedLayer]
-            });
-
-            const baseMaps = {
-                "Topografica": topo,
-                "Politica": political
-            };
-            L.control.layers(baseMaps).addTo(map);
-
-            map.on('baselayerchange', function (e) {
-                if (e.name === 'Politica') {
-                    localStorage.setItem('sunclock_map_layer', 'political');
-                } else {
-                    localStorage.setItem('sunclock_map_layer', 'topo');
-                }
-            });
-
-            marker = L.marker([currentLat, currentLon], {draggable: true}).addTo(map);
-
-            marker.on('dragend', function(e) {
-                const pos = marker.getLatLng();
-                document.getElementById('input-lat').value = pos.lat.toFixed(4);
-                document.getElementById('input-lon').value = pos.lng.toFixed(4);
-            });
-
-            map.on('click', function(e) {
-                const lat = e.latlng.lat;
-                const lon = e.latlng.lng;
-                marker.setLatLng([lat, lon]);
-                document.getElementById('input-lat').value = lat.toFixed(4);
-                document.getElementById('input-lon').value = lon.toFixed(4);
-                
-                getPlaceNameAndRedirect(lat, lon);
-            });
-        } else {
-            map.invalidateSize();
-        }
-    }
-}
-
-function applyManualLocation() {
-    const lat = parseFloat(document.getElementById('input-lat').value);
-    const lon = parseFloat(document.getElementById('input-lon').value);
-    if (!isNaN(lat) && !isNaN(lon)) {
-        getPlaceNameAndRedirect(lat, lon);
-    } else {
-        alert("Inserisci coordinate valide.");
-    }
 }
 
 function getCompleteMoonTimes(date, lat, lon) {
@@ -967,13 +883,13 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Mari lunari realistici (le grandi macchie scure della superficie)
+    // Mari lunari realistici
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill(); // Mare di Tranquillità / Serenitatis
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill(); // Oceanus Procellarum
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, Math.PI * 2); ctxMoon.fill(); // Mare Imbrium
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();   // Mare Nubium
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill(); // Mare Fecunditatis
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, Math.PI * 2); ctxMoon.fill();
+    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, Math.PI * 2); ctxMoon.fill();
 
     // Crateri in rilievo chiaro
     ctxMoon.fillStyle = 'rgba(255, 255, 255, 0.25)';
@@ -985,7 +901,7 @@ function drawRealisticMoon(canvasId, illumination) {
     let cosineValue = Math.cos(2 * Math.PI * phase);
 
     ctxMoon.save();
-    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra dello spazio profondo
+    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)';
     ctxMoon.beginPath();
     ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
     if (phase < 0.5) {
@@ -1030,8 +946,9 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
     setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
-    // Aggiorna il canvas della luna veritiera
+    // Aggiorna ENTRAMBI i canvas della luna (pannello in alto e lancetta dell'orologio)
     drawRealisticMoon('moon-canvas', illumination);
+    drawRealisticMoon('moon-clock-canvas', illumination);
 }
 
 function getNextEventIndex(times, refDate) {
