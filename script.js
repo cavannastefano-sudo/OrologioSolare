@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Versione con Timeout GPS Sicuro + Luna allineata a Sorge/Tramonta)
+// SunClock24 - script.js (Versione con Arco Lunare e Sorge/Tramonta Corretti)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -652,27 +652,24 @@ function isValidDate(d) {
     return d instanceof Date && !isNaN(d);
 }
 
+// ARCO ESTERNO DELLA LUNA CORRETTO ED ESATTO
 function drawMoonVisibilityArc(moonTimes, refDate) {
-    let rise = toTargetTime(moonTimes.rise);
-    let set = toTargetTime(moonTimes.set);
-
     if (moonTimes.alwaysUp) {
-        rise = new Date(refDate); rise.setUTCHours(0,0,0,0);
-        set = new Date(refDate); set.setUTCHours(23,59,59,999);
+        ctx.save();
+        ctx.beginPath();
+        let arcRadius = radius - 7;
+        ctx.lineWidth = 8;
+        ctx.strokeStyle = '#64748b';
+        ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+        return;
     }
 
-    if (!isValidDate(rise) || !isValidDate(set)) return;
+    if (!isValidDate(moonTimes.rise) || !isValidDate(moonTimes.set)) return;
 
-    let startDayStart = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate()));
-    let startDayEnd = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate(), 23, 59, 59, 999));
-
-    let startH, endH;
-
-    if (rise < startDayStart) startH = 0;
-    else startH = timeToHours(moonTimes.rise);
-
-    if (set > startDayEnd) endH = 24;
-    else endH = timeToHours(moonTimes.set);
+    let startH = timeToHours(moonTimes.rise);
+    let endH = timeToHours(moonTimes.set);
 
     if (startH === null || endH === null) return;
 
@@ -1187,7 +1184,6 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-    // LANCETTA LUNA CORRETTA E ALLINEATA A SORGE / TRAMONTA
     let moonEquivalentHour = h;
     if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
         let riseH = timeToHours(cachedMoonTimes.rise);
