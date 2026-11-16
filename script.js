@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Testo Dinamico + Luna Piena Visiva)
+// SunClock24 - script.js (Versione con Timeout GPS Sicuro)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -153,34 +153,61 @@ async function initClock() {
 
     drawRealisticSun('sun-clock-canvas');
 
-    if (navigator.geolocation && !urlParams.has('lat')) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
-            },
-            async (error) => {
-                cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-                cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-                currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
-                
-                document.getElementById('input-lat').value = cachedLat;
-                document.getElementById('input-lon').value = cachedLon;
-                updateTimeForLocation();
-                updateInputsVal();
-                updateSunClock(cachedLat, cachedLon);
-            },
-            { timeout: 8000, enableHighAccuracy: true }
-        );
-    } else {
-        cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
-        cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
-        currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Piacenza - Italia";
-
+    if (urlParams.has('lat') && urlParams.has('lon')) {
+        cachedLat = parseFloat(urlParams.get('lat'));
+        cachedLon = parseFloat(urlParams.get('lon'));
+        currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
+        
         document.getElementById('input-lat').value = cachedLat;
         document.getElementById('input-lon').value = cachedLon;
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
+        return;
+    }
+
+    const loadDefaultLocation = () => {
+        cachedLat = 45.05;
+        cachedLon = 9.69;
+        currentPlaceDisplayName = "Piacenza - Italia";
+        
+        const latInput = document.getElementById('input-lat');
+        const lonInput = document.getElementById('input-lon');
+        if (latInput) latInput.value = cachedLat;
+        if (lonInput) lonInput.value = cachedLon;
+        
+        updateTimeForLocation();
+        updateInputsVal();
+        updateSunClock(cachedLat, cachedLon);
+    };
+
+    if (navigator.geolocation) {
+        let gpsFinished = false;
+
+        const gpsTimeout = setTimeout(() => {
+            if (!gpsFinished) {
+                gpsFinished = true;
+                loadDefaultLocation();
+            }
+        }, 3000);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                if (gpsFinished) return;
+                gpsFinished = true;
+                clearTimeout(gpsTimeout);
+                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
+            },
+            (error) => {
+                if (gpsFinished) return;
+                gpsFinished = true;
+                clearTimeout(gpsTimeout);
+                loadDefaultLocation();
+            },
+            { timeout: 2500, enableHighAccuracy: false, maximumAge: 60000 }
+        );
+    } else {
+        loadDefaultLocation();
     }
 }
 
@@ -242,7 +269,7 @@ function updateDstUI(isAuto) {
     } else {
         manualBox.style.opacity = "1.0";
         manualInput.disabled = false;
-        manualInput.checked = localStorage.getItem('sunclock_dst'] === 'true';
+        manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
     }
 }
 
@@ -570,8 +597,6 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    
-    // Ripristiniamo il calcolo reale della fase per i testi digitali e la tabella
     cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -947,7 +972,6 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// DISEGNO FISSA DELLA LUNA PIENA (Grafica pulita e senza errori di ombre)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -995,7 +1019,6 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.stroke();
 }
 
-// TESTO DINAMICO RIPRISTINATO (Mostra la fase e percentuale reale)
 function updateMoonDigitalPanel(illumination, moonTimes) {
     if (isTimezoneOnlyMode) return;
 
@@ -1019,7 +1042,6 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
     if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
-    // Disegna la luna piena nei canvas visivi
     drawRealisticMoon('moon-canvas', illumination);
     drawRealisticMoon('moon-clock-canvas', illumination);
     drawRealisticSun('sun-clock-canvas');
