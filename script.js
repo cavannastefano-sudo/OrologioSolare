@@ -966,6 +966,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
+    // Sfondo disco lunare (illuminato)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -974,6 +975,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
+    // Crateri stilizzati
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.55)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
@@ -981,43 +983,31 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    let phase = illumination.phase;       
-    let fraction = illumination.fraction; 
-
-    // Tolleranza per azzerare micro-imperfezioni ai bordi estremi
-    if (fraction < 0.005) fraction = 0;
-    if (fraction > 0.995) fraction = 1;
+    let phase = illumination.phase;       // 0.0 (Nuova) -> 0.5 (Piena) -> 1.0 (Nuova)
+    let fraction = illumination.fraction; // 0.0 -> 1.0
 
     let cxCenter = width / 2;
     let cyCenter = height / 2;
 
-    if (fraction === 0) {
+    if (fraction < 0.01) {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
         ctxMoon.fillRect(0, 0, width, height);
     } 
-    else if (fraction === 1) {
+    else if (fraction > 0.99) {
         // Luna Piena (nessuna ombra)
     } 
     else {
         ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.96)';
 
-        // CORRETTO: Sfruttiamo il valore assoluto del coseno e il controllo della fase
-        // per evitare che l'ombra faccia il salto all'indietro dopo il primo/ultimo quarto.
-        let cosX = Math.abs(Math.cos(phase * tau));
-        let rx1 = (phase < 0.50) ? r * cosX : r;
-        let rx2 = (phase < 0.50) ? r : r * cosX;
+        let angle = phase * tau;
+        let rx = r * Math.cos(angle);
         
-        // Correzione dei flag sweep per garantire la continuità a cavallo della luna piena
-        let sweep1 = (phase < 0.25 || phase > 0.75) ? 0 : 1;
-        let sweep2 = (phase < 0.5) ? 1 : 0;
-        if (phase >= 0.5) {
-            sweep1 = (phase < 0.75) ? 0 : 1;
-        }
+        let cx = cxCenter;
+        let cy = cyCenter;
 
         ctxMoon.beginPath();
-        ctxMoon.moveTo(cxCenter, cyCenter - r);
-        ctxMoon.ellipse(cxCenter, cyCenter, rx1, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, sweep1 === 0);
-        ctxMoon.ellipse(cxCenter, cyCenter, rx2, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, sweep2 === 0);
+        ctxMoon.arc(cx, cy, r, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.5);
+        ctxMoon.arc(cx, cy, Math.abs(rx), 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.5);
         ctxMoon.closePath();
         ctxMoon.fill();
     }
