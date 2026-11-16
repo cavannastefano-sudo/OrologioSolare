@@ -908,7 +908,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione avanzata per disegnare la Luna con fasi corrette e realistiche (32x32)
+// Funzione avanzata per disegnare la Luna con fasi corrette, orientamento e dettagli realistici (32x32)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -929,7 +929,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Sfondo di base luminoso della luna piena
+    // Sfondo di base luminoso (Superficie della luna piena)
     let bgGrad = ctxMoon.createRadialGradient(width / 2 - 5, height / 2 - 5, 2, width / 2, height / 2, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -951,34 +951,42 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.35, height * 0.45, r * 0.08, 0, Math.PI * 2); ctxMoon.fill();
 
     let phase = illumination.phase; // 0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto
-    let cosineValue = Math.cos(2 * Math.PI * phase);
-    let isWaxing = phase < 0.5; // Crescente vs Calante
+    let fraction = illumination.fraction; // da 0.0 a 1.0
 
-    ctxMoon.save();
-    ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.95)'; // Ombra scura
-    ctxMoon.beginPath();
-    
-    if (phase > 0.02 && phase < 0.98) {
+    // Disegno dell'ombra per le fasi parziali con orientamento corretto
+    if (fraction > 0.03 && fraction < 0.97) {
+        let cosineValue = Math.cos(2 * Math.PI * phase);
+        let isWaxing = phase < 0.5; // Crescente vs Calante
+
+        ctxMoon.save();
+        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.92)'; // Ombra scura
+        ctxMoon.beginPath();
+        
         if (isWaxing) {
-            ctxMoon.arc(width / 2, height / 2, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
-            let ellipseRadius = Math.abs(r * cosineValue);
-            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, phase > 0.25);
-        } else {
             ctxMoon.arc(width / 2, height / 2, r, 0.5 * Math.PI, 1.5 * Math.PI, false);
             let ellipseRadius = Math.abs(r * cosineValue);
-            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, phase > 0.75);
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 1.5 * Math.PI, 0.5 * Math.PI, phase < 0.25);
+        } else {
+            ctxMoon.arc(width / 2, height / 2, r, 1.5 * Math.PI, 0.5 * Math.PI, false);
+            let ellipseRadius = Math.abs(r * cosineValue);
+            ctxMoon.ellipse(width / 2, height / 2, ellipseRadius, r, 0, 0.5 * Math.PI, 1.5 * Math.PI, phase < 0.75);
         }
-    } else if (phase >= 0.98 || phase <= 0.02) {
-        // Luna Nuova (completamente scura)
-        ctxMoon.arc(width / 2, height / 2, r + 1, 0, Math.PI * 2);
+        
+        ctxMoon.closePath();
+        ctxMoon.fill();
+        ctxMoon.restore();
+    } 
+    // Luna Nuova (completamente scura)
+    else if (fraction <= 0.03) {
+        ctxMoon.fillStyle = 'rgba(2, 6, 23, 0.98)';
+        ctxMoon.beginPath();
+        ctxMoon.arc(width / 2, height / 2, r + 2, 0, Math.PI * 2);
+        ctxMoon.fill();
     }
-    
-    ctxMoon.closePath();
-    ctxMoon.fill();
-    ctxMoon.restore();
 
     ctxMoon.restore();
 
+    // Bordo esterno del cerchio lunare
     ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.45)';
     ctxMoon.lineWidth = 1.5;
     ctxMoon.beginPath();
