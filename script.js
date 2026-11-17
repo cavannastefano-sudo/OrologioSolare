@@ -567,7 +567,7 @@ function getCompleteMoonTimes(date, lat, lon) {
     let startDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
     let endDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
 
-    if ((rise && (rise < startDay || rise > endDay)) || times.alwaysUp || times.alwaysDown) {
+    if ((rise && (rise < startDay || rise > endDay)) || (set && (set < startDay || set > endDay)) || times.alwaysUp || times.alwaysDown) {
         let dPrev = new Date(targetDate);
         dPrev.setUTCDate(targetDate.getUTCDate() - 1);
         let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
