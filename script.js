@@ -567,7 +567,7 @@ function getCompleteMoonTimes(date, lat, lon) {
     let startDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
     let endDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
 
-    if ((rise && (rise < startDay || rise > endDay)) || (set && (set < startDay || set > endDay)) || times.alwaysUp || times.alwaysDown) {
+    if (!isValidDate(rise) || !isValidDate(set) || (rise < startDay || rise > endDay) || (set < startDay || set > endDay) || times.alwaysUp || times.alwaysDown) {
         let dPrev = new Date(targetDate);
         dPrev.setUTCDate(targetDate.getUTCDate() - 1);
         let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
@@ -576,13 +576,18 @@ function getCompleteMoonTimes(date, lat, lon) {
         dNext.setUTCDate(targetDate.getUTCDate() + 1);
         let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
 
-        if (!rise || rise < startDay || rise > endDay) {
-            if (pTimes.rise && pTimes.rise >= startDay && pTimes.rise <= endDay) rise = pTimes.rise;
-            else if (nTimes.rise && nTimes.rise >= startDay && nTimes.rise <= endDay) rise = nTimes.rise;
+        if (!isValidDate(rise) || rise < startDay || rise > endDay) {
+            if (isValidDate(pTimes.rise) && pTimes.rise >= startDay && pTimes.rise <= endDay) rise = pTimes.rise;
+            else if (isValidDate(nTimes.rise) && nTimes.rise >= startDay && nTimes.rise <= endDay) rise = nTimes.rise;
+            else if (isValidDate(pTimes.rise)) rise = pTimes.rise;
+            else if (isValidDate(nTimes.rise)) rise = nTimes.rise;
         }
-        if (!set || set < startDay || set > endDay) {
-            if (pTimes.set && pTimes.set >= startDay && pTimes.set <= endDay) set = pTimes.set;
-            else if (nTimes.set && nTimes.set >= startDay && nTimes.set <= endDay) set = nTimes.set;
+
+        if (!isValidDate(set) || set < startDay || set > endDay) {
+            if (isValidDate(pTimes.set) && pTimes.set >= startDay && pTimes.set <= endDay) set = pTimes.set;
+            else if (isValidDate(nTimes.set) && nTimes.set >= startDay && nTimes.set <= endDay) set = nTimes.set;
+            else if (isValidDate(pTimes.set)) set = pTimes.set;
+            else if (isValidDate(nTimes.set)) set = nTimes.set;
         }
     }
     return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
