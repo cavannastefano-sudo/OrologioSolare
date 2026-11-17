@@ -362,9 +362,9 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Stile personalizzato per rendere didascalie e orari della luna bianchi, in grassetto e senza bordo */
+        /* Stile personalizzato per rendere didascalie e orari della luna in azzurro #00ffff, in grassetto e senza bordo */
         .moon-grid-item {
-            color: #ffffff !important;
+            color: #00ffff !important;
             font-size: 0.82rem;
             font-weight: bold !important;
             opacity: 1 !important;
@@ -373,7 +373,7 @@
             -webkit-text-stroke: 0px transparent !important;
         }
         .moon-grid-item span {
-            color: #ffffff !important;
+            color: #00ffff !important;
             font-size: 0.95rem !important;
             font-weight: bold !important;
             text-shadow: none !important;
@@ -523,7 +523,7 @@
             if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
             if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
             if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
-            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;    
 
             try {
                 if (typeof tzlookup === 'function') {
