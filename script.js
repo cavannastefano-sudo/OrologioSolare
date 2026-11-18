@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Modalità Dettaglio Luna)
+// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -1005,7 +1005,6 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
-    // Crateri proporzionali alla dimensione del canvas
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.35)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
@@ -1013,7 +1012,6 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
 
-    // Terminatore lunare continuo (0 -> 1)
     if (illumination && typeof illumination.phase !== 'undefined') {
         const phase = illumination.phase; 
         const d = r * Math.cos(phase * tau);
@@ -1078,7 +1076,6 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     drawRealisticMoon('moon-clock-canvas', illumination, 32);
     drawRealisticSun('sun-clock-canvas');
 
-    // Aggiornamento tendina grande (modal-moon)
     drawRealisticMoon('big-moon-canvas', illumination, 180);
     const bigTitleEl = document.getElementById('big-moon-phase-title');
     const bigDateEl = document.getElementById('big-moon-date-display');
@@ -1129,7 +1126,7 @@ function populateTable(times, moonTimes, illumination) {
 
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
-            <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+            <tr class="table-section-header"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
             <tr style="background: #000000; color: #ffffff;"><td>Mezzanotte solare</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>----</td></tr>
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Alba Nautica</td><td>----</td></tr>
@@ -1145,7 +1142,7 @@ function populateTable(times, moonTimes, illumination) {
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
             
-            <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+            <tr class="table-section-header"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>----</td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>----</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>----</b></td></tr>
@@ -1186,10 +1183,10 @@ function populateTable(times, moonTimes, illumination) {
     });
 
     tbody.innerHTML = `
-        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+        <tr class="table-section-header"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
 
-        <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+        <tr class="table-section-header"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
