@@ -133,6 +133,10 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
+// Caricamento dell'immagine reale della Luna Piena
+const realMoonImage = new Image();
+realMoonImage.src = 'moon-texture.jpg'; // Assicurati di avere l'immagine nella stessa cartella con questo nome
+
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
     localStorage.setItem('sunclock_auto_dst', urlParams.get('auto'));
@@ -973,7 +977,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione drawRealisticMoon scalabile (supporta sia 32px che 180px per la tendina)
+// Funzione drawRealisticMoon aggiornata con la foto reale della Luna e le fasi dinamiche
 function drawRealisticMoon(canvasId, illumination, size = 32) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -997,21 +1001,20 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    let bgGrad = ctxMoon.createRadialGradient(cxCenter - r * 0.3, cyCenter - r * 0.3, r * 0.1, cxCenter, cyCenter, r);
-    bgGrad.addColorStop(0, '#f1f5f9');
-    bgGrad.addColorStop(0.4, '#cbd5e1');
-    bgGrad.addColorStop(0.8, '#64748b');
-    bgGrad.addColorStop(1, '#334155');
-    ctxMoon.fillStyle = bgGrad;
-    ctxMoon.fillRect(0, 0, width, height);
+    // Se l'immagine reale della luna è caricata, la usa come base; altrimenti usa il fallback sfumato
+    if (realMoonImage.complete && realMoonImage.naturalWidth !== 0) {
+        ctxMoon.drawImage(realMoonImage, cxCenter - r, cyCenter - r, r * 2, r * 2);
+    } else {
+        let bgGrad = ctxMoon.createRadialGradient(cxCenter - r * 0.3, cyCenter - r * 0.3, r * 0.1, cxCenter, cyCenter, r);
+        bgGrad.addColorStop(0, '#f1f5f9');
+        bgGrad.addColorStop(0.4, '#cbd5e1');
+        bgGrad.addColorStop(0.8, '#64748b');
+        bgGrad.addColorStop(1, '#334155');
+        ctxMoon.fillStyle = bgGrad;
+        ctxMoon.fillRect(0, 0, width, height);
+    }
 
-    ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.35)';
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
-    ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
-
+    // Sovrappone l'ombra della fase calcolata da SunCalc
     if (illumination && typeof illumination.phase !== 'undefined') {
         const phase = illumination.phase; 
         const d = r * Math.cos(phase * tau);
@@ -1076,7 +1079,9 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     drawRealisticMoon('moon-clock-canvas', illumination, 32);
     drawRealisticSun('sun-clock-canvas');
 
-    drawRealisticMoon('big-moon-canvas', illumination, 180);
+    // Impostata a 140px per non farla troppo grossa ma ben visibile e definita nel modale
+    drawRealisticMoon('big-moon-canvas', illumination, 140);
+    
     const bigTitleEl = document.getElementById('big-moon-phase-title');
     const bigDateEl = document.getElementById('big-moon-date-display');
     if (bigTitleEl) bigTitleEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
