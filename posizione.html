@@ -1222,7 +1222,7 @@
             const phasePct = Math.round(illumination.fraction * 100);
             
             const events = [
-                { name: "Mezzanotte solare", date: times.nadir, bg: "rgba(30, 41, 59, 0.5)" },
+                { name: "Mezzanotte solare", date: times.nadir, bg: "#000000" },
                 { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
                 { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.6)" },
                 { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.4)" },
@@ -1255,10 +1255,10 @@
                 <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 ${solarRowsHtml}
 
-                <tr style="background: rgba(30, 41, 59, 0.9); color: #38bdf8;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
-                <tr style="background: transparent; color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
-                <tr style="background: transparent; color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
-                <tr style="background: transparent; color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
+                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
             `;
         }
 
