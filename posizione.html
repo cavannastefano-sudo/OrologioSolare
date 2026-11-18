@@ -8,8 +8,9 @@
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
     
-    <!-- Libreria per i calcoli solari e lunari -->
+    <!-- Libreria per i calcoli solari e SunCalc3 per i calcoli lunari avanzati -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/suncalc3@0.2.0/suncalc3.js"></script>
     
     <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -43,7 +44,6 @@
             user-select: none;
         }
         
-        /* Stile per il logo di CavanWeb nell'angolo sinistro */
         .logo-link {
             display: inline-block;
             width: 38px;
@@ -100,7 +100,6 @@
             background: rgba(0,0,0,0.5);
         }
 
-        /* Stile per i pulsanti freccia < > */
         .step-btn {
             background: rgba(0,0,0,0.3);
             color: #facc15;
@@ -287,9 +286,7 @@
             box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
             z-index: 12; 
         } 
-        #hand-hour::after {
-            content: none !important;
-        }
+        #hand-hour::after { content: none !important; }
 
         #hand-minute { 
             width: 4px; height: 42%; 
@@ -305,9 +302,7 @@
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
         }
-        #hand-moon::after {
-            content: none !important;
-        }
+        #hand-moon::after { content: none !important; }
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
@@ -336,17 +331,10 @@
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             font-weight: bold;
-            cursor: pointer;
-            line-height: 1.35;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            transition: background 0.2s ease;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: center;
-        }
-        .info-panel-box:hover {
-            background: rgba(0,0,0,0.4);
         }
 
         .info-grid {
@@ -362,7 +350,6 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Stile personalizzato per rendere didascalie e orari della luna bianchi, in grassetto e senza bordo */
         .moon-grid-item {
             color: #ffffff !important;
             font-size: 0.82rem;
@@ -397,6 +384,12 @@
         table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
         table.times-table th { color: #38bdf8; }
+        .table-section-header {
+            background: rgba(113, 63, 18, 0.8);
+            color: #facc15;
+            font-weight: bold;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -410,14 +403,12 @@
     </div>
 
     <header>
-        <!-- Logo CavanWeb nell'angolo sinistro -->
         <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
             <img src="SfondoN-512.png" alt="CavanWeb Logo">
         </a>
 
         <h1>SunClock24</h1>
 
-        <!-- Controllo Ora con frecce < > -->
         <div style="display: flex; align-items: center; gap: 3px;">
             <button class="step-btn" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
@@ -425,7 +416,6 @@
             <button class="step-btn" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
         </div>
 
-        <!-- Controllo Data con frecce < > -->
         <div class="header-box">
             <button class="step-btn" onclick="changeDate(-1)" title="Un giorno indietro">&lt;</button>
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
@@ -452,14 +442,15 @@
     </div>
 
     <div id="bottom-panels-container">
-        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+        <div class="info-panel-box">
+            <!-- Riga superiore divisibile: clic sulla micro-luna apre la tabella orari, clic sul testo apre il modale lunare -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
-                <canvas id="moon-canvas" width="24" height="24"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
+                <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Apri tabella orari"></canvas>
+                <span id="moon-phase-name" onclick="toggleMoonModal(true)" style="font-size: 0.95rem; color: #facc15; font-weight: bold; cursor: pointer; text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;" title="Apri dettaglio lunare">Caricamento...</span>
             </div>
 
-            <div id="location-text">Ricerca posizione in corso...</div>
-            <div class="info-grid">
+            <div id="location-text" onclick="toggleTimesModal(true)" style="cursor: pointer;">Ricerca posizione in corso...</div>
+            <div class="info-grid" onclick="toggleTimesModal(true)" style="cursor: pointer;">
                 <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
                 <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
                 <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
@@ -468,7 +459,8 @@
         </div>
     </div>
 
-    <div id="modal-times" class="modal">
+    <!-- Modale Tabella Tempi Solari e Lunari -->
+    <div id="modal-times" class="modal" onclick="if(event.target === this) toggleTimesModal(false);">
         <div class="modal-content">
             <div class="modal-header">
                 <strong>Tutti i tempi solari e lunari</strong>
@@ -478,6 +470,42 @@
                 <thead><tr><th>Evento</th><th>Tempo</th></tr></thead>
                 <tbody id="times-table-body"></tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Modale Dettaglio Lunare Avanzato -->
+    <div id="modal-moon" class="modal" onclick="if(event.target === this) toggleMoonModal(false);">
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-moon" style="color: #facc15;"></i>
+                    <strong style="color: #facc15;">Dettaglio Lunare</strong>
+                </span>
+                <button class="close-btn" onclick="toggleMoonModal(false)">✕</button>
+            </div>
+            
+            <div style="margin: 15px 0; display: flex; justify-content: center;">
+                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: 3px solid #facc15; box-shadow: 0 0 15px rgba(250,204,21,0.5);"></canvas>
+            </div>
+
+            <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #facc15; margin-bottom: 4px;">--</div>
+            <div id="big-moon-date-display" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">--</div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #334155;">
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 2px;">Modifica rapida data/ora</div>
+                <div style="display: flex; justify-content: center; gap: 6px; align-items: center;">
+                    <button class="step-btn" onclick="changeDate(-1)" style="font-size: 0.8rem; padding: 4px 8px;">-1g</button>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Giorni</span>
+                    <button class="step-btn" onclick="changeDate(1)" style="font-size: 0.8rem; padding: 4px 8px;">+1g</button>
+                </div>
+                <div style="display: flex; justify-content: center; gap: 6px; align-items: center;">
+                    <button class="step-btn" onclick="changeHour(-1)" style="font-size: 0.8rem; padding: 4px 8px;">-1h</button>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Ore</span>
+                    <button class="step-btn" onclick="changeHour(1)" style="font-size: 0.8rem; padding: 4px 8px;">+1h</button>
+                </div>
+            </div>
+
+            <button onclick="resetToNow(); toggleMoonModal(false);" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
         </div>
     </div>
 
@@ -510,6 +538,10 @@
         let selectedDate = new Date();
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
+
+        // Caricamento dell'immagine reale della Luna (luna.jpg)
+        const realMoonImage = new Image();
+        realMoonImage.src = 'luna.jpg';
 
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
@@ -738,7 +770,11 @@
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
             cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-            cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
+            
+            // Utilizzo di SunCalc3 per i dati lunari avanzati
+            cachedMoonIllumination = (typeof SunCalc3 !== 'undefined' && SunCalc3.getMoonIllumination) 
+                ? SunCalc3.getMoonIllumination(utcCalculationDate) 
+                : SunCalc.getMoonIllumination(utcCalculationDate);
 
             updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
@@ -1109,17 +1145,18 @@
             ctxSun.stroke();
         }
 
-        function drawRealisticMoon(canvasId, illumination) {
+        // Funzione drawRealisticMoon integrata con foto reale luna.jpg e zoom ottimizzato 1.55
+        function drawRealisticMoon(canvasId, illumination, size = 32) {
             const canvasMoon = document.getElementById(canvasId);
             if (!canvasMoon) return;
             
-            canvasMoon.width = 32;
-            canvasMoon.height = 32;
+            canvasMoon.width = size;
+            canvasMoon.height = size;
             
             const ctxMoon = canvasMoon.getContext('2d');
             const width = canvasMoon.width;
             const height = canvasMoon.height;
-            const r = width / 2 - 2;
+            const r = width / 2 - (size > 50 ? 4 : 2);
             const cxCenter = width / 2;
             const cyCenter = height / 2;
             const tau = Math.PI * 2;
@@ -1132,28 +1169,56 @@
             ctxMoon.closePath();
             ctxMoon.clip();
 
-            let bgGrad = ctxMoon.createRadialGradient(cxCenter - 5, cyCenter - 5, 2, cxCenter, cyCenter, r);
-            bgGrad.addColorStop(0, '#f1f5f9');
-            bgGrad.addColorStop(0.4, '#cbd5e1');
-            bgGrad.addColorStop(0.8, '#64748b');
-            bgGrad.addColorStop(1, '#334155');
-            ctxMoon.fillStyle = bgGrad;
-            ctxMoon.fillRect(0, 0, width, height);
+            if (realMoonImage.complete && realMoonImage.naturalWidth !== 0) {
+                const zoomFactor = 1.55;
+                const drawSize = r * 2 * zoomFactor;
+                const offset = (drawSize - (r * 2)) / 2;
+                ctxMoon.drawImage(realMoonImage, (cxCenter - r) - offset, (cyCenter - r) - offset, drawSize, drawSize);
+            } else {
+                let bgGrad = ctxMoon.createRadialGradient(cxCenter - r * 0.3, cyCenter - r * 0.3, r * 0.1, cxCenter, cyCenter, r);
+                bgGrad.addColorStop(0, '#f1f5f9');
+                bgGrad.addColorStop(0.4, '#cbd5e1');
+                bgGrad.addColorStop(0.8, '#64748b');
+                bgGrad.addColorStop(1, '#334155');
+                ctxMoon.fillStyle = bgGrad;
+                ctxMoon.fillRect(0, 0, width, height);
+            }
 
-            ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.35)';
-            ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
-            ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
-            ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
-            ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
-            ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
+            if (illumination && typeof illumination.phase !== 'undefined') {
+                const phase = illumination.phase; 
+                const d = r * Math.cos(phase * tau);
+                
+                ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)';
+                ctxMoon.beginPath();
+                
+                const isWaxing = phase <= 0.5;
+                ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, isWaxing);
+                
+                let outerRx = Math.abs(d);
+                let sweepFlag = (d >= 0) === isWaxing;
+                ctxMoon.ellipse(cxCenter, cyCenter, outerRx, r, 0, Math.PI / 2, -Math.PI / 2, sweepFlag);
+                
+                ctxMoon.closePath();
+                ctxMoon.fill();
+            }
 
             ctxMoon.restore();
 
             ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            ctxMoon.lineWidth = 1.5;
+            ctxMoon.lineWidth = size > 50 ? 2 : 1.5;
             ctxMoon.beginPath();
             ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
             ctxMoon.stroke();
+        }
+
+        function toggleMoonModal(show) {
+            const modal = document.getElementById('modal-moon');
+            if (modal) {
+                modal.style.display = show ? 'flex' : 'none';
+                if (show && cachedMoonIllumination && cachedMoonTimes) {
+                    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+                }
+            }
         }
 
         function updateMoonDigitalPanel(illumination, moonTimes) {
@@ -1177,9 +1242,20 @@
             if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
             if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
-            drawRealisticMoon('moon-canvas', illumination);
-            drawRealisticMoon('moon-clock-canvas', illumination);
+            drawRealisticMoon('moon-canvas', illumination, 24);
+            drawRealisticMoon('moon-clock-canvas', illumination, 32);
             drawRealisticSun('sun-clock-canvas');
+
+            drawRealisticMoon('big-moon-canvas', illumination, 140);
+            
+            const bigTitleEl = document.getElementById('big-moon-phase-title');
+            const bigDateEl = document.getElementById('big-moon-date-display');
+            if (bigTitleEl) bigTitleEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+            if (bigDateEl && selectedDate) {
+                const dStr = `${String(selectedDate.getUTCDate()).padStart(2, '0')}/${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}/${selectedDate.getUTCFullYear()}`;
+                const tStr = `${String(selectedDate.getUTCHours()).padStart(2, '0')}:${String(selectedDate.getUTCMinutes()).padStart(2, '0')}`;
+                bigDateEl.innerText = `${dStr} - ${tStr}`;
+            }
         }
 
         function getNextEventIndex(times, refDate) {
@@ -1219,7 +1295,7 @@
 
         function populateTable(times, moonTimes, illumination) {
             const tbody = document.getElementById('times-table-body');
-            const phasePct = Math.round(illumination.fraction * 100);
+            const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
             
             const events = [
                 { name: "Mezzanotte solare", date: times.nadir, bg: "#000000" },
@@ -1252,10 +1328,10 @@
             });
 
             tbody.innerHTML = `
-                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+                <tr class="table-section-header"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 ${solarRowsHtml}
 
-                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr class="table-section-header"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
@@ -1294,16 +1370,11 @@
             const secDeg = (s / 60) * 360;
             document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
-            let utcCalculationDate = new Date(selectedDate.getTime() - (cityOffsetHours * 3600000));
-
-            const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-            const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-            
-            const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
-            let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
-            
-            let moonEquivalentHour = (h + moonHourOffset) % 24;
-            if (moonEquivalentHour < 0) moonEquivalentHour += 24;
+            let moonEquivalentHour = h;
+            if (cachedMoonIllumination && typeof cachedMoonIllumination.phase !== 'undefined') {
+                let phaseOffsetHours = cachedMoonIllumination.phase * 24;
+                moonEquivalentHour = (h + phaseOffsetHours) % 24;
+            }
 
             const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
             document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
