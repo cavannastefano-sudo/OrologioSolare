@@ -133,9 +133,9 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Caricamento dell'immagine reale della Luna Piena
+// Caricamento dell'immagine reale della Luna con il nome corretto luna.jpg
 const realMoonImage = new Image();
-realMoonImage.src = 'moon-texture.jpg'; // Assicurati di avere l'immagine nella stessa cartella con questo nome
+realMoonImage.src = 'luna.jpg';
 
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('auto')) {
@@ -977,7 +977,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione drawRealisticMoon aggiornata con la foto reale della Luna e le fasi dinamiche
+// Funzione drawRealisticMoon aggiornata con la foto reale luna.jpg e le fasi dinamiche
 function drawRealisticMoon(canvasId, illumination, size = 32) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
