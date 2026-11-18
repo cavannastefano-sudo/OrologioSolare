@@ -318,17 +318,12 @@
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             font-weight: bold;
-            cursor: pointer;
             line-height: 1.35;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            transition: background 0.2s ease;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: center;
-        }
-        .info-panel-box:hover {
-            background: rgba(0,0,0,0.4);
         }
 
         .info-grid {
@@ -441,20 +436,22 @@
     </div>
 
     <div id="bottom-panels-container">
-        <!-- Cliccando qui si apre la tendina con TUTTI gli orari (come prima) -->
-        <div class="info-panel-box" onclick="toggleTimesModal(true)">
+        <div class="info-panel-box">
+            <!-- Riga Superiore: micro-luna apre gli orari, il testo della fase apre la tendina della Luna -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
-                <!-- Cliccando sull'icona della luna si apre la tendina grande con le freccine -->
-                <canvas id="moon-canvas" width="24" height="24" onclick="event.stopPropagation(); toggleMoonModal(true);" title="Clicca per aprire il dettaglio lunare"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
+                <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari"></canvas>
+                <span id="moon-phase-name" onclick="toggleMoonModal(true)" style="font-size: 0.95rem; color: #facc15; font-weight: bold; cursor: pointer;" title="Clicca per aprire il dettaglio lunare">Caricamento...</span>
             </div>
 
-            <div id="location-text">Ricerca posizione in corso...</div>
-            <div class="info-grid">
-                <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
-                <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
-                <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
-                <div class="moon-grid-item">Tramonta (luna):<br><span id="moon-set">--:--</span></div>
+            <!-- Resto del riquadro: Cliccando qui si apre la tendina degli orari completi -->
+            <div onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Clicca per aprire tutti i tempi solari e lunari">
+                <div id="location-text">Ricerca posizione in corso...</div>
+                <div class="info-grid">
+                    <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
+                    <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
+                    <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
+                    <div class="moon-grid-item">Tramonta (luna):<br><span id="moon-set">--:--</span></div>
+                </div>
             </div>
         </div>
     </div>
@@ -494,6 +491,7 @@
         </div>
     </div>
 
+    <!-- Modale Tabella Tutti i Tempi -->
     <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -507,6 +505,7 @@
         </div>
     </div>
 
+    <!-- Modale Impostazioni -->
     <div id="modal-settings" class="modal">
         <div class="modal-content">
             <div class="modal-header">
