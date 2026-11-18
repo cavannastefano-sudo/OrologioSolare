@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Aggiornato con SunCalc3 & Fix Fusi/Giorni)
+// SunClock24 - script.js (Con Fase Lunare Grafica & SunCalc3)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -560,7 +560,6 @@ async function getPlaceNameAndRedirect(lat, lon) {
 function getCompleteMoonTimes(date, lat, lon) {
     let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
     
-    // Supporto SunCalc3 con fallback su getMoonTimes standard
     let times = (typeof SunCalc.getMoonTimes === 'function') ? SunCalc.getMoonTimes(targetDate, lat, lon) : {};
     let rise = times.rise;
     let set = times.set;
@@ -604,7 +603,7 @@ function updateSunClock(lat, lon) {
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
     
-    // Integrazione SunCalc3: getMoonIllumination / getMoonData compatibili
+    // Sfruttiamo suncalc3 per ottenere i dati di fase precisi
     cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -976,6 +975,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
+// Funzione con rendering geometrico corretto della fase lunare (usando suncalc3 / illumination)
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -999,6 +999,7 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
+    // Sfondo illuminato della luna
     let bgGrad = ctxMoon.createRadialGradient(cxCenter - 5, cyCenter - 5, 2, cxCenter, cyCenter, r);
     bgGrad.addColorStop(0, '#f1f5f9');
     bgGrad.addColorStop(0.4, '#cbd5e1');
@@ -1007,12 +1008,29 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.fillStyle = bgGrad;
     ctxMoon.fillRect(0, 0, width, height);
 
+    // Crateretti di texture
     ctxMoon.fillStyle = 'rgba(30, 41, 59, 0.35)';
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.42, height * 0.38, r * 0.32, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.28, height * 0.55, r * 0.28, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
+
+    // Applicazione della falce d'ombra basata sulla fase (SunCalc3 / phase)
+    if (illumination && typeof illumination.phase !== 'undefined') {
+        const phase = illumination.phase; // 0 = Nuova, 0.25 = Primo Quarto, 0.5 = Piena, 0.75 = Ultimo Quarto
+        
+        ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)'; // Ombra scura
+        ctxMoon.beginPath();
+        
+        ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, phase > 0.5);
+        
+        let angleFactor = Math.cos(phase * tau);
+        ctxMoon.ellipse(cxCenter, cyCenter, Math.abs(r * angleFactor), r, 0, Math.PI / 2, -Math.PI / 2, phase <= 0.5);
+        
+        ctxMoon.closePath();
+        ctxMoon.fill();
+    }
 
     ctxMoon.restore();
 
