@@ -344,12 +344,20 @@
             margin-top: 8px;
             font-size: 1.15rem;
         }
+        
+        /* Stili ripristinati per le etichette solari */
+        .info-grid > div {
+            color: #39ff14;
+            font-weight: bold;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
         .info-grid span { 
             color: #39ff14; 
             font-weight: bold; 
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
+        /* Stile specifico per le scritte lunari in basso (bianche e senza bordo) */
         .moon-grid-item {
             color: #ffffff !important;
             font-size: 0.82rem;
@@ -384,11 +392,14 @@
         table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
         table.times-table th { color: #38bdf8; }
+        
+        /* Intestazioni delle sezioni con testo in rosso come richiesto */
         .table-section-header {
             background: rgba(113, 63, 18, 0.8);
-            color: #facc15;
+            color: #ff0000;
             font-weight: bold;
             text-align: center;
+            text-shadow: 0 0 4px rgba(0,0,0,0.8);
         }
     </style>
 </head>
@@ -443,7 +454,6 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box">
-            <!-- Riga superiore divisibile: clic sulla micro-luna apre la tabella orari, clic sul testo apre il modale lunare -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
                 <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Apri tabella orari"></canvas>
                 <span id="moon-phase-name" onclick="toggleMoonModal(true)" style="font-size: 0.95rem; color: #facc15; font-weight: bold; cursor: pointer; text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;" title="Apri dettaglio lunare">Caricamento...</span>
