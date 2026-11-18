@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Dati lunari modificati)
+// SunClock24 - script.js (Fase Lunare Geometrica Corretta)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -602,7 +602,7 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
 
@@ -973,6 +973,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
+// Funzione drawRealisticMoon con calcolo corretto e progressivo della fase lunare
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1010,6 +1011,25 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
+
+    // Gestione geometrica corretta del terminatore lunare in base alla fase (0 -> 1)
+    if (illumination && typeof illumination.phase !== 'undefined') {
+        const phase = illumination.phase; 
+        
+        ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)';
+        ctxMoon.beginPath();
+        
+        // Emisfero d'ombra basato sul fatto che sia crescente (<= 0.5) o calante (> 0.5)
+        const isWaxing = phase <= 0.5;
+        ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, isWaxing);
+        
+        // Fattore di curvatura progressivo basato sul coseno della fase per evitare inversioni errate
+        let curvature = Math.cos(phase * tau);
+        ctxMoon.ellipse(cxCenter, cyCenter, Math.abs(r * curvature), r, 0, Math.PI / 2, -Math.PI / 2, !isWaxing);
+        
+        ctxMoon.closePath();
+        ctxMoon.fill();
+    }
 
     ctxMoon.restore();
 
@@ -1188,28 +1208,11 @@ function updateHands() {
     const secDeg = (s / 60) * 360;
     document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
 
+    // Calcolo della posizione della luna basato rigorosamente sulla fase (elongazione rispetto al sole)
     let moonEquivalentHour = h;
-    if (cachedMoonTimes && isValidDate(cachedMoonTimes.rise) && isValidDate(cachedMoonTimes.set)) {
-        let riseH = timeToHours(cachedMoonTimes.rise);
-        let setH = timeToHours(cachedMoonTimes.set);
-        if (riseH !== null && setH !== null) {
-            let transitH = (riseH + setH) / 2;
-            if (setH < riseH) transitH = (riseH + setH + 24) / 2;
-            moonEquivalentHour = transitH % 24;
-        }
-    } else {
-        const baseOffset = getBaseLocationOffset();
-        let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
-        utcCalculationDate.setUTCHours(12, 0, 0, 0);
-
-        const moonPos = SunCalc.getMoonPosition(utcCalculationDate, cachedLat, cachedLon);
-        const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-        
-        const diffAzimuth = moonPos.azimuth - sunPos.azimuth;
-        let moonHourOffset = (diffAzimuth / (2 * Math.PI)) * 24;
-        
-        moonEquivalentHour = (h + moonHourOffset) % 24;
-        if (moonEquivalentHour < 0) moonEquivalentHour += 24;
+    if (cachedMoonIllumination && typeof cachedMoonIllumination.phase !== 'undefined') {
+        let phaseOffsetHours = cachedMoonIllumination.phase * 24;
+        moonEquivalentHour = (h + phaseOffsetHours) % 24;
     }
 
     const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
