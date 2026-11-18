@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Dati lunari modificati)
+// SunClock24 - script.js (Aggiornato con SunCalc3 & Fix Fusi/Giorni)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -560,7 +560,8 @@ async function getPlaceNameAndRedirect(lat, lon) {
 function getCompleteMoonTimes(date, lat, lon) {
     let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
     
-    let times = SunCalc.getMoonTimes(targetDate, lat, lon);
+    // Supporto SunCalc3 con fallback su getMoonTimes standard
+    let times = (typeof SunCalc.getMoonTimes === 'function') ? SunCalc.getMoonTimes(targetDate, lat, lon) : {};
     let rise = times.rise;
     let set = times.set;
 
@@ -602,7 +603,9 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
+    
+    // Integrazione SunCalc3: getMoonIllumination / getMoonData compatibili
+    cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
 
