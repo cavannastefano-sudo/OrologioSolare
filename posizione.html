@@ -44,6 +44,7 @@
             user-select: none;
         }
         
+        /* Stile per il logo di CavanWeb nell'angolo sinistro */
         .logo-link {
             display: inline-block;
             width: 38px;
@@ -100,6 +101,7 @@
             background: rgba(0,0,0,0.5);
         }
 
+        /* Stile per i pulsanti freccia < > */
         .step-btn {
             background: rgba(0,0,0,0.3);
             color: #facc15;
@@ -286,7 +288,9 @@
             box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
             z-index: 12; 
         } 
-        #hand-hour::after { content: none !important; }
+        #hand-hour::after {
+            content: none !important;
+        }
 
         #hand-minute { 
             width: 4px; height: 42%; 
@@ -302,7 +306,9 @@
             box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
             z-index: 9; 
         }
-        #hand-moon::after { content: none !important; }
+        #hand-moon::after {
+            content: none !important;
+        }
 
         #center-dot {
             position: absolute; width: 14px; height: 14px;
@@ -320,18 +326,18 @@
             box-sizing: border-box;
         }
 
-        /* Riquadro inferiore identico allo screenshot 1 */
         .info-panel-box {
             width: 100%;
-            background: rgba(0, 0, 0, 0.45);
+            background: rgba(0,0,0,0.25);
             padding: 10px 12px;
-            border-radius: 8px;
+            border-radius: 6px;
             font-size: 1.05rem;
             color: #39ff14;
             text-align: center;
             border: 2px solid #334155;
             box-shadow: 0 4px 12px rgba(0,0,0,0.8);
             font-weight: bold;
+            line-height: 1.35;
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
             box-sizing: border-box;
             display: flex;
@@ -344,11 +350,10 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            margin-bottom: 8px;
-            border-bottom: 1px solid rgba(51, 65, 85, 0.8);
-            padding-bottom: 8px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(51,65,85,0.6);
+            padding-bottom: 6px;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
         .moon-header-trigger:hover {
             opacity: 0.85;
@@ -357,15 +362,9 @@
         .info-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 10px;
+            gap: 6px;
+            margin-top: 8px;
             font-size: 1.15rem;
-        }
-        
-        .info-grid > div {
-            color: #39ff14;
-            font-weight: bold;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
         .info-grid span { 
             color: #39ff14; 
@@ -373,89 +372,50 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Dati lunari in basso in bianco pulito e grassetto */
+        /* Stile personalizzato per rendere didascalie e orari della luna bianchi, in grassetto e senza bordo */
         .moon-grid-item {
             color: #ffffff !important;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: bold !important;
             opacity: 1 !important;
-            line-height: 1.3;
+            line-height: 1.25;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
         }
         .moon-grid-item span {
             color: #ffffff !important;
-            font-size: 1.0rem !important;
+            font-size: 0.95rem !important;
             font-weight: bold !important;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
         }
 
-        /* Modali e tendine identici agli screenshot 2 e 3 */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.65); z-index: 100; justify-content: center; align-items: center;
+            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: #172033; padding: 20px; border-radius: 16px;
+            background: #1e293b; padding: 20px; border-radius: 12px;
             width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
-            border: 1px solid #334155; box-shadow: 0 15px 35px rgba(0,0,0,0.7); box-sizing: border-box; color: #f8fafc;
+            border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding-bottom: 10px; margin-bottom: 12px;
+            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
         }
-        .close-btn { 
-            background: none; border: none; color: #f8fafc; font-size: 1.35rem; cursor: pointer; 
-            display: flex; align-items: center; justify-content: center; padding: 0;
-        }
+        .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
         .close-btn-red {
-            background: #ef4444; color: #ffffff; border: none; border-radius: 8px;
-            width: 32px; height: 32px; font-size: 1rem; font-weight: bold; cursor: pointer;
+            background: #ef4444; color: #ffffff; border: none; border-radius: 6px;
+            width: 28px; height: 28px; font-size: 0.95rem; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
         }
-        .close-btn-red:hover {
-            background: #dc2626;
-        }
-
-        /* Pulsanti controllo rapido nel modale Luna identici allo screenshot 2 */
         .moon-step-btn {
-            background: #2b3544;
-            color: #ffffff;
-            border: 1px solid #475569;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            transition: background 0.2s;
+            background: #2b3544; color: #ffffff; border: 1px solid #475569;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
         }
-        .moon-step-btn:hover {
-            background: #3b4759;
-        }
-
-        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-        table.times-table th { 
-            padding: 8px 10px; color: #38bdf8; text-align: left; font-weight: bold; font-size: 0.95rem;
-        }
-        table.times-table td { 
-            padding: 8px 10px; border-bottom: 1px solid rgba(51, 65, 85, 0.5); text-align: left; 
-        }
-        
-        /* Intestazioni delle sezioni con barra rossa piena e testo bianco come nello screenshot 3 */
-        .table-section-header td {
-            background: #dc2626 !important;
-            color: #ffffff !important;
-            font-weight: bold;
-            text-align: left;
-            padding: 8px 10px !important;
-            border-bottom: none !important;
-            font-size: 0.92rem;
-        }
+        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+        table.times-table th { color: #38bdf8; }
     </style>
 </head>
 <body>
@@ -469,12 +429,14 @@
     </div>
 
     <header>
+        <!-- Logo CavanWeb nell'angolo sinistro -->
         <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
             <img src="SfondoN-512.png" alt="CavanWeb Logo">
         </a>
 
         <h1>SunClock24</h1>
 
+        <!-- Controllo Ora con frecce < > -->
         <div style="display: flex; align-items: center; gap: 3px;">
             <button class="step-btn" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
@@ -482,6 +444,7 @@
             <button class="step-btn" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
         </div>
 
+        <!-- Controllo Data con frecce < > -->
         <div class="header-box">
             <button class="step-btn" onclick="changeDate(-1)" title="Un giorno indietro">&lt;</button>
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
@@ -509,14 +472,14 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box">
-            <!-- Cliccando su tutta questa barra superiore si apre il modale Dettaglio Lunare -->
+            <!-- Barra superiore: Cliccando qui si apre la tendina Dettaglio Lunare -->
             <div class="moon-header-trigger" onclick="toggleMoonModal(true)" title="Apri dettaglio lunare">
                 <canvas id="moon-canvas" width="24" height="24"></canvas>
-                <span id="moon-phase-name" style="font-size: 0.98rem; color: #facc15; font-weight: bold;">Caricamento...</span>
+                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
             </div>
 
-            <!-- Cliccando su località o orari si apre la tabella Tutti i tempi solari e lunari -->
-            <div onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Apri tutti i tempi solari e lunari">
+            <!-- Parte inferiore: Cliccando qui si apre la tendina Tutti i tempi solari e lunari -->
+            <div onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Apri tabella orari">
                 <div id="location-text">Ricerca posizione in corso...</div>
                 <div class="info-grid">
                     <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
@@ -528,11 +491,11 @@
         </div>
     </div>
 
-    <!-- Tendina 1: Tutti i tempi solari e lunari (identica allo screenshot 3) -->
+    <!-- Tendina 1: Tutti i tempi solari e lunari -->
     <div id="modal-times" class="modal" onclick="if(event.target === this) toggleTimesModal(false);">
-        <div class="modal-content" style="padding: 16px;">
-            <div class="modal-header" style="border-bottom: none; margin-bottom: 6px;">
-                <strong style="font-size: 1.15rem; color: #ffffff;">Tutti i tempi solari e lunari</strong>
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Tutti i tempi solari e lunari</strong>
                 <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
             </div>
             <table class="times-table">
@@ -542,38 +505,39 @@
         </div>
     </div>
 
-    <!-- Tendina 2: Dettaglio Lunare (identica allo screenshot 2) -->
+    <!-- Tendina 2: Dettaglio Lunare Avanzato -->
     <div id="modal-moon" class="modal" onclick="if(event.target === this) toggleMoonModal(false);">
-        <div class="modal-content" style="text-align: center; background: #141c2f;">
-            <div class="modal-header" style="border-bottom: none; margin-bottom: 4px;">
-                <span style="display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-moon" style="color: #facc15; font-size: 1.15rem;"></i>
-                    <strong style="color: #facc15; font-size: 1.15rem;">Dettaglio Lunare</strong>
+        <div class="modal-content" style="text-align: center;">
+            <div class="modal-header">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-moon" style="color: #facc15;"></i>
+                    <strong style="color: #facc15;">Dettaglio Lunare</strong>
                 </span>
                 <button class="close-btn-red" onclick="toggleMoonModal(false)">✕</button>
             </div>
             
-            <div style="margin: 14px 0; display: flex; justify-content: center;">
-                <canvas id="big-moon-canvas" width="144" height="144" style="border-radius: 50%; box-shadow: 0 0 18px rgba(255, 255, 255, 0.25);"></canvas>
+            <div style="margin: 15px 0; display: flex; justify-content: center;">
+                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: 3px solid #facc15; box-shadow: 0 0 15px rgba(250,204,21,0.5);"></canvas>
             </div>
 
-            <div id="big-moon-phase-title" style="font-size: 1.2rem; font-weight: bold; color: #ffffff; margin-bottom: 4px;">--</div>
-            <div id="big-moon-date-display" style="font-size: 0.92rem; color: #94a3b8; margin-bottom: 16px;">--</div>
+            <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #facc15; margin-bottom: 4px;">--</div>
+            <div id="big-moon-date-display" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">--</div>
 
-            <div style="display: flex; flex-direction: column; gap: 10px; background: #1e283a; padding: 12px; border-radius: 12px; border: 1px solid #2d384d;">
+            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #334155;">
+                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 2px;">Modifica rapida data/ora</div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button class="moon-step-btn" onclick="changeDate(-1)">◀ -1g</button>
-                    <span style="font-size: 0.92rem; font-weight: bold; color: #ffffff;">Giorni</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Giorni</span>
                     <button class="moon-step-btn" onclick="changeDate(1)">+1g ▶</button>
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button class="moon-step-btn" onclick="changeHour(-1)">◀ -1h</button>
-                    <span style="font-size: 0.92rem; font-weight: bold; color: #ffffff;">Ore</span>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Ore</span>
                     <button class="moon-step-btn" onclick="changeHour(1)">+1h ▶</button>
                 </div>
             </div>
 
-            <button onclick="resetToNow(); toggleMoonModal(false);" style="width: 100%; margin-top: 14px; padding: 12px; background: #3b82f6; color: #ffffff; border: none; border-radius: 10px; font-size: 0.98rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">Torna ad Adesso</button>
+            <button onclick="resetToNow(); toggleMoonModal(false);" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
         </div>
     </div>
 
@@ -871,8 +835,8 @@
 
             document.getElementById('location-text').innerHTML = `
                 <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
-                <div style="font-size: 0.95rem; opacity: 0.95;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
-                <div style="font-size: 0.90rem; opacity: 0.95; margin-top: 2px;">${fusoText}</div>
+                <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
+                <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">${fusoText}</div>
             `;
 
             document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
@@ -1314,7 +1278,7 @@
             drawRealisticMoon('moon-clock-canvas', illumination, 32);
             drawRealisticSun('sun-clock-canvas');
 
-            drawRealisticMoon('big-moon-canvas', illumination, 144);
+            drawRealisticMoon('big-moon-canvas', illumination, 140);
             
             const bigTitleEl = document.getElementById('big-moon-phase-title');
             const bigDateEl = document.getElementById('big-moon-date-display');
@@ -1367,25 +1331,25 @@
             
             const events = [
                 { name: "Mezzanotte solare", date: times.nadir, bg: "#000000" },
-                { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.75)" },
-                { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.75)" },
-                { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.55)" },
-                { name: "Alba", date: times.sunrise, bg: "rgba(180, 83, 9, 0.65)" },
-                { name: "Fine dell'alba", date: times.sunriseEnd, bg: "rgba(161, 98, 7, 0.65)" },
-                { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, bg: "rgba(161, 98, 7, 0.75)" },
-                { name: "Mezzogiorno solare", date: times.solarNoon, bg: "rgba(100, 116, 139, 0.65); color: #ffffff;" },
-                { name: "Inizio dell'ora d'oro", date: times.goldenHour, bg: "rgba(161, 98, 7, 0.75)" },
-                { name: "Inizio del tramonto", date: times.sunsetStart, bg: "rgba(161, 98, 7, 0.65)" },
-                { name: "Tramonto", date: times.sunset, bg: "rgba(180, 83, 9, 0.65)" },
-                { name: "Crepuscolo civile", date: times.dusk, bg: "rgba(59, 130, 246, 0.55)" },
-                { name: "Crepuscolo nautico", date: times.nauticalDusk, bg: "rgba(30, 58, 138, 0.75)" },
-                { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.75)" }
+                { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
+                { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.6)" },
+                { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.4)" },
+                { name: "Alba", date: times.sunrise, bg: "rgba(249, 115, 22, 0.4)" },
+                { name: "Fine dell'alba", date: times.sunriseEnd, bg: "rgba(234, 179, 8, 0.4)" },
+                { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, bg: "rgba(234, 179, 8, 0.5)" },
+                { name: "Mezzogiorno solare", date: times.solarNoon, bg: "rgba(186, 230, 253, 0.3); color: #ffffff;" },
+                { name: "Inizio dell'ora d'oro", date: times.goldenHour, bg: "rgba(234, 179, 8, 0.5)" },
+                { name: "Inizio del tramonto", date: times.sunsetStart, bg: "rgba(234, 179, 8, 0.4)" },
+                { name: "Tramonto", date: times.sunset, bg: "rgba(249, 115, 22, 0.4)" },
+                { name: "Crepuscolo civile", date: times.dusk, bg: "rgba(59, 130, 246, 0.4)" },
+                { name: "Crepuscolo nautico", date: times.nauticalDusk, bg: "rgba(30, 58, 138, 0.6)" },
+                { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.6)" }
             ];
 
             let solarRowsHtml = "";
             events.forEach((ev, idx) => {
                 const isNext = (idx === lastHighlightedEventIndex);
-                const borderStyle = isNext ? "border: 2px solid #ffffff; font-weight: bold;" : "";
+                const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
                 
                 solarRowsHtml += `
                     <tr style="background: ${ev.bg}; ${borderStyle}">
@@ -1396,10 +1360,10 @@
             });
 
             tbody.innerHTML = `
-                <tr class="table-section-header"><td colspan="2">☀️ Dati Solari e Crepuscoli</td></tr>
+                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 ${solarRowsHtml}
 
-                <tr class="table-section-header"><td colspan="2">🌙 Dati Lunari</td></tr>
+                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
