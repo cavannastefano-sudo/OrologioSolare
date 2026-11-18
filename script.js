@@ -977,7 +977,7 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione drawRealisticMoon con zoom ottimizzato per riempire esattamente il cerchio
+// Funzione drawRealisticMoon con zoom ottimizzato (1.55) per riempire esattamente il cerchio
 function drawRealisticMoon(canvasId, illumination, size = 32) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1001,9 +1001,9 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     ctxMoon.closePath();
     ctxMoon.clip();
 
-    // Se l'immagine reale della luna è caricata, la disegna con zoom per coprire i bordi neri
+    // Se l'immagine reale della luna è caricata, la disegna con zoom a 1.55 per coprire i bordi neri
     if (realMoonImage.complete && realMoonImage.naturalWidth !== 0) {
-        const zoomFactor = 1.28;
+        const zoomFactor = 1.55;
         const drawSize = r * 2 * zoomFactor;
         const offset = (drawSize - (r * 2)) / 2;
         ctxMoon.drawImage(realMoonImage, (cxCenter - r) - offset, (cyCenter - r) - offset, drawSize, drawSize);
