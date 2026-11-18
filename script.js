@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (SunCalc Standard + SunCalc3 per Fase Lunare)
+// SunClock24 - script.js (Dati lunari modificati)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -602,9 +602,7 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    
-    // Utilizziamo SunCalc3 (tramite getMoonData se disponibile o getMoonIllumination) per ricavare la fase esatta
-    cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate);
+    cachedMoonIllumination = SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
 
@@ -975,7 +973,6 @@ function drawRealisticSun(canvasId) {
     ctxSun.stroke();
 }
 
-// Funzione drawRealisticMoon aggiornata con SunCalc3 per mostrare la fase geometrica corretta
 function drawRealisticMoon(canvasId, illumination) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -1013,22 +1010,6 @@ function drawRealisticMoon(canvasId, illumination) {
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.38, height * 0.25, r * 0.22, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.5, height * 0.7, r * 0.2, 0, tau); ctxMoon.fill();
     ctxMoon.beginPath(); ctxMoon.arc(width * 0.68, height * 0.55, r * 0.25, 0, tau); ctxMoon.fill();
-
-    // Sfruttiamo illumination.phase (fornito da SunCalc3) per il rendering della falce d'ombra
-    if (illumination && typeof illumination.phase !== 'undefined') {
-        const phase = illumination.phase;
-        
-        ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)';
-        ctxMoon.beginPath();
-        
-        ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, phase > 0.5);
-        
-        let angleFactor = Math.cos(phase * tau);
-        ctxMoon.ellipse(cxCenter, cyCenter, Math.abs(r * angleFactor), r, 0, Math.PI / 2, -Math.PI / 2, phase <= 0.5);
-        
-        ctxMoon.closePath();
-        ctxMoon.fill();
-    }
 
     ctxMoon.restore();
 
