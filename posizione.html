@@ -509,21 +509,20 @@
         <div class="modal-content" style="text-align: center;">
             <div class="modal-header">
                 <span style="display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-moon" style="color: #facc15;"></i>
-                    <strong style="color: #facc15;">Dettaglio Lunare</strong>
+                    <i class="fa-solid fa-moon" style="color: #ffffff;"></i>
+                    <strong style="color: #ffffff;">Dettaglio Lunare</strong>
                 </span>
                 <button class="close-btn-red" onclick="toggleMoonModal(false)">✕</button>
             </div>
             
             <div style="margin: 15px 0; display: flex; justify-content: center;">
-                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: 3px solid #facc15; box-shadow: 0 0 15px rgba(250,204,21,0.5);"></canvas>
+                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 15px rgba(255,255,255,0.4);"></canvas>
             </div>
 
-            <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #facc15; margin-bottom: 4px;">--</div>
-            <div id="big-moon-date-display" style="font-size: 1.15rem; font-weight: bold; color: #f8fafc; margin-bottom: 15px;">--</div>
+            <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 4px;">--</div>
+            <div id="big-moon-date-display" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 15px;">--</div>
 
-            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #334155;">
-                <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 2px;">Modifica rapida data/ora</div>
+            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button class="moon-step-btn" onclick="changeDate(-1)">◀ -1g</button>
                     <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Giorni</span>
@@ -574,8 +573,8 @@
         realMoonImage.src = 'luna.jpg';
 
         function getPreciseStandardTimezone(lat, lon) {
-            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-                if (lon < -168.9) {
+            if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
+                if (lon < -168.8) {
                     return 12; 
                 } else {
                     return -9; 
