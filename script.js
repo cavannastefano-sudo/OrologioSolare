@@ -1038,11 +1038,13 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
 
     ctxMoon.restore();
 
-    ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctxMoon.lineWidth = size > 50 ? 2 : 1.5;
-    ctxMoon.beginPath();
-    ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
-    ctxMoon.stroke();
+    if (size <= 50) {
+        ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctxMoon.lineWidth = 1.5;
+        ctxMoon.beginPath();
+        ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
+        ctxMoon.stroke();
+    }
 }
 
 function toggleMoonModal(show) {
@@ -1140,7 +1142,7 @@ function populateTable(times, moonTimes, illumination) {
 
     if (isTimezoneOnlyMode) {
         tbody.innerHTML = `
-            <tr class="table-section-header"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+            <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
             <tr style="background: #000000; color: #ffffff;"><td>Mezzanotte solare</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Alba astronomica</td><td>----</td></tr>
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Alba Nautica</td><td>----</td></tr>
@@ -1156,7 +1158,7 @@ function populateTable(times, moonTimes, illumination) {
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
             
-            <tr class="table-section-header"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+            <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>----</td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>----</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>----</b></td></tr>
@@ -1197,10 +1199,10 @@ function populateTable(times, moonTimes, illumination) {
     });
 
     tbody.innerHTML = `
-        <tr class="table-section-header"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+        <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
         ${solarRowsHtml}
 
-        <tr class="table-section-header"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+        <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
         <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
