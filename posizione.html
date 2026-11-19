@@ -372,7 +372,6 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Stile personalizzato per rendere didascalie e orari della luna bianchi, in grassetto e senza bordo */
         .moon-grid-item {
             color: #ffffff !important;
             font-size: 0.82rem;
@@ -521,7 +520,7 @@
             </div>
 
             <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #facc15; margin-bottom: 4px;">--</div>
-            <div id="big-moon-date-display" style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px;">--</div>
+            <div id="big-moon-date-display" style="font-size: 1.15rem; font-weight: bold; color: #f8fafc; margin-bottom: 15px;">--</div>
 
             <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; border: 1px solid #334155;">
                 <div style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 2px;">Modifica rapida data/ora</div>
@@ -571,13 +570,12 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
 
-        // Caricamento dell'immagine reale della Luna (luna.jpg)
         const realMoonImage = new Image();
         realMoonImage.src = 'luna.jpg';
 
         function getPreciseStandardTimezone(lat, lon) {
-            if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
-                if (lon < -168.8) {
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                if (lon < -168.9) {
                     return 12; 
                 } else {
                     return -9; 
@@ -621,7 +619,47 @@
             if (urlDst !== null) {
                 return urlDst === 'true';
             }
-            return document.getElementById('chk-dst').checked;
+
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+                if (typeof getEffectiveDST === 'function') {
+                    const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
+                    if (effective !== undefined) return effective;
+                }
+
+                try {
+                    if (typeof tzlookup === 'function') {
+                        const tzString = tzlookup(cachedLat, cachedLon);
+                        if (tzString.startsWith('Africa/')) return false;
+
+                        const now = selectedDate || new Date();
+                        const dtf = new Intl.DateTimeFormat('en-US', {
+                            timeZone: tzString,
+                            timeZoneName: 'shortOffset'
+                        });
+                        const parts = dtf.formatToParts(now);
+                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                        if (offsetPart) {
+                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                            if (match) {
+                                const currentOffset = parseInt(match[1], 10);
+                                const standardBaseOffset = getPreciseStandardTimezone(cachedLat, cachedLon);
+                                return currentOffset > standardBaseOffset;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
+            }
+
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        function getBaseLocationOffset() {
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const isDstNowActive = getCurrentDstState();
+            return standardTz + (isDstNowActive ? 1 : 0);
         }
 
         function initClock() {
@@ -658,9 +696,7 @@
             if (!isCustomTime) {
                 updateTimeForLocation();
             } else {
-                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-                const isDstNowActive = getCurrentDstState();
-                const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+                const cityOffsetHours = getBaseLocationOffset();
                 const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
                 customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
             }
@@ -668,9 +704,7 @@
         }
 
         function getEffectiveDate() {
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             return new Date(Date.now() + (cityOffsetHours * 3600000));
         }
 
@@ -689,12 +723,10 @@
         function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            selectedDate.setUTCFullYear(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            selectedDate.setUTCFullYear(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
             isCustomTime = true;
             
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
             customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
@@ -708,9 +740,7 @@
             selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
             isCustomTime = true;
             
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
             customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
@@ -722,9 +752,7 @@
             selectedDate.setUTCDate(selectedDate.getUTCDate() + days);
             isCustomTime = true;
 
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
             customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
@@ -736,9 +764,7 @@
             selectedDate.setUTCHours(selectedDate.getUTCHours() + hours);
             isCustomTime = true;
 
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
             customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
@@ -762,33 +788,41 @@
 
         function toTargetTime(date) {
             if (!isValidDate(date)) return null;
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
             return new Date(date.getTime() + (cityOffsetHours * 3600000));
         }
 
         function getCompleteMoonTimes(date, lat, lon) {
-            let times = SunCalc.getMoonTimes(date, lat, lon);
+            let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
+            
+            let times = SunCalc.getMoonTimes(targetDate, lat, lon);
             let rise = times.rise;
             let set = times.set;
 
-            if (!rise || !set || times.alwaysUp || times.alwaysDown) {
-                let dPrev = new Date(date);
-                dPrev.setDate(date.getDate() - 1);
+            let startDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
+            let endDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
+
+            if (!isValidDate(rise) || !isValidDate(set) || (rise < startDay || rise > endDay) || (set < startDay || set > endDay) || times.alwaysUp || times.alwaysDown) {
+                let dPrev = new Date(targetDate);
+                dPrev.setUTCDate(targetDate.getUTCDate() - 1);
                 let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
 
-                let dNext = new Date(date);
-                dNext.setDate(date.getDate() + 1);
+                let dNext = new Date(targetDate);
+                dNext.setUTCDate(targetDate.getUTCDate() + 1);
                 let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
 
-                if (!rise) {
-                    if (pTimes.rise && pTimes.rise > dPrev) rise = pTimes.rise;
-                    else if (nTimes.rise) rise = nTimes.rise;
+                if (!isValidDate(rise) || rise < startDay || rise > endDay) {
+                    if (isValidDate(pTimes.rise) && pTimes.rise >= startDay && pTimes.rise <= endDay) rise = pTimes.rise;
+                    else if (isValidDate(nTimes.rise) && nTimes.rise >= startDay && nTimes.rise <= endDay) rise = nTimes.rise;
+                    else if (isValidDate(pTimes.rise)) rise = pTimes.rise;
+                    else if (isValidDate(nTimes.rise)) rise = nTimes.rise;
                 }
-                if (!set) {
-                    if (pTimes.set && pTimes.set > dPrev) set = pTimes.set;
-                    else if (nTimes.set) set = nTimes.set;
+
+                if (!isValidDate(set) || set < startDay || set > endDay) {
+                    if (isValidDate(pTimes.set) && pTimes.set >= startDay && pTimes.set <= endDay) set = pTimes.set;
+                    else if (isValidDate(nTimes.set) && nTimes.set >= startDay && nTimes.set <= endDay) set = nTimes.set;
+                    else if (isValidDate(pTimes.set)) set = pTimes.set;
+                    else if (isValidDate(nTimes.set)) set = nTimes.set;
                 }
             }
             return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
@@ -797,18 +831,16 @@
         function updateSunClock(lat, lon) {
             const standardTz = getPreciseStandardTimezone(lat, lon);
             const isDstNowActive = getCurrentDstState();
-            const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
+            const totalTzOffset = getBaseLocationOffset();
             let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
+            utcCalculationDate.setUTCHours(12, 0, 0, 0);
 
             cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
             cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
             
-            // Utilizzo di SunCalc3 per i dati lunari avanzati
             cachedMoonIllumination = (typeof SunCalc3 !== 'undefined' && SunCalc3.getMoonIllumination) 
                 ? SunCalc3.getMoonIllumination(utcCalculationDate) 
-                : SunCalc.getMoonIllumination(utcCalculationDate);
-
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+                : ((typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate));
 
             ctx.clearRect(0, 0, 500, 500);
 
@@ -818,6 +850,8 @@
             drawMinuteRingSafe();
             drawClockNumbers();
             updatePageBackground(cachedTimes);
+
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
             
             lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
@@ -858,26 +892,22 @@
         }
 
         function drawMoonVisibilityArc(moonTimes, refDate) {
-            let rise = toTargetTime(moonTimes.rise);
-            let set = toTargetTime(moonTimes.set);
-
             if (moonTimes.alwaysUp) {
-                rise = new Date(refDate); rise.setUTCHours(0,0,0,0);
-                set = new Date(refDate); set.setUTCHours(23,59,59,999);
+                ctx.save();
+                ctx.beginPath();
+                let arcRadius = radius - 7;
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = '#64748b';
+                ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+                return;
             }
 
-            if (!isValidDate(rise) || !isValidDate(set)) return;
+            if (!isValidDate(moonTimes.rise) || !isValidDate(moonTimes.set)) return;
 
-            let startDayStart = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate()));
-            let startDayEnd = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), refDate.getUTCDate(), 23, 59, 59, 999));
-
-            let startH, endH;
-
-            if (rise < startDayStart) startH = 0;
-            else startH = timeToHours(moonTimes.rise);
-
-            if (set > startDayEnd) endH = 24;
-            else endH = timeToHours(moonTimes.set);
+            let startH = timeToHours(moonTimes.rise);
+            let endH = timeToHours(moonTimes.set);
 
             if (startH === null || endH === null) return;
 
@@ -905,9 +935,7 @@
             const hSunset = timeToHours(times.sunset);
 
             if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
-                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-                const isDstNowActive = getCurrentDstState();
-                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
+                const dstOffset = getBaseLocationOffset();
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -950,9 +978,7 @@
             let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
             
             if (!hasValidSunset) {
-                const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-                const isDstNowActive = getCurrentDstState();
-                const dstOffset = standardTz + (isDstNowActive ? 1 : 0);
+                const dstOffset = getBaseLocationOffset();
                 let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
                 utcCalculationDate.setUTCHours(12, 0, 0, 0);
                 const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
@@ -1177,7 +1203,6 @@
             ctxSun.stroke();
         }
 
-        // Funzione drawRealisticMoon integrata con foto reale luna.jpg e zoom ottimizzato 1.55
         function drawRealisticMoon(canvasId, illumination, size = 32) {
             const canvasMoon = document.getElementById(canvasId);
             if (!canvasMoon) return;
@@ -1291,34 +1316,32 @@
         }
 
         function getNextEventIndex(times, refDate) {
-            if (!times) return -1;
+            if (!times) return 0;
+
+            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+
             const events = [
-                { name: "Mezzanotte solare", date: times.nadir },
-                { name: "Alba astronomica", date: times.astronomicalDawn },
-                { name: "Alba Nautica", date: times.nauticalDawn },
-                { name: "Alba Civile", date: times.dawn },
-                { name: "Alba", date: times.sunrise },
-                { name: "Fine dell'alba", date: times.sunriseEnd },
-                { name: "Fine dell'ora d'oro", date: times.goldenHourEnd },
-                { name: "Mezzogiorno solare", date: times.solarNoon },
-                { name: "Inizio dell'ora d'oro", date: times.goldenHour },
-                { name: "Inizio del tramonto", date: times.sunsetStart },
-                { name: "Tramonto", date: times.sunset },
-                { name: "Crepuscolo civile", date: times.dusk },
-                { name: "Crepuscolo nautico", date: times.nauticalDusk },
-                { name: "Crepuscolo astronomico", date: times.astronomicalDusk }
+                { name: "Mezzanotte solare", hours: timeToHours(times.nadir), index: 0 },
+                { name: "Alba astronomica", hours: timeToHours(times.astronomicalDawn), index: 1 },
+                { name: "Alba Nautica", hours: timeToHours(times.nauticalDawn), index: 2 },
+                { name: "Alba Civile", hours: timeToHours(times.dawn), index: 3 },
+                { name: "Alba", hours: timeToHours(times.sunrise), index: 4 },
+                { name: "Fine dell'alba", hours: timeToHours(times.sunriseEnd), index: 5 },
+                { name: "Fine dell'ora d'oro", hours: timeToHours(times.goldenHourEnd), index: 6 },
+                { name: "Mezzogiorno solare", hours: timeToHours(times.solarNoon), index: 7 },
+                { name: "Inizio dell'ora d'oro", hours: timeToHours(times.goldenHour), index: 8 },
+                { name: "Inizio del tramonto", hours: timeToHours(times.sunsetStart), index: 9 },
+                { name: "Tramonto", hours: timeToHours(times.sunset), index: 10 },
+                { name: "Crepuscolo civile", hours: timeToHours(times.dusk), index: 11 },
+                { name: "Crepuscolo nautico", hours: timeToHours(times.nauticalDusk), index: 12 },
+                { name: "Crepuscolo astronomico", hours: timeToHours(times.astronomicalDusk), index: 13 }
             ];
 
-            const currentTimeMs = refDate.getTime();
             for (let i = 0; i < events.length; i++) {
-                if (isValidDate(events[i].date)) {
-                    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-                    const isDstNowActive = getCurrentDstState();
-                    const totalTzOffset = standardTz + (isDstNowActive ? 1 : 0);
-                    const eventUtc = events[i].date.getTime();
-                    
-                    if (eventUtc >= (currentTimeMs - (totalTzOffset * 3600000))) {
-                        return i;
+                if (events[i].hours !== null && !isNaN(events[i].hours)) {
+                    let evH = (events[i].hours + 24) % 24;
+                    if (evH >= h) {
+                        return events[i].index;
                     }
                 }
             }
@@ -1375,9 +1398,7 @@
         }
 
         function updateHands() {
-            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-            const isDstNowActive = getCurrentDstState();
-            const cityOffsetHours = standardTz + (isDstNowActive ? 1 : 0);
+            const cityOffsetHours = getBaseLocationOffset();
 
             if (!isCustomTime) {
                 selectedDate = getEffectiveDate();
