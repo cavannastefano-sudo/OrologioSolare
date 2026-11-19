@@ -542,7 +542,7 @@
                 </div>
             </div>
 
-            <button onclick="resetToNow(); toggleMoonModal(false);" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
+            <button onclick="resetToNow();" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
         </div>
     </div>
 
@@ -1219,7 +1219,7 @@
             const ctxMoon = canvasMoon.getContext('2d');
             const width = canvasMoon.width;
             const height = canvasMoon.height;
-            const r = width / 2 - (size > 50 ? 4 : 2);
+            const r = width / 2 - (size > 50 ? 1 : 2);
             const cxCenter = width / 2;
             const cyCenter = height / 2;
             const tau = Math.PI * 2;
