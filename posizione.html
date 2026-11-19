@@ -398,6 +398,13 @@
             width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
             border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
         }
+        .moon-modal-content {
+            background: #0f172a; border-color: #1e293b;
+        }
+        .moon-data-box {
+            display: flex; flex-direction: column; gap: 8px;
+            background: #1e293b; padding: 10px; border-radius: 8px;
+        }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
@@ -409,7 +416,7 @@
             display: flex; align-items: center; justify-content: center;
         }
         .moon-step-btn {
-            background: #2b3544; color: #ffffff; border: 1px solid #475569;
+            background: #2b3544; color: #ffffff; border: none;
             padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
         }
         table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
@@ -506,11 +513,11 @@
 
     <!-- Tendina 2: Dettaglio Lunare Avanzato -->
     <div id="modal-moon" class="modal" onclick="if(event.target === this) toggleMoonModal(false);">
-        <div class="modal-content" style="text-align: center;">
+        <div class="modal-content moon-modal-content" style="text-align: center;">
             <div class="modal-header">
                 <span style="display: flex; align-items: center; gap: 6px;">
-                    <i class="fa-solid fa-moon" style="color: #ffffff;"></i>
-                    <strong style="color: #ffffff;">Dettaglio Lunare</strong>
+                    <i class="fa-solid fa-moon" style="color: #facc15;"></i>
+                    <strong style="color: #facc15;">Dettaglio Lunare</strong>
                 </span>
                 <button class="close-btn-red" onclick="toggleMoonModal(false)">✕</button>
             </div>
@@ -522,7 +529,7 @@
             <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 4px;">--</div>
             <div id="big-moon-date-display" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 15px;">--</div>
 
-            <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+            <div class="moon-data-box">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button class="moon-step-btn" onclick="changeDate(-1)">◀ -1g</button>
                     <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Giorni</span>
