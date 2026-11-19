@@ -1086,11 +1086,18 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     
     const bigTitleEl = document.getElementById('big-moon-phase-title');
     const bigDateEl = document.getElementById('big-moon-date-display');
-    if (bigTitleEl) bigTitleEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+    if (bigTitleEl) {
+        bigTitleEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+        bigTitleEl.style.fontSize = '1.15rem';
+        bigTitleEl.style.fontWeight = 'bold';
+    }
     if (bigDateEl && selectedDate) {
         const dStr = `${String(selectedDate.getUTCDate()).padStart(2, '0')}/${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}/${selectedDate.getUTCFullYear()}`;
         const tStr = `${String(selectedDate.getUTCHours()).padStart(2, '0')}:${String(selectedDate.getUTCMinutes()).padStart(2, '0')}`;
         bigDateEl.innerText = `${dStr} - ${tStr}`;
+        bigDateEl.style.fontSize = '1.15rem';
+        bigDateEl.style.fontWeight = 'bold';
+        bigDateEl.style.color = '#f8fafc';
     }
 }
 
