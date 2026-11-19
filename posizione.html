@@ -516,7 +516,7 @@
             </div>
             
             <div style="margin: 15px 0; display: flex; justify-content: center;">
-                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: 3px solid #ffffff; box-shadow: 0 0 15px rgba(255,255,255,0.4);"></canvas>
+                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: none;"></canvas>
             </div>
 
             <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 4px;">--</div>
@@ -1260,11 +1260,13 @@
 
             ctxMoon.restore();
 
-            ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-            ctxMoon.lineWidth = size > 50 ? 2 : 1.5;
-            ctxMoon.beginPath();
-            ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
-            ctxMoon.stroke();
+            if (size <= 50) {
+                ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                ctxMoon.lineWidth = 1.5;
+                ctxMoon.beginPath();
+                ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
+                ctxMoon.stroke();
+            }
         }
 
         function toggleMoonModal(show) {
@@ -1382,10 +1384,10 @@
             });
 
             tbody.innerHTML = `
-                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+                <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
                 ${solarRowsHtml}
 
-                <tr style="background: rgba(113, 63, 18, 0.8); color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
                 <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
