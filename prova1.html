@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SunClock24 - Prova Opzione 1 (Striscia Annuale nel Riquadro)</title>
+    <title>SunClock24 - Prova Opzione 1 con Cursore Centrale Opzione 2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         :root { 
@@ -130,7 +130,7 @@
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
         }
 
-        /* OPZIONE 1: Riquadro inferiore a altezza fissa che commuta tra Dati e Striscia Annuale */
+        /* OPZIONE 1: Riquadro inferiore a altezza fissa */
         #bottom-panels-container {
             width: min(90vw, 480px);
             margin-top: 12px;
@@ -139,7 +139,7 @@
 
         .info-panel-box {
             width: 100%;
-            height: 148px; /* Altezza fissa: nessun aumento degli spazi */
+            height: 152px;
             background: rgba(0,0,0,0.25);
             padding: 8px 10px;
             border-radius: 6px;
@@ -199,7 +199,7 @@
             font-size: 1rem;
         }
 
-        /* Vista Striscia Annuale dentro il riquadro */
+        /* METODO OPZIONE 2 DENTRO IL RIQUADRO OPZIONE 1: Cursore fisso centrale + striscia annuale */
         #panel-strip-body {
             display: none;
             flex-direction: column;
@@ -212,57 +212,82 @@
             display: flex;
         }
 
-        .year-strip-scroll {
+        .timeline-wrapper {
             position: relative;
             width: 100%;
             height: 76px;
-            overflow-x: auto;
-            overflow-y: hidden;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding: 0 6px;
-            box-sizing: border-box;
-            background: rgba(2, 6, 23, 0.85);
-            border: 1px solid #334155;
-            border-radius: 6px;
-            scrollbar-width: thin;
-            scrollbar-color: #475569 transparent;
         }
 
-        .day-card {
-            position: relative;
-            flex: 0 0 46px;
-            height: 62px;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.68rem;
-            color: #e2e8f0;
-            cursor: pointer;
-            box-sizing: border-box;
+        /* Cursore fisso centrale stile Opzione 2 */
+        .timeline-center-cursor {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff007f;
+            box-shadow: 0 0 8px #ff007f;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 15;
         }
-
-        /* Cursore mobile sul giorno selezionato */
-        .day-card.selected {
-            border: 2px solid #39ff14;
-            background: rgba(57, 255, 20, 0.16);
-            color: #39ff14;
-            box-shadow: 0 0 8px rgba(57, 255, 20, 0.55);
-        }
-        .day-card.selected::before {
+        .timeline-center-cursor::before {
             content: "▼";
             position: absolute;
-            top: -10px;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
             font-size: 0.65rem;
             color: #ff007f;
         }
 
-        .day-card.is-today {
+        .timeline-viewport {
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            background: rgba(2, 6, 23, 0.9);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            scrollbar-width: none;
+            scroll-snap-type: x mandatory;
+        }
+        .timeline-viewport::-webkit-scrollbar { display: none; }
+
+        .timeline-track {
+            display: flex;
+            align-items: center;
+            /* Padding laterale del 50% così il 1° Gennaio e il 31 Dicembre arrivano esattamente al cursore centrale */
+            padding: 0 50%;
+            gap: 4px;
+        }
+
+        .timeline-tick {
+            flex: 0 0 52px;
+            height: 60px;
+            border-radius: 5px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            scroll-snap-align: center;
+            box-sizing: border-box;
+            transition: border-color 0.12s, background 0.12s;
+        }
+        .timeline-tick.active {
+            border: 2px solid #39ff14;
+            background: rgba(57, 255, 20, 0.16);
+            color: #39ff14;
+            font-weight: bold;
+        }
+        .timeline-tick.is-today {
             border-bottom: 2px solid #facc15;
         }
 
@@ -270,7 +295,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             color: #cbd5e1;
         }
     </style>
@@ -292,7 +317,7 @@
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
             <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
             <button class="step-btn" onclick="changeDate(1)">&gt;</button>
-            <button id="btn-now" onclick="resetToNow(true)">Adesso</button>
+            <button id="btn-now" onclick="resetToNow()">Adesso</button>
         </div>
     </header>
 
@@ -310,7 +335,7 @@
         <div class="info-panel-box">
             <div class="panel-top-bar">
                 <span id="moon-summary" style="font-size: 0.88rem; color: #facc15;">🌙 Caricamento...</span>
-                <button id="btn-toggle-year-strip" class="switch-strip-btn" onclick="toggleYearStrip()">📅 Anno</button>
+                <button id="btn-toggle-year-strip" class="switch-strip-btn" onclick="toggleYearStrip()">⏱️ Striscia</button>
             </div>
 
             <!-- Vista Standard -->
@@ -322,12 +347,17 @@
                 </div>
             </div>
 
-            <!-- Vista Striscia Annuale (Gennaio - Dicembre) -->
+            <!-- Vista Striscia Annuale con Cursore Centrale Fisso (Opzione 1 + Metodo Opzione 2) -->
             <div id="panel-strip-body">
-                <div class="year-strip-scroll" id="year-strip-scroll"></div>
+                <div class="timeline-wrapper">
+                    <div class="timeline-center-cursor"></div>
+                    <div class="timeline-viewport" id="timeline-viewport">
+                        <div class="timeline-track" id="timeline-track"></div>
+                    </div>
+                </div>
                 <div class="strip-footer-info">
                     <span id="strip-year-label">Anno 2026 (Gen–Dic)</span>
-                    <span style="color:#facc15;">Giallo = Oggi • Verde = Cursore</span>
+                    <span style="color:#facc15;">Trascina o tocca • Giallo = Oggi</span>
                 </div>
             </div>
         </div>
@@ -342,8 +372,11 @@
         let selectedDate = new Date();
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
+
         let builtYear = null;
         let isStripOpen = false;
+        let isProgrammaticScroll = false;
+        let scrollEndTimer = null;
 
         function hoursToAngle(h) { return (h / 24) * Math.PI * 2 + Math.PI / 2; }
 
@@ -363,23 +396,23 @@
                 btn.classList.add('active');
                 btn.innerText = '✕ Dati';
                 ensureYearStripBuilt(selectedDate.getFullYear());
-                highlightCursor(false);
+                syncStripToSelectedDate(false);
             } else {
                 stripBody.classList.remove('active');
                 stdBody.style.display = 'flex';
                 btn.classList.remove('active');
-                btn.innerText = '📅 Anno';
+                btn.innerText = '⏱️ Striscia';
             }
         }
 
-        // Costruisce una sola volta i 365/366 giorni dell'anno (Gennaio -> Dicembre)
+        // Costruisce una sola volta i 365/366 giorni (1 Gennaio -> 31 Dicembre)
         function ensureYearStripBuilt(year) {
             if (builtYear === year) return;
             builtYear = year;
 
-            const container = document.getElementById('year-strip-scroll');
-            document.getElementById('strip-year-label').innerText = `Anno ${year} (Gen–Dic)`;
-            container.innerHTML = '';
+            const track = document.getElementById('timeline-track');
+            document.getElementById('strip-year-label').innerText = `Anno ${year} (1 Gen – 31 Dic)`;
+            track.innerHTML = '';
 
             const todayKey = getDayKey(new Date());
             const cursor = new Date(year, 0, 1, 12, 0, 0);
@@ -391,51 +424,98 @@
                 const moon = SunCalc.getMoonIllumination(dCopy);
                 const pct = Math.round(moon.fraction * 100);
 
-                const card = document.createElement('div');
-                card.className = 'day-card' + (key === todayKey ? ' is-today' : '');
-                card.dataset.dayKey = key;
+                const tick = document.createElement('div');
+                tick.className = 'timeline-tick' + (key === todayKey ? ' is-today' : '');
+                tick.dataset.dayKey = key;
+                tick.dataset.year = dCopy.getFullYear();
+                tick.dataset.month = dCopy.getMonth();
+                tick.dataset.day = dCopy.getDate();
 
                 const dayNum = String(dCopy.getDate()).padStart(2, '0');
                 const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '');
 
-                card.innerHTML = `
-                    <span style="font-weight:bold;">${dayNum} ${monthShort}</span>
-                    <span style="font-size:0.65rem; color:#facc15;">🌙 ${pct}%</span>
+                tick.innerHTML = `
+                    <span>${dayNum} ${monthShort}</span>
+                    <span style="font-size:0.64rem; color:#facc15;">🌙 ${pct}%</span>
                 `;
 
-                // Cliccando su un giorno sposta solo il cursore e aggiorna la data senza ricreare la barra
-                card.onclick = () => {
-                    selectSpecificDate(dCopy.getFullYear(), dCopy.getMonth(), dCopy.getDate(), false);
+                // Toccare una casella la porta dolcemente sotto il cursore centrale
+                tick.onclick = () => {
+                    applyDateChange(dCopy.getFullYear(), dCopy.getMonth(), dCopy.getDate(), true);
                 };
 
-                fragment.appendChild(card);
+                fragment.appendChild(tick);
                 cursor.setDate(cursor.getDate() + 1);
             }
 
-            container.appendChild(fragment);
+            track.appendChild(fragment);
         }
 
-        // Sposta il cursore visivo sul giorno selezionato; opzionalmente centra lo scorrimento
-        function highlightCursor(shouldCenter = false) {
-            const container = document.getElementById('year-strip-scroll');
-            if (!container) return;
+        // Scorre la barra in modo che il giorno selezionato si fermi esattamente sotto il cursore centrale
+        function syncStripToSelectedDate(smooth = true) {
+            const viewport = document.getElementById('timeline-viewport');
+            const track = document.getElementById('timeline-track');
+            if (!viewport || !track) return;
 
             const activeKey = getDayKey(selectedDate);
-            let targetCard = null;
+            let targetTick = null;
 
-            container.querySelectorAll('.day-card').forEach(card => {
-                const isMatch = card.dataset.dayKey === activeKey;
-                card.classList.toggle('selected', isMatch);
-                if (isMatch) targetCard = card;
+            track.querySelectorAll('.timeline-tick').forEach(tick => {
+                const isMatch = tick.dataset.dayKey === activeKey;
+                tick.classList.toggle('active', isMatch);
+                if (isMatch) targetTick = tick;
             });
 
-            if (targetCard && shouldCenter) {
-                const leftPos = targetCard.offsetLeft - (container.clientWidth / 2) + (targetCard.clientWidth / 2);
-                container.scrollTo({ left: Math.max(0, leftPos), behavior: 'auto' });
+            if (targetTick) {
+                isProgrammaticScroll = true;
+                const targetScrollLeft = targetTick.offsetLeft + (targetTick.offsetWidth / 2) - (viewport.clientWidth / 2);
+                viewport.scrollTo({
+                    left: Math.max(0, targetScrollLeft),
+                    behavior: smooth ? 'smooth' : 'auto'
+                });
+                clearTimeout(scrollEndTimer);
+                scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 350 : 60);
             }
         }
 
-        function selectSpecificDate(y, m, d, shouldCenter = false) {
+        // Quando l'utente trascina la barra con il dito/mouse, legge quale casella passa sotto il cursore centrale
+        document.getElementById('timeline-viewport').addEventListener('scroll', () => {
+            if (!isStripOpen || isProgrammaticScroll) return;
+
+            const viewport = document.getElementById('timeline-viewport');
+            const track = document.getElementById('timeline-track');
+            const centerX = viewport.scrollLeft + (viewport.clientWidth / 2);
+
+            let closestTick = null;
+            let minDist = Infinity;
+
+            track.querySelectorAll('.timeline-tick').forEach(tick => {
+                const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
+                const dist = Math.abs(centerX - tickCenter);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestTick = tick;
+                }
+            });
+
+            if (closestTick && closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
+                track.querySelectorAll('.timeline-tick.active').forEach(el => el.classList.remove('active'));
+                closestTick.classList.add('active');
+
+                const y = parseInt(closestTick.dataset.year, 10);
+                const m = parseInt(closestTick.dataset.month, 10);
+                const d = parseInt(closestTick.dataset.day, 10);
+
+                selectedDate.setFullYear(y, m, d);
+                isCustomTime = true;
+                customTimeOffsetMs = selectedDate.getTime() - Date.now();
+                updateInputsVal();
+                updateInfo();
+                drawClock();
+            }
+        }, { passive: true });
+
+        function applyDateChange(y, m, d, smoothScroll = true) {
             selectedDate.setFullYear(y, m, d);
             isCustomTime = true;
             customTimeOffsetMs = selectedDate.getTime() - Date.now();
@@ -444,7 +524,7 @@
             drawClock();
             if (isStripOpen) {
                 ensureYearStripBuilt(y);
-                highlightCursor(shouldCenter);
+                syncStripToSelectedDate(smoothScroll);
             }
         }
 
@@ -463,7 +543,7 @@
         function changeDate(days) {
             const next = new Date(selectedDate);
             next.setDate(next.getDate() + days);
-            selectSpecificDate(next.getFullYear(), next.getMonth(), next.getDate(), true);
+            applyDateChange(next.getFullYear(), next.getMonth(), next.getDate(), true);
         }
 
         function changeHour(hours) {
@@ -473,13 +553,16 @@
             updateInputsVal();
             updateInfo();
             drawClock();
-            if (isStripOpen) highlightCursor(false);
+            if (isStripOpen) {
+                ensureYearStripBuilt(selectedDate.getFullYear());
+                syncStripToSelectedDate(true);
+            }
         }
 
         function onDateChanged(val) {
             if (!val) return;
             const [y, m, d] = val.split('-').map(Number);
-            selectSpecificDate(y, m - 1, d, true);
+            applyDateChange(y, m - 1, d, true);
         }
 
         function onTimeChanged(val) {
@@ -493,7 +576,7 @@
             drawClock();
         }
 
-        function resetToNow(shouldCenter = true) {
+        function resetToNow() {
             isCustomTime = false;
             customTimeOffsetMs = 0;
             selectedDate = new Date();
@@ -502,7 +585,7 @@
             drawClock();
             if (isStripOpen) {
                 ensureYearStripBuilt(selectedDate.getFullYear());
-                highlightCursor(shouldCenter);
+                syncStripToSelectedDate(true);
             }
         }
 
