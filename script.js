@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Allineato a posizione.html + Pulsante Striscia Visibile + Selettore Anno senza scritte + Auto-Adattamento)
+// SunClock24 - script.js (Striscia Mensile Fluida + Selettori Anno e Mese Visibili + Auto-Adattamento)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -133,8 +133,8 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Annuale con Cursore Centrale Fisso e Selettore Anno (come posizione.html)
-let builtYear = null;
+// Stato Striscia Mensile Fluida con Selettori Anno e Mese Visibili
+let builtMonthKey = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
 let scrollEndTimer = null;
@@ -151,7 +151,7 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
-// Garantisce alta leggibilità del pulsante Striscia su qualsiasi sfondo (anche chiaro/azzurro)
+// Garantisce visibilità e contrasto su qualsiasi sfondo (giorno/notte)
 function styleStripButtonVisibility(btn, active) {
     if (!btn) return;
     btn.style.backgroundColor = active ? '#0284c7' : '#0f172a';
@@ -162,45 +162,29 @@ function styleStripButtonVisibility(btn, active) {
     btn.style.webkitTextStroke = '0px transparent';
 }
 
-// Rimuove solo le scritte testuali ("Anno:" e "Giallo = Oggi") mantenendo intatti <, tendina anni e >
-function removeOnlyUnwantedYearBarText() {
+function styleStripControlsVisibility() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
 
-    const yearBar = stripBody.querySelector('.strip-year-bar');
-    if (yearBar) {
-        yearBar.childNodes.forEach(node => {
-            if (node.nodeType === Node.TEXT_NODE) {
-                node.textContent = '';
-            } else if (node.nodeType === Node.ELEMENT_NODE) {
-                const tag = node.tagName;
-                if (tag !== 'BUTTON' && tag !== 'SELECT') {
-                    const txt = (node.textContent || '').trim().toLowerCase();
-                    if (txt.includes('anno') || txt.includes('oggi') || txt.includes('giallo')) {
-                        node.remove();
-                    }
-                }
-            }
-        });
-    }
+    stripBody.style.textShadow = 'none';
+    stripBody.style.webkitTextStroke = '0px transparent';
+    stripBody.style.color = '#f8fafc';
 
-    stripBody.querySelectorAll('span, small, label, div, p').forEach(el => {
-        if (
-            el.id === 'timeline-viewport' ||
-            el.id === 'timeline-track' ||
-            el.classList.contains('strip-year-bar') ||
-            el.classList.contains('strip-stage') ||
-            el.classList.contains('strip-center-cursor')
-        ) return;
+    stripBody.querySelectorAll('button, select, span, label').forEach(el => {
+        el.style.textShadow = 'none';
+        el.style.webkitTextStroke = '0px transparent';
+    });
 
-        const txt = (el.textContent || '').trim().toLowerCase();
-        if (
-            (txt.includes('giallo') && txt.includes('oggi')) ||
-            txt === 'anno:' ||
-            txt === 'anno'
-        ) {
-            el.remove();
-        }
+    stripBody.querySelectorAll('button').forEach(btn => {
+        btn.style.backgroundColor = '#0f172a';
+        btn.style.color = '#f8fafc';
+        btn.style.border = '1px solid #475569';
+    });
+
+    stripBody.querySelectorAll('select').forEach(sel => {
+        sel.style.backgroundColor = '#0f172a';
+        sel.style.color = '#facc15';
+        sel.style.border = '1px solid #475569';
     });
 }
 
@@ -230,44 +214,117 @@ function getDayKey(d) {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-function populateYearSelect(currentYear) {
-    removeOnlyUnwantedYearBarText();
-    const sel = document.getElementById('select-strip-year');
-    if (!sel) return;
+function getMonthKey(year, month) {
+    return `${year}-${String(month + 1).padStart(2, '0')}`;
+}
+
+function ensureYearAndMonthSelectors(currentYear, currentMonth) {
+    const stripBody = document.getElementById('panel-strip-body');
+    if (!stripBody) return;
+
+    let yearBar = stripBody.querySelector('.strip-year-bar');
+    if (!yearBar) {
+        yearBar = document.createElement('div');
+        yearBar.className = 'strip-year-bar';
+        stripBody.insertBefore(yearBar, stripBody.firstChild);
+    }
+
+    yearBar.style.display = 'flex';
+    yearBar.style.flexWrap = 'wrap';
+    yearBar.style.alignItems = 'center';
+    yearBar.style.justifyContent = 'center';
+    yearBar.style.gap = '6px';
+
+    // Controlli Anno: < [select-strip-year] >
+    let yearPrevBtn = document.getElementById('btn-year-prev');
+    let yearSel = document.getElementById('select-strip-year');
+    let yearNextBtn = document.getElementById('btn-year-next');
+
+    if (!yearPrevBtn || !yearSel || !yearNextBtn) {
+        yearBar.innerHTML = `
+            <div style="display:inline-flex;align-items:center;gap:4px;">
+                <button type="button" id="btn-year-prev" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
+                <button type="button" id="btn-year-next" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:4px;">
+                <button type="button" id="btn-month-prev" class="strip-year-step" onclick="stepMonth(-1)" title="Mese precedente">&lt;</button>
+                <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
+                <button type="button" id="btn-month-next" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
+            </div>
+        `;
+        yearSel = document.getElementById('select-strip-year');
+    }
 
     const startY = Math.min(2020, currentYear - 5);
     const endY = Math.max(2035, currentYear + 5);
-
     if (
-        sel.options.length === 0 ||
-        parseInt(sel.options[0].value, 10) > currentYear ||
-        parseInt(sel.options[sel.options.length - 1].value, 10) < currentYear
+        yearSel.options.length === 0 ||
+        parseInt(yearSel.options[0].value, 10) > currentYear ||
+        parseInt(yearSel.options[yearSel.options.length - 1].value, 10) < currentYear
     ) {
-        sel.innerHTML = '';
+        yearSel.innerHTML = '';
         for (let y = startY; y <= endY; y++) {
             const opt = document.createElement('option');
             opt.value = y;
             opt.textContent = y;
-            sel.appendChild(opt);
+            yearSel.appendChild(opt);
         }
     }
-    sel.value = String(currentYear);
+    yearSel.value = String(currentYear);
+
+    const monthSel = document.getElementById('select-strip-month');
+    if (monthSel) {
+        if (monthSel.options.length !== 12) {
+            monthSel.innerHTML = '';
+            for (let m = 0; m < 12; m++) {
+                const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'long', timeZone: 'UTC' });
+                const capLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                const opt = document.createElement('option');
+                opt.value = String(m);
+                opt.textContent = capLabel;
+                monthSel.appendChild(opt);
+            }
+        }
+        monthSel.value = String(currentMonth);
+    }
+
+    styleStripControlsVisibility();
 }
 
 function onYearSelectChanged(val) {
     const targetYear = parseInt(val, 10);
     if (isNaN(targetYear)) return;
-    const maxDay = new Date(Date.UTC(targetYear, selectedDate.getUTCMonth() + 1, 0)).getUTCDate();
+    const currentMonth = selectedDate.getUTCMonth();
+    const maxDay = new Date(Date.UTC(targetYear, currentMonth + 1, 0)).getUTCDate();
     const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-    applyStripDateChange(targetYear, selectedDate.getUTCMonth(), safeDay, false);
+    applyStripDateChange(targetYear, currentMonth, safeDay, false);
 }
 
 function stepYear(delta) {
     const nextYear = selectedDate.getUTCFullYear() + delta;
-    populateYearSelect(nextYear);
-    const maxDay = new Date(Date.UTC(nextYear, selectedDate.getUTCMonth() + 1, 0)).getUTCDate();
+    const currentMonth = selectedDate.getUTCMonth();
+    const maxDay = new Date(Date.UTC(nextYear, currentMonth + 1, 0)).getUTCDate();
     const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-    applyStripDateChange(nextYear, selectedDate.getUTCMonth(), safeDay, false);
+    applyStripDateChange(nextYear, currentMonth, safeDay, false);
+}
+
+function onMonthSelectChanged(val) {
+    const targetMonth = parseInt(val, 10);
+    if (isNaN(targetMonth)) return;
+    const currentYear = selectedDate.getUTCFullYear();
+    const maxDay = new Date(Date.UTC(currentYear, targetMonth + 1, 0)).getUTCDate();
+    const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+    applyStripDateChange(currentYear, targetMonth, safeDay, false);
+}
+
+function stepMonth(delta) {
+    const base = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth() + delta, 1, 12, 0, 0));
+    const nextYear = base.getUTCFullYear();
+    const nextMonth = base.getUTCMonth();
+    const maxDay = new Date(Date.UTC(nextYear, nextMonth + 1, 0)).getUTCDate();
+    const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+    applyStripDateChange(nextYear, nextMonth, safeDay, false);
 }
 
 function toggleYearStrip() {
@@ -275,8 +332,6 @@ function toggleYearStrip() {
     const stdBody = document.getElementById('panel-standard-body');
     const stripBody = document.getElementById('panel-strip-body');
     const btn = document.getElementById('btn-toggle-year-strip');
-
-    removeOnlyUnwantedYearBarText();
 
     if (isStripOpen) {
         if (stdBody) stdBody.style.display = 'none';
@@ -286,8 +341,8 @@ function toggleYearStrip() {
             btn.innerText = '✕ Dati';
             styleStripButtonVisibility(btn, true);
         }
-        populateYearSelect(selectedDate.getUTCFullYear());
-        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
         syncStripToSelectedDate(false);
     } else {
         if (stripBody) stripBody.classList.remove('active');
@@ -301,21 +356,23 @@ function toggleYearStrip() {
     adaptBottomPanelHeight();
 }
 
-function ensureYearStripBuilt(year) {
-    removeOnlyUnwantedYearBarText();
-    if (builtYear === year) return;
-    builtYear = year;
+// Costruisce solo i giorni del mese selezionato (massimo 31 giorni) per uno scorrimento fluido
+function ensureMonthStripBuilt(year, month) {
+    ensureYearAndMonthSelectors(year, month);
+    const keyMonth = getMonthKey(year, month);
+    if (builtMonthKey === keyMonth) return;
+    builtMonthKey = keyMonth;
 
     const track = document.getElementById('timeline-track');
     if (!track) return;
     track.innerHTML = '';
 
     const todayKey = getDayKey(getEffectiveDate());
-    const cursor = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
+    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
     const fragment = document.createDocumentFragment();
 
-    while (cursor.getUTCFullYear() === year) {
-        const dCopy = new Date(cursor);
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dCopy = new Date(Date.UTC(year, month, day, 12, 0, 0));
         const key = getDayKey(dCopy);
         const moon = (typeof SunCalc.getMoonData === 'function')
             ? SunCalc.getMoonData(dCopy)
@@ -325,11 +382,13 @@ function ensureYearStripBuilt(year) {
         const tick = document.createElement('div');
         tick.className = 'timeline-tick' + (key === todayKey ? ' is-today' : '');
         tick.dataset.dayKey = key;
-        tick.dataset.year = dCopy.getUTCFullYear();
-        tick.dataset.month = dCopy.getUTCMonth();
-        tick.dataset.day = dCopy.getUTCDate();
+        tick.dataset.year = year;
+        tick.dataset.month = month;
+        tick.dataset.day = day;
+        tick.style.textShadow = 'none';
+        tick.style.webkitTextStroke = '0px transparent';
 
-        const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
+        const dayNum = String(day).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
         tick.innerHTML = `
@@ -338,11 +397,10 @@ function ensureYearStripBuilt(year) {
         `;
 
         tick.onclick = () => {
-            applyStripDateChange(dCopy.getUTCFullYear(), dCopy.getUTCMonth(), dCopy.getUTCDate(), true);
+            applyStripDateChange(year, month, day, true);
         };
 
         fragment.appendChild(tick);
-        cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     track.appendChild(fragment);
@@ -370,7 +428,7 @@ function syncStripToSelectedDate(smooth = true) {
             behavior: smooth ? 'smooth' : 'auto'
         });
         clearTimeout(scrollEndTimer);
-        scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 350 : 60);
+        scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 250 : 50);
     }
 }
 
@@ -389,8 +447,7 @@ function applyStripDateChange(y, m, d, smoothScroll = true) {
         updateSunClock(cachedLat, cachedLon);
     }
     if (isStripOpen) {
-        populateYearSelect(y);
-        ensureYearStripBuilt(y);
+        ensureMonthStripBuilt(y, m);
         syncStripToSelectedDate(smoothScroll);
     }
     adaptBottomPanelHeight();
@@ -443,7 +500,7 @@ if (stripViewportEl) {
 }
 
 async function initClock() {
-    removeOnlyUnwantedYearBarText();
+    ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -468,8 +525,7 @@ async function initClock() {
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
         if (isStripOpen) {
-            populateYearSelect(selectedDate.getUTCFullYear());
-            ensureYearStripBuilt(selectedDate.getUTCFullYear());
+            ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
             syncStripToSelectedDate(false);
         }
         adaptBottomPanelHeight();
@@ -490,8 +546,7 @@ async function initClock() {
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
         if (isStripOpen) {
-            populateYearSelect(selectedDate.getUTCFullYear());
-            ensureYearStripBuilt(selectedDate.getUTCFullYear());
+            ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
             syncStripToSelectedDate(false);
         }
         adaptBottomPanelHeight();
@@ -700,8 +755,7 @@ function changeHour(hours) {
     }
 
     if (isStripOpen) {
-        populateYearSelect(selectedDate.getUTCFullYear());
-        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
         syncStripToSelectedDate(true);
     }
 }
@@ -757,8 +811,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     updateInputsVal();
     updateSunClock(cachedLat, cachedLon);
     if (isStripOpen) {
-        populateYearSelect(selectedDate.getUTCFullYear());
-        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
         syncStripToSelectedDate(true);
     }
     adaptBottomPanelHeight();
@@ -785,8 +838,7 @@ function resetToNow() {
     updateSunClock(cachedLat, cachedLon);
 
     if (isStripOpen) {
-        populateYearSelect(selectedDate.getUTCFullYear());
-        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
         syncStripToSelectedDate(true);
     }
     adaptBottomPanelHeight();
