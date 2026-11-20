@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Striscia Intero Anno + Selettori Anno e Mese + Scroll Fluido)
+// SunClock24 - script.js (Striscia Intero Anno + Selettori Anno/Mese + Tasto Oggi + Mouse + Cursori Laterali)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -133,7 +133,7 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Intero Anno con Selettori Anno e Mese
+// Stato Striscia Intero Anno con Selettori Anno e Mese + Tasto Oggi
 let builtYear = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
@@ -165,6 +165,19 @@ function styleStripButtonVisibility(btn, active) {
     btn.style.webkitTextStroke = '0px transparent';
 }
 
+function styleTodayButton(btn) {
+    if (!btn) return;
+    btn.style.backgroundColor = '#1d4ed8';
+    btn.style.color = '#fef08a';
+    btn.style.border = '1px solid #93c5fd';
+    btn.style.fontWeight = 'bold';
+    btn.style.cursor = 'pointer';
+    btn.style.padding = '3px 8px';
+    btn.style.borderRadius = '6px';
+    btn.style.textShadow = 'none';
+    btn.style.webkitTextStroke = '0px transparent';
+}
+
 function styleStripControlsVisibility() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
@@ -179,9 +192,17 @@ function styleStripControlsVisibility() {
     });
 
     stripBody.querySelectorAll('button').forEach(btn => {
-        btn.style.backgroundColor = '#0f172a';
-        btn.style.color = '#f8fafc';
-        btn.style.border = '1px solid #475569';
+        if (btn.id === 'btn-strip-today') {
+            styleTodayButton(btn);
+        } else if (btn.id === 'strip-cursor-left' || btn.id === 'strip-cursor-right') {
+            btn.style.backgroundColor = 'rgba(15, 23, 42, 0.92)';
+            btn.style.color = '#38bdf8';
+            btn.style.border = '1px solid #38bdf8';
+        } else {
+            btn.style.backgroundColor = '#0f172a';
+            btn.style.color = '#f8fafc';
+            btn.style.border = '1px solid #475569';
+        }
     });
 
     stripBody.querySelectorAll('select').forEach(sel => {
@@ -215,7 +236,7 @@ function removeBottomRedundantFooter() {
         ) return;
 
         const txt = (el.textContent || '').trim().toLowerCase();
-        if (txt.includes('giallo') || txt.includes('oggi') || txt === 'anno:' || txt === 'anno') {
+        if (txt.includes('giallo') || txt === 'anno:' || txt === 'anno') {
             el.remove();
         }
     });
@@ -288,8 +309,18 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
                 <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
                 <button type="button" id="btn-month-next" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
             </div>
+            <button type="button" id="btn-strip-today" class="strip-year-step" onclick="goToTodayOnStrip()" title="Torna ad oggi">Oggi</button>
         `;
         yearSel = document.getElementById('select-strip-year');
+    } else if (!document.getElementById('btn-strip-today')) {
+        const todayBtn = document.createElement('button');
+        todayBtn.type = 'button';
+        todayBtn.id = 'btn-strip-today';
+        todayBtn.className = 'strip-year-step';
+        todayBtn.title = 'Torna ad oggi';
+        todayBtn.innerText = 'Oggi';
+        todayBtn.onclick = goToTodayOnStrip;
+        yearBar.appendChild(todayBtn);
     }
 
     const startY = Math.min(2020, currentYear - 5);
@@ -326,6 +357,15 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     }
 
     styleStripControlsVisibility();
+}
+
+function goToTodayOnStrip() {
+    resetToNow();
+    if (isStripOpen) {
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        syncStripToSelectedDate(true);
+    }
+    adaptBottomPanelHeight();
 }
 
 function onYearSelectChanged(val) {
@@ -582,6 +622,176 @@ if (stripViewportEl) {
         });
     }, { passive: true });
 }
+
+// 1. Supporto Mouse: Rotella + Trascinamento Drag + Cursore Centrale Non Bloccante
+(function enableMouseStripNavigation() {
+    const viewport = document.getElementById('timeline-viewport');
+    if (!viewport) return;
+
+    const cursor = viewport.parentElement ? viewport.parentElement.querySelector('.strip-center-cursor') : null;
+    if (cursor) {
+        cursor.style.pointerEvents = 'none';
+    }
+
+    viewport.addEventListener('wheel', (e) => {
+        if (!isStripOpen) return;
+        const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+        if (delta !== 0) {
+            e.preventDefault();
+            viewport.scrollLeft += delta;
+        }
+    }, { passive: false });
+
+    let isMouseDragging = false;
+    let dragStartX = 0;
+    let dragStartScrollLeft = 0;
+    let hasDragged = false;
+
+    viewport.style.cursor = 'grab';
+
+    viewport.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || !isStripOpen) return;
+        isMouseDragging = true;
+        hasDragged = false;
+        dragStartX = e.clientX;
+        dragStartScrollLeft = viewport.scrollLeft;
+        viewport.style.cursor = 'grabbing';
+        viewport.style.userSelect = 'none';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isMouseDragging) return;
+        const dx = e.clientX - dragStartX;
+        if (Math.abs(dx) > 4) {
+            hasDragged = true;
+        }
+        viewport.scrollLeft = dragStartScrollLeft - dx;
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isMouseDragging) return;
+        isMouseDragging = false;
+        viewport.style.cursor = 'grab';
+        viewport.style.userSelect = '';
+        if (hasDragged) {
+            setTimeout(() => { hasDragged = false; }, 0);
+        }
+    });
+
+    viewport.addEventListener('click', (e) => {
+        if (hasDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+})();
+
+// 2. Cursori Sinistro (◀) e Destro (▶) per Scorrimento Veloce sulla Striscia
+(function setupSideStripCursors() {
+    const viewport = document.getElementById('timeline-viewport');
+    if (!viewport) return;
+
+    const stage = viewport.parentElement || viewport;
+    if (getComputedStyle(stage).position === 'static') {
+        stage.style.position = 'relative';
+    }
+
+    if (document.getElementById('strip-cursor-left') || document.getElementById('strip-cursor-right')) {
+        return;
+    }
+
+    const createCursorBtn = (id, symbol, side) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.id = id;
+        btn.innerText = symbol;
+        btn.setAttribute('aria-label', side === 'left' ? 'Scorri a sinistra' : 'Scorri a destra');
+        btn.style.position = 'absolute';
+        btn.style.top = '50%';
+        btn.style[side] = '4px';
+        btn.style.transform = 'translateY(-50%)';
+        btn.style.zIndex = '15';
+        btn.style.width = '28px';
+        btn.style.height = '38px';
+        btn.style.borderRadius = '6px';
+        btn.style.backgroundColor = 'rgba(15, 23, 42, 0.92)';
+        btn.style.color = '#38bdf8';
+        btn.style.border = '1px solid #38bdf8';
+        btn.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.65)';
+        btn.style.fontSize = '0.9rem';
+        btn.style.fontWeight = 'bold';
+        btn.style.cursor = 'pointer';
+        btn.style.display = 'flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.textShadow = 'none';
+        btn.style.webkitTextStroke = '0px transparent';
+        btn.style.userSelect = 'none';
+        btn.style.touchAction = 'manipulation';
+        return btn;
+    };
+
+    const leftBtn = createCursorBtn('strip-cursor-left', '◀', 'left');
+    const rightBtn = createCursorBtn('strip-cursor-right', '▶', 'right');
+
+    stage.appendChild(leftBtn);
+    stage.appendChild(rightBtn);
+
+    let holdAnimId = null;
+    let holdTimeout = null;
+    let currentDir = 0;
+
+    const stepFast = (dir) => {
+        const stepPx = Math.max(140, Math.round(viewport.clientWidth * 0.65));
+        viewport.scrollLeft += dir * stepPx;
+    };
+
+    const startContinuousScroll = (dir) => {
+        stopContinuousScroll();
+        currentDir = dir;
+        stepFast(dir);
+
+        holdTimeout = setTimeout(() => {
+            const speedPxPerFrame = 18;
+            const tick = () => {
+                if (currentDir !== dir || !isStripOpen) return;
+                viewport.scrollLeft += dir * speedPxPerFrame;
+                holdAnimId = requestAnimationFrame(tick);
+            };
+            holdAnimId = requestAnimationFrame(tick);
+        }, 180);
+    };
+
+    const stopContinuousScroll = () => {
+        currentDir = 0;
+        clearTimeout(holdTimeout);
+        if (holdAnimId) {
+            cancelAnimationFrame(holdAnimId);
+            holdAnimId = null;
+        }
+    };
+
+    const bindCursorEvents = (btn, dir) => {
+        btn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startContinuousScroll(dir);
+        });
+
+        btn.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            startContinuousScroll(dir);
+        }, { passive: true });
+    };
+
+    bindCursorEvents(leftBtn, -1);
+    bindCursorEvents(rightBtn, 1);
+
+    window.addEventListener('mouseup', stopContinuousScroll);
+    window.addEventListener('touchend', stopContinuousScroll);
+    window.addEventListener('touchcancel', stopContinuousScroll);
+    window.addEventListener('blur', stopContinuousScroll);
+})();
 
 async function initClock() {
     ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
