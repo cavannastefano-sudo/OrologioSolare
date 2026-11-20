@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SunClock24 - Prova Opzione 1 (Striscia Annuale nel Riquadro)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <style>
+        :root { 
+            --bg-color: #000000; 
+            color-scheme: dark;
+        }
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #facc15;
+            transition: background-color 0.6s ease;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: min(98vw, 480px);
+            margin-bottom: 8px;
+            gap: 6px;
+        }
+        h1 { 
+            margin: 0; 
+            color: #facc15; 
+            font-size: 1.15rem; 
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #digital-clock {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 6px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            cursor: pointer;
+        }
+
+        .step-btn {
+            background: rgba(0,0,0,0.3);
+            color: #facc15;
+            border: 2px solid #334155;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        .step-btn:hover { color: #39ff14; }
+
+        .header-box {
+            background: rgba(0,0,0,0.25);
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+
+        #date-display-btn {
+            background: none;
+            border: none;
+            color: #39ff14;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #btn-now {
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            border: none;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #clock-wrapper {
+            position: relative;
+            width: min(90vw, 480px);
+            height: min(90vw, 480px);
+        }
+        #clock-face {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #000; border: 4px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+        #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .hand {
+            position: absolute; bottom: 50%; left: 50%;
+            transform-origin: bottom center;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        #hand-hour { width: 6px; height: 38%; background: #ff007f; box-shadow: 0 0 10px #ff007f; }
+        #hand-minute { width: 4px; height: 42%; background: #39ff14; box-shadow: 0 0 10px #39ff14; }
+        #hand-second { width: 2px; height: 46%; background: #a855f7; }
+        #center-dot {
+            position: absolute; width: 14px; height: 14px;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+        }
+
+        /* OPZIONE 1: Riquadro inferiore a altezza fissa che commuta tra Dati e Striscia Annuale */
+        #bottom-panels-container {
+            width: min(90vw, 480px);
+            margin-top: 12px;
+            box-sizing: border-box;
+        }
+
+        .info-panel-box {
+            width: 100%;
+            height: 148px; /* Altezza fissa: nessun aumento degli spazi */
+            background: rgba(0,0,0,0.25);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 1rem;
+            color: #39ff14;
+            text-align: center;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            font-weight: bold;
+            line-height: 1.25;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .panel-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(51,65,85,0.6);
+            padding-bottom: 4px;
+            gap: 6px;
+        }
+
+        .switch-strip-btn {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: none;
+        }
+        .switch-strip-btn.active {
+            background: #ef4444;
+            color: #ffffff;
+            border-color: #ef4444;
+        }
+
+        #panel-standard-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            margin-top: 4px;
+            font-size: 1rem;
+        }
+
+        /* Vista Striscia Annuale dentro il riquadro */
+        #panel-strip-body {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            flex: 1;
+            padding-top: 4px;
+            text-shadow: none;
+        }
+        #panel-strip-body.active {
+            display: flex;
+        }
+
+        .year-strip-scroll {
+            position: relative;
+            width: 100%;
+            height: 76px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0 6px;
+            box-sizing: border-box;
+            background: rgba(2, 6, 23, 0.85);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: #475569 transparent;
+        }
+
+        .day-card {
+            position: relative;
+            flex: 0 0 46px;
+            height: 62px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.68rem;
+            color: #e2e8f0;
+            cursor: pointer;
+            box-sizing: border-box;
+        }
+
+        /* Cursore mobile sul giorno selezionato */
+        .day-card.selected {
+            border: 2px solid #39ff14;
+            background: rgba(57, 255, 20, 0.16);
+            color: #39ff14;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.55);
+        }
+        .day-card.selected::before {
+            content: "▼";
+            position: absolute;
+            top: -10px;
+            font-size: 0.65rem;
+            color: #ff007f;
+        }
+
+        .day-card.is-today {
+            border-bottom: 2px solid #facc15;
+        }
+
+        .strip-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SunClock24</h1>
+
+        <div style="display: flex; align-items: center; gap: 3px;">
+            <button class="step-btn" onclick="changeHour(-1)">&lt;</button>
+            <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
+            <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+            <button class="step-btn" onclick="changeHour(1)">&gt;</button>
+        </div>
+
+        <div class="header-box">
+            <button class="step-btn" onclick="changeDate(-1)">&lt;</button>
+            <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
+            <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button class="step-btn" onclick="changeDate(1)">&gt;</button>
+            <button id="btn-now" onclick="resetToNow(true)">Adesso</button>
+        </div>
+    </header>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-minute"></div>
+            <div class="hand" id="hand-second"></div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <div id="bottom-panels-container">
+        <div class="info-panel-box">
+            <div class="panel-top-bar">
+                <span id="moon-summary" style="font-size: 0.88rem; color: #facc15;">🌙 Caricamento...</span>
+                <button id="btn-toggle-year-strip" class="switch-strip-btn" onclick="toggleYearStrip()">📅 Anno</button>
+            </div>
+
+            <!-- Vista Standard -->
+            <div id="panel-standard-body">
+                <div style="font-size: 0.95rem;">Piacenza - Italia</div>
+                <div class="info-grid">
+                    <div>Sorge: <span id="txt-sunrise">--:--</span></div>
+                    <div>Tramonta: <span id="txt-sunset">--:--</span></div>
+                </div>
+            </div>
+
+            <!-- Vista Striscia Annuale (Gennaio - Dicembre) -->
+            <div id="panel-strip-body">
+                <div class="year-strip-scroll" id="year-strip-scroll"></div>
+                <div class="strip-footer-info">
+                    <span id="strip-year-label">Anno 2026 (Gen–Dic)</span>
+                    <span style="color:#facc15;">Giallo = Oggi • Verde = Cursore</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const lat = 45.05, lon = 9.69;
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 250, cy = 250, radius = 248;
+
+        let selectedDate = new Date();
+        let isCustomTime = false;
+        let customTimeOffsetMs = 0;
+        let builtYear = null;
+        let isStripOpen = false;
+
+        function hoursToAngle(h) { return (h / 24) * Math.PI * 2 + Math.PI / 2; }
+
+        function getDayKey(d) {
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function toggleYearStrip() {
+            isStripOpen = !isStripOpen;
+            const stdBody = document.getElementById('panel-standard-body');
+            const stripBody = document.getElementById('panel-strip-body');
+            const btn = document.getElementById('btn-toggle-year-strip');
+
+            if (isStripOpen) {
+                stdBody.style.display = 'none';
+                stripBody.classList.add('active');
+                btn.classList.add('active');
+                btn.innerText = '✕ Dati';
+                ensureYearStripBuilt(selectedDate.getFullYear());
+                highlightCursor(false);
+            } else {
+                stripBody.classList.remove('active');
+                stdBody.style.display = 'flex';
+                btn.classList.remove('active');
+                btn.innerText = '📅 Anno';
+            }
+        }
+
+        // Costruisce una sola volta i 365/366 giorni dell'anno (Gennaio -> Dicembre)
+        function ensureYearStripBuilt(year) {
+            if (builtYear === year) return;
+            builtYear = year;
+
+            const container = document.getElementById('year-strip-scroll');
+            document.getElementById('strip-year-label').innerText = `Anno ${year} (Gen–Dic)`;
+            container.innerHTML = '';
+
+            const todayKey = getDayKey(new Date());
+            const cursor = new Date(year, 0, 1, 12, 0, 0);
+            const fragment = document.createDocumentFragment();
+
+            while (cursor.getFullYear() === year) {
+                const dCopy = new Date(cursor);
+                const key = getDayKey(dCopy);
+                const moon = SunCalc.getMoonIllumination(dCopy);
+                const pct = Math.round(moon.fraction * 100);
+
+                const card = document.createElement('div');
+                card.className = 'day-card' + (key === todayKey ? ' is-today' : '');
+                card.dataset.dayKey = key;
+
+                const dayNum = String(dCopy.getDate()).padStart(2, '0');
+                const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short' }).replace('.', '');
+
+                card.innerHTML = `
+                    <span style="font-weight:bold;">${dayNum} ${monthShort}</span>
+                    <span style="font-size:0.65rem; color:#facc15;">🌙 ${pct}%</span>
+                `;
+
+                // Cliccando su un giorno sposta solo il cursore e aggiorna la data senza ricreare la barra
+                card.onclick = () => {
+                    selectSpecificDate(dCopy.getFullYear(), dCopy.getMonth(), dCopy.getDate(), false);
+                };
+
+                fragment.appendChild(card);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            container.appendChild(fragment);
+        }
+
+        // Sposta il cursore visivo sul giorno selezionato; opzionalmente centra lo scorrimento
+        function highlightCursor(shouldCenter = false) {
+            const container = document.getElementById('year-strip-scroll');
+            if (!container) return;
+
+            const activeKey = getDayKey(selectedDate);
+            let targetCard = null;
+
+            container.querySelectorAll('.day-card').forEach(card => {
+                const isMatch = card.dataset.dayKey === activeKey;
+                card.classList.toggle('selected', isMatch);
+                if (isMatch) targetCard = card;
+            });
+
+            if (targetCard && shouldCenter) {
+                const leftPos = targetCard.offsetLeft - (container.clientWidth / 2) + (targetCard.clientWidth / 2);
+                container.scrollTo({ left: Math.max(0, leftPos), behavior: 'auto' });
+            }
+        }
+
+        function selectSpecificDate(y, m, d, shouldCenter = false) {
+            selectedDate.setFullYear(y, m, d);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            updateInfo();
+            drawClock();
+            if (isStripOpen) {
+                ensureYearStripBuilt(y);
+                highlightCursor(shouldCenter);
+            }
+        }
+
+        function updateInputsVal() {
+            const y = selectedDate.getFullYear();
+            const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const d = String(selectedDate.getDate()).padStart(2, '0');
+            const hh = String(selectedDate.getHours()).padStart(2, '0');
+            const mm = String(selectedDate.getMinutes()).padStart(2, '0');
+
+            document.getElementById('input-date').value = `${y}-${m}-${d}`;
+            document.getElementById('date-display-btn').innerText = `${d}/${m}/${y}`;
+            document.getElementById('input-time').value = `${hh}:${mm}`;
+        }
+
+        function changeDate(days) {
+            const next = new Date(selectedDate);
+            next.setDate(next.getDate() + days);
+            selectSpecificDate(next.getFullYear(), next.getMonth(), next.getDate(), true);
+        }
+
+        function changeHour(hours) {
+            selectedDate.setHours(selectedDate.getHours() + hours);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            updateInfo();
+            drawClock();
+            if (isStripOpen) highlightCursor(false);
+        }
+
+        function onDateChanged(val) {
+            if (!val) return;
+            const [y, m, d] = val.split('-').map(Number);
+            selectSpecificDate(y, m - 1, d, true);
+        }
+
+        function onTimeChanged(val) {
+            if (!val) return;
+            const [hh, mm] = val.split(':').map(Number);
+            selectedDate.setHours(hh, mm, 0, 0);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            updateInfo();
+            drawClock();
+        }
+
+        function resetToNow(shouldCenter = true) {
+            isCustomTime = false;
+            customTimeOffsetMs = 0;
+            selectedDate = new Date();
+            updateInputsVal();
+            updateInfo();
+            drawClock();
+            if (isStripOpen) {
+                ensureYearStripBuilt(selectedDate.getFullYear());
+                highlightCursor(shouldCenter);
+            }
+        }
+
+        function updateInfo() {
+            const times = SunCalc.getTimes(selectedDate, lat, lon);
+            const moon = SunCalc.getMoonIllumination(selectedDate);
+            const pct = Math.round(moon.fraction * 100);
+
+            document.getElementById('moon-summary').innerText = `🌙 Fase Lunare (${pct}%)`;
+            document.getElementById('txt-sunrise').innerText = times.sunrise.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('txt-sunset').innerText = times.sunset.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function drawClock() {
+            const times = SunCalc.getTimes(selectedDate, lat, lon);
+            ctx.clearRect(0, 0, 500, 500);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
+
+            const hRise = times.sunrise.getHours() + times.sunrise.getMinutes() / 60;
+            const hSet = times.sunset.getHours() + times.sunset.getMinutes() / 60;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, hoursToAngle(hRise), hoursToAngle(hSet));
+            ctx.closePath();
+            ctx.fillStyle = '#bae6fd';
+            ctx.fill();
+
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = 1; i <= 24; i++) {
+                const a = hoursToAngle(i);
+                const x = cx + radius * 0.78 * Math.cos(a);
+                const y = cy + radius * 0.78 * Math.sin(a);
+                ctx.fillStyle = '#39ff14';
+                ctx.fillText(i, x, y);
+            }
+        }
+
+        function updateHands() {
+            selectedDate = isCustomTime ? new Date(Date.now() + customTimeOffsetMs) : new Date();
+            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString('it-IT');
+
+            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
+
+            document.getElementById('hand-hour').style.transform = `rotate(${(h / 24) * 360 - 180}deg)`;
+            document.getElementById('hand-minute').style.transform = `rotate(${(m / 60) * 360}deg)`;
+            document.getElementById('hand-second').style.transform = `rotate(${(s / 60) * 360}deg)`;
+        }
+
+        updateInputsVal();
+        updateInfo();
+        drawClock();
+        setInterval(updateHands, 50);
+    </script>
+</body>
+</html>
