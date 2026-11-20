@@ -389,14 +389,14 @@
             -webkit-text-stroke: 0px transparent !important;
         }
 
-        /* Striscia Annuale con Cursore Centrale Fisso e Selettore Anno */
+        /* Striscia Annuale con Cursore Centrale Fisso, Selettori Anno/Mese e Tasto Oggi */
         .panel-strip-toggle-btn {
-            background: rgba(56, 189, 248, 0.14);
+            background: #0f172a;
             color: #38bdf8;
-            border: 1px solid rgba(56, 189, 248, 0.45);
+            border: 1px solid #38bdf8;
             border-radius: 5px;
-            padding: 2px 7px;
-            font-size: 0.72rem;
+            padding: 3px 8px;
+            font-size: 0.75rem;
             font-weight: bold;
             cursor: pointer;
             text-shadow: none !important;
@@ -405,8 +405,9 @@
         }
         .panel-strip-toggle-btn:hover,
         .panel-strip-toggle-btn.active {
-            background: rgba(56, 189, 248, 0.32);
+            background: #0284c7;
             color: #ffffff;
+            border-color: #e0f2fe;
         }
 
         #panel-standard-body {
@@ -431,29 +432,53 @@
 
         .strip-year-bar {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: center;
             gap: 6px;
         }
 
         .strip-year-step {
-            background: rgba(15, 23, 42, 0.85);
+            background: #0f172a;
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 5px;
-            width: 26px;
-            height: 24px;
-            font-size: 0.78rem;
+            min-width: 26px;
+            height: 26px;
+            font-size: 0.8rem;
             font-weight: bold;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0;
+            padding: 0 6px;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
         }
         .strip-year-step:hover {
             border-color: #38bdf8;
             color: #38bdf8;
+        }
+
+        .strip-today-btn {
+            background: #2563eb;
+            color: #fde047;
+            border: 1px solid #93c5fd;
+            border-radius: 6px;
+            height: 26px;
+            padding: 0 10px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-today-btn:hover {
+            background: #1d4ed8;
+            color: #ffffff;
         }
 
         .strip-year-select {
@@ -461,11 +486,14 @@
             color: #facc15;
             border: 1px solid #475569;
             border-radius: 5px;
-            padding: 2px 8px;
+            height: 26px;
+            padding: 0 6px;
             font-size: 0.8rem;
             font-weight: bold;
             cursor: pointer;
             outline: none;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
         }
         .strip-year-select:focus {
             border-color: #38bdf8;
@@ -475,7 +503,7 @@
             position: relative;
             width: 100%;
             border-radius: 6px;
-            background: rgba(15, 23, 42, 0.72);
+            background: rgba(15, 23, 42, 0.85);
             border: 1px solid #334155;
             overflow: hidden;
         }
@@ -485,10 +513,10 @@
             top: 0;
             bottom: 0;
             left: 50%;
-            width: 2px;
+            width: 2.5px;
             transform: translateX(-50%);
-            background: #38bdf8;
-            box-shadow: 0 0 8px rgba(56, 189, 248, 0.95);
+            background: #ff007f;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.95);
             z-index: 4;
             pointer-events: none;
         }
@@ -498,9 +526,9 @@
             top: -1px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.6rem;
+            font-size: 0.62rem;
             line-height: 1;
-            color: #38bdf8;
+            color: #ff007f;
         }
 
         .timeline-viewport {
@@ -509,7 +537,9 @@
             overflow-y: hidden;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
             padding: 8px 0 6px 0;
+            cursor: grab;
         }
         .timeline-viewport::-webkit-scrollbar {
             display: none;
@@ -518,19 +548,19 @@
         .timeline-track {
             display: inline-flex;
             align-items: stretch;
-            gap: 4px;
+            gap: 5px;
             padding: 0 50%;
         }
 
         .timeline-tick {
             flex: 0 0 auto;
-            min-width: 48px;
-            padding: 4px 5px;
-            border-radius: 5px;
-            background: rgba(30, 41, 59, 0.78);
+            min-width: 50px;
+            padding: 5px 6px;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.85);
             border: 1px solid #334155;
             color: #e2e8f0;
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
@@ -539,14 +569,52 @@
             align-items: center;
             gap: 2px;
             line-height: 1.15;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
         }
         .timeline-tick.is-today {
             border-color: #39ff14;
         }
         .timeline-tick.active {
-            background: rgba(56, 189, 248, 0.25);
-            border-color: #38bdf8;
+            background: rgba(20, 83, 45, 0.88);
+            border: 2px solid #39ff14;
+            box-shadow: inset 0 0 0 1px #facc15;
+            color: #39ff14;
+        }
+
+        .strip-side-cursor {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            width: 28px;
+            height: 38px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            user-select: none;
+            touch-action: manipulation;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-side-cursor:hover {
+            background: rgba(2, 132, 199, 0.92);
             color: #ffffff;
+        }
+        .strip-side-cursor.left {
+            left: 4px;
+        }
+        .strip-side-cursor.right {
+            right: 4px;
         }
 
         .modal {
@@ -656,18 +724,29 @@
                 </div>
             </div>
 
-            <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con cursore centrale fisso e selettore anno -->
+            <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con selettori Anno/Mese, tasto Oggi e cursori laterali -->
             <div id="panel-strip-body">
                 <div class="strip-year-bar">
-                    <button type="button" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
-                    <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
-                    <button type="button" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                    <div style="display:inline-flex;align-items:center;gap:4px;">
+                        <button type="button" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                        <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
+                        <button type="button" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                    </div>
+                    <div style="display:inline-flex;align-items:center;gap:4px;">
+                        <button type="button" class="strip-year-step" onclick="stepMonth(-1)" title="Mese precedente">&lt;</button>
+                        <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
+                        <button type="button" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
+                    </div>
+                    <button type="button" id="btn-strip-today" class="strip-today-btn" onclick="goToTodayOnStrip()" title="Torna ad oggi">Oggi</button>
                 </div>
+
                 <div class="strip-stage">
+                    <button type="button" id="strip-cursor-left" class="strip-side-cursor left" aria-label="Scorri a sinistra" title="Scorri a sinistra (tieni premuto per scorrimento veloce)">◀</button>
                     <div class="strip-center-cursor" aria-hidden="true"></div>
                     <div id="timeline-viewport" class="timeline-viewport">
                         <div id="timeline-track" class="timeline-track"></div>
                     </div>
+                    <button type="button" id="strip-cursor-right" class="strip-side-cursor right" aria-label="Scorri a destra" title="Scorri a destra (tieni premuto per scorrimento veloce)">▶</button>
                 </div>
             </div>
         </div>
@@ -752,11 +831,12 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
 
-        // Stato Striscia Annuale con Cursore Centrale Fisso e Selettore Anno
+        // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi e Cursori Laterali
         let builtYear = null;
         let isStripOpen = false;
         let isProgrammaticScroll = false;
         let scrollEndTimer = null;
+        let scrollRafId = null;
 
         const realMoonImage = new Image();
         realMoonImage.src = 'luna.jpg';
@@ -765,43 +845,96 @@
             return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
         }
 
-        function populateYearSelect(currentYear) {
-            const sel = document.getElementById('select-strip-year');
-            if (!sel) return;
-
-            const startY = Math.min(2020, currentYear - 5);
-            const endY = Math.max(2035, currentYear + 5);
-
-            if (
-                sel.options.length === 0 ||
-                parseInt(sel.options[0].value, 10) > currentYear ||
-                parseInt(sel.options[sel.options.length - 1].value, 10) < currentYear
-            ) {
-                sel.innerHTML = '';
-                for (let y = startY; y <= endY; y++) {
-                    const opt = document.createElement('option');
-                    opt.value = y;
-                    opt.textContent = y;
-                    sel.appendChild(opt);
-                }
+        function syncMonthSelectorValue(monthIdx) {
+            const monthSel = document.getElementById('select-strip-month');
+            if (monthSel && String(monthIdx) !== monthSel.value) {
+                monthSel.value = String(monthIdx);
             }
-            sel.value = String(currentYear);
+        }
+
+        function populateYearAndMonthSelects(currentYear, currentMonth) {
+            const yearSel = document.getElementById('select-strip-year');
+            if (yearSel) {
+                const startY = Math.min(2020, currentYear - 5);
+                const endY = Math.max(2035, currentYear + 5);
+
+                if (
+                    yearSel.options.length === 0 ||
+                    parseInt(yearSel.options[0].value, 10) > currentYear ||
+                    parseInt(yearSel.options[yearSel.options.length - 1].value, 10) < currentYear
+                ) {
+                    yearSel.innerHTML = '';
+                    for (let y = startY; y <= endY; y++) {
+                        const opt = document.createElement('option');
+                        opt.value = y;
+                        opt.textContent = y;
+                        yearSel.appendChild(opt);
+                    }
+                }
+                yearSel.value = String(currentYear);
+            }
+
+            const monthSel = document.getElementById('select-strip-month');
+            if (monthSel) {
+                if (monthSel.options.length !== 12) {
+                    monthSel.innerHTML = '';
+                    for (let m = 0; m < 12; m++) {
+                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'long', timeZone: 'UTC' });
+                        const capLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                        const opt = document.createElement('option');
+                        opt.value = String(m);
+                        opt.textContent = capLabel;
+                        monthSel.appendChild(opt);
+                    }
+                }
+                monthSel.value = String(currentMonth);
+            }
+        }
+
+        function goToTodayOnStrip() {
+            resetToNow();
+            if (isStripOpen) {
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(true);
+            }
         }
 
         function onYearSelectChanged(val) {
             const targetYear = parseInt(val, 10);
             if (isNaN(targetYear)) return;
-            const maxDay = new Date(Date.UTC(targetYear, selectedDate.getUTCMonth() + 1, 0)).getUTCDate();
+            const currentMonth = selectedDate.getUTCMonth();
+            const maxDay = new Date(Date.UTC(targetYear, currentMonth + 1, 0)).getUTCDate();
             const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-            applyStripDateChange(targetYear, selectedDate.getUTCMonth(), safeDay, false);
+            applyStripDateChange(targetYear, currentMonth, safeDay, false);
         }
 
         function stepYear(delta) {
             const nextYear = selectedDate.getUTCFullYear() + delta;
-            populateYearSelect(nextYear);
-            const maxDay = new Date(Date.UTC(nextYear, selectedDate.getUTCMonth() + 1, 0)).getUTCDate();
+            const currentMonth = selectedDate.getUTCMonth();
+            populateYearAndMonthSelects(nextYear, currentMonth);
+            const maxDay = new Date(Date.UTC(nextYear, currentMonth + 1, 0)).getUTCDate();
             const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-            applyStripDateChange(nextYear, selectedDate.getUTCMonth(), safeDay, false);
+            applyStripDateChange(nextYear, currentMonth, safeDay, false);
+        }
+
+        function onMonthSelectChanged(val) {
+            const targetMonth = parseInt(val, 10);
+            if (isNaN(targetMonth)) return;
+            const currentYear = selectedDate.getUTCFullYear();
+            const maxDay = new Date(Date.UTC(currentYear, targetMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(currentYear, targetMonth, safeDay, true);
+        }
+
+        function stepMonth(delta) {
+            const base = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth() + delta, 1, 12, 0, 0));
+            const nextYear = base.getUTCFullYear();
+            const nextMonth = base.getUTCMonth();
+            populateYearAndMonthSelects(nextYear, nextMonth);
+            const maxDay = new Date(Date.UTC(nextYear, nextMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(nextYear, nextMonth, safeDay, true);
         }
 
         function toggleYearStrip() {
@@ -817,7 +950,7 @@
                     btn.classList.add('active');
                     btn.innerText = '✕ Dati';
                 }
-                populateYearSelect(selectedDate.getUTCFullYear());
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
                 syncStripToSelectedDate(false);
             } else {
@@ -890,6 +1023,8 @@
                 if (isMatch) targetTick = tick;
             });
 
+            syncMonthSelectorValue(selectedDate.getUTCMonth());
+
             if (targetTick) {
                 isProgrammaticScroll = true;
                 const targetScrollLeft = targetTick.offsetLeft + (targetTick.offsetWidth / 2) - (viewport.clientWidth / 2);
@@ -905,6 +1040,7 @@
         function applyStripDateChange(y, m, d, smoothScroll = true) {
             selectedDate.setUTCFullYear(y, m, d);
             isCustomTime = true;
+            syncMonthSelectorValue(m);
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -914,7 +1050,7 @@
             updateSunClock(cachedLat, cachedLon);
 
             if (isStripOpen) {
-                populateYearSelect(y);
+                populateYearAndMonthSelects(y, m);
                 ensureYearStripBuilt(y);
                 syncStripToSelectedDate(smoothScroll);
             }
@@ -925,42 +1061,169 @@
             stripViewportEl.addEventListener('scroll', () => {
                 if (!isStripOpen || isProgrammaticScroll) return;
 
-                const track = document.getElementById('timeline-track');
-                if (!track) return;
-                const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
+                if (scrollRafId) return;
+                scrollRafId = requestAnimationFrame(() => {
+                    scrollRafId = null;
+                    const track = document.getElementById('timeline-track');
+                    if (!track) return;
+                    const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
 
-                let closestTick = null;
-                let minDist = Infinity;
+                    let closestTick = null;
+                    let minDist = Infinity;
 
-                track.querySelectorAll('.timeline-tick').forEach(tick => {
-                    const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
-                    const dist = Math.abs(centerX - tickCenter);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closestTick = tick;
+                    track.querySelectorAll('.timeline-tick').forEach(tick => {
+                        const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
+                        const dist = Math.abs(centerX - tickCenter);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestTick = tick;
+                        }
+                    });
+
+                    if (closestTick) {
+                        track.querySelectorAll('.timeline-tick.active').forEach(el => el.classList.remove('active'));
+                        closestTick.classList.add('active');
+
+                        const m = parseInt(closestTick.dataset.month, 10);
+                        syncMonthSelectorValue(m);
+
+                        if (closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
+                            const y = parseInt(closestTick.dataset.year, 10);
+                            const d = parseInt(closestTick.dataset.day, 10);
+
+                            selectedDate.setUTCFullYear(y, m, d);
+                            isCustomTime = true;
+
+                            const cityOffsetHours = getBaseLocationOffset();
+                            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+                            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+                            updateInputsVal();
+                            updateSunClock(cachedLat, cachedLon);
+                        }
                     }
                 });
-
-                if (closestTick && closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
-                    track.querySelectorAll('.timeline-tick.active').forEach(el => el.classList.remove('active'));
-                    closestTick.classList.add('active');
-
-                    const y = parseInt(closestTick.dataset.year, 10);
-                    const m = parseInt(closestTick.dataset.month, 10);
-                    const d = parseInt(closestTick.dataset.day, 10);
-
-                    selectedDate.setUTCFullYear(y, m, d);
-                    isCustomTime = true;
-
-                    const cityOffsetHours = getBaseLocationOffset();
-                    const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
-                    customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
-
-                    updateInputsVal();
-                    updateSunClock(cachedLat, cachedLon);
-                }
             }, { passive: true });
         }
+
+        // Supporto Mouse: Rotella + Trascinamento Drag
+        (function enableMouseStripNavigation() {
+            const viewport = document.getElementById('timeline-viewport');
+            if (!viewport) return;
+
+            viewport.addEventListener('wheel', (e) => {
+                if (!isStripOpen) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (delta !== 0) {
+                    e.preventDefault();
+                    viewport.scrollLeft += delta;
+                }
+            }, { passive: false });
+
+            let isMouseDragging = false;
+            let dragStartX = 0;
+            let dragStartScrollLeft = 0;
+            let hasDragged = false;
+
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || !isStripOpen) return;
+                isMouseDragging = true;
+                hasDragged = false;
+                dragStartX = e.clientX;
+                dragStartScrollLeft = viewport.scrollLeft;
+                viewport.style.cursor = 'grabbing';
+                viewport.style.userSelect = 'none';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isMouseDragging) return;
+                const dx = e.clientX - dragStartX;
+                if (Math.abs(dx) > 4) {
+                    hasDragged = true;
+                }
+                viewport.scrollLeft = dragStartScrollLeft - dx;
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!isMouseDragging) return;
+                isMouseDragging = false;
+                viewport.style.cursor = 'grab';
+                viewport.style.userSelect = '';
+                if (hasDragged) {
+                    setTimeout(() => { hasDragged = false; }, 0);
+                }
+            });
+
+            viewport.addEventListener('click', (e) => {
+                if (hasDragged) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        })();
+
+        // Cursori Laterali Sinistro (◀) e Destro (▶)
+        (function setupSideStripCursors() {
+            const viewport = document.getElementById('timeline-viewport');
+            const leftBtn = document.getElementById('strip-cursor-left');
+            const rightBtn = document.getElementById('strip-cursor-right');
+            if (!viewport || !leftBtn || !rightBtn) return;
+
+            let holdAnimId = null;
+            let holdTimeout = null;
+            let currentDir = 0;
+
+            const stepFast = (dir) => {
+                const stepPx = Math.max(140, Math.round(viewport.clientWidth * 0.65));
+                viewport.scrollLeft += dir * stepPx;
+            };
+
+            const startContinuousScroll = (dir) => {
+                stopContinuousScroll();
+                currentDir = dir;
+                stepFast(dir);
+
+                holdTimeout = setTimeout(() => {
+                    const speedPxPerFrame = 18;
+                    const tick = () => {
+                        if (currentDir !== dir || !isStripOpen) return;
+                        viewport.scrollLeft += dir * speedPxPerFrame;
+                        holdAnimId = requestAnimationFrame(tick);
+                    };
+                    holdAnimId = requestAnimationFrame(tick);
+                }, 180);
+            };
+
+            const stopContinuousScroll = () => {
+                currentDir = 0;
+                clearTimeout(holdTimeout);
+                if (holdAnimId) {
+                    cancelAnimationFrame(holdAnimId);
+                    holdAnimId = null;
+                }
+            };
+
+            const bindCursorEvents = (btn, dir) => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                });
+
+                btn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                }, { passive: true });
+            };
+
+            bindCursorEvents(leftBtn, -1);
+            bindCursorEvents(rightBtn, 1);
+
+            window.addEventListener('mouseup', stopContinuousScroll);
+            window.addEventListener('touchend', stopContinuousScroll);
+            window.addEventListener('touchcancel', stopContinuousScroll);
+            window.addEventListener('blur', stopContinuousScroll);
+        })();
 
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
@@ -1079,7 +1342,7 @@
             updateSunClock(cachedLat, cachedLon);
 
             if (isStripOpen) {
-                populateYearSelect(selectedDate.getUTCFullYear());
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
                 syncStripToSelectedDate(false);
             }
@@ -1153,7 +1416,7 @@
             updateSunClock(cachedLat, cachedLon);
 
             if (isStripOpen) {
-                populateYearSelect(selectedDate.getUTCFullYear());
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
                 syncStripToSelectedDate(true);
             }
@@ -1167,7 +1430,7 @@
             updateSunClock(cachedLat, cachedLon);
 
             if (isStripOpen) {
-                populateYearSelect(selectedDate.getUTCFullYear());
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
                 syncStripToSelectedDate(true);
             }
