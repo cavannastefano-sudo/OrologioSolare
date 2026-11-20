@@ -348,15 +348,16 @@
         .moon-header-trigger {
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             gap: 8px;
             margin-bottom: 6px;
             border-bottom: 1px solid rgba(51,65,85,0.6);
             padding-bottom: 6px;
+            padding-left: 26px;
             cursor: pointer;
         }
         .moon-header-trigger:hover {
-            opacity: 0.85;
+            opacity: 0.92;
         }
 
         .info-grid {
@@ -389,8 +390,10 @@
             -webkit-text-stroke: 0px transparent !important;
         }
 
-        /* Striscia Annuale con Cursore Centrale Fisso, Selettori Anno/Mese e Tasto Oggi */
+        /* Pulsante Striscia nell'angolo destro */
         .panel-strip-toggle-btn {
+            margin-left: auto;
+            flex-shrink: 0;
             background: #0f172a;
             color: #38bdf8;
             border: 1px solid #38bdf8;
@@ -706,7 +709,7 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box">
-            <!-- Barra superiore: Cliccando qui si apre la tendina Dettaglio Lunare + pulsante Striscia Annuale -->
+            <!-- Barra superiore: Cliccando sulla Luna/Fase si apre Dettaglio Lunare; a destra il pulsante Striscia -->
             <div class="moon-header-trigger" onclick="toggleMoonModal(true)" title="Apri dettaglio lunare">
                 <canvas id="moon-canvas" width="24" height="24"></canvas>
                 <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
