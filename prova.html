@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SunClock24 - Prova Striscia Tempo Header</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <style>
+        :root { 
+            --bg-color: #000000; 
+            color-scheme: dark;
+        }
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #facc15;
+            transition: background-color 0.6s ease;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        /* HEADER CON ALTEZZA BLOCCATA: ospita sia i controlli normali sia la striscia del tempo */
+        header {
+            position: relative;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: min(98vw, 480px);
+            min-height: 76px;
+            margin-bottom: 8px;
+            gap: 6px;
+            box-sizing: border-box;
+        }
+
+        h1 { 
+            margin: 0; 
+            color: #facc15; 
+            font-size: 1.15rem; 
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #digital-clock {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 6px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            cursor: pointer;
+        }
+
+        .step-btn {
+            background: rgba(0,0,0,0.3);
+            color: #facc15;
+            border: 2px solid #334155;
+            padding: 4px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        .step-btn:hover { color: #39ff14; }
+
+        .header-box {
+            background: rgba(0,0,0,0.25);
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+
+        #date-display-btn {
+            background: none;
+            border: none;
+            color: #39ff14;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #btn-now {
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            border: none;
+            padding: 3px 7px;
+            border-radius: 4px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Pulsante attivazione Striscia del Tempo */
+        #btn-toggle-strip {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 2px solid #38bdf8;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
+        }
+
+        /* STRISCIA DEL TEMPO OVERLAY NELL'HEADER (zero aumento di altezza) */
+        #header-time-strip-overlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.96);
+            border: 2px solid #38bdf8;
+            border-radius: 10px;
+            padding: 5px 8px;
+            box-sizing: border-box;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 50;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.9);
+        }
+        #header-time-strip-overlay.active {
+            display: flex;
+        }
+
+        .strip-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            color: #f8fafc;
+            gap: 4px;
+        }
+        .strip-mini-btn {
+            background: #1e293b;
+            color: #39ff14;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .strip-close-btn {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Contenitore scorrevole con cursore centrale fisso */
+        .timeline-viewport {
+            position: relative;
+            width: 100%;
+            height: 36px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            scrollbar-width: none;
+            border-radius: 6px;
+            background: #020617;
+            border: 1px solid #334155;
+            scroll-behavior: smooth;
+        }
+        .timeline-viewport::-webkit-scrollbar { display: none; }
+
+        /* Cursore fisso centrale che indica il punto attivo */
+        .timeline-center-cursor {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff007f;
+            box-shadow: 0 0 8px #ff007f;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .timeline-track {
+            display: flex;
+            align-items: center;
+            padding: 0 50%;
+            gap: 4px;
+        }
+
+        .timeline-tick {
+            flex: 0 0 54px;
+            height: 30px;
+            border-radius: 4px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+        .timeline-tick.active {
+            border-color: #39ff14;
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            font-weight: bold;
+            transform: scale(1.05);
+        }
+        .timeline-tick.is-today {
+            border-bottom: 2px solid #facc15;
+        }
+
+        /* OROLOGIO DI PROVA */
+        #clock-wrapper {
+            position: relative;
+            width: min(90vw, 480px);
+            height: min(90vw, 480px);
+        }
+        #clock-face {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #000; border: 4px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+        #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .hand {
+            position: absolute; bottom: 50%; left: 50%;
+            transform-origin: bottom center;
+            border-radius: 4px;
+            z-index: 10;
+        }
+        #hand-hour { width: 6px; height: 38%; background: #ff007f; box-shadow: 0 0 10px #ff007f; }
+        #hand-minute { width: 4px; height: 42%; background: #39ff14; box-shadow: 0 0 10px #39ff14; }
+        #hand-second { width: 2px; height: 46%; background: #a855f7; }
+        #center-dot {
+            position: absolute; width: 14px; height: 14px;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SunClock24</h1>
+
+        <div style="display: flex; align-items: center; gap: 3px;">
+            <button class="step-btn" onclick="changeHour(-1)">&lt;</button>
+            <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
+            <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+            <button class="step-btn" onclick="changeHour(1)">&gt;</button>
+        </div>
+
+        <div class="header-box">
+            <button class="step-btn" onclick="changeDate(-1)">&lt;</button>
+            <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
+            <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button class="step-btn" onclick="changeDate(1)">&gt;</button>
+            <button id="btn-now" onclick="resetToNow()">Adesso</button>
+            <button id="btn-toggle-strip" onclick="toggleTimeStrip(true)" title="Apri Striscia del Tempo">⏱️</button>
+        </div>
+
+        <!-- STRISCIA DEL TEMPO INTEGRATA NELL'HEADER -->
+        <div id="header-time-strip-overlay">
+            <div class="strip-top-bar">
+                <div style="display:flex; gap:4px;">
+                    <button class="strip-mini-btn" onclick="changeDate(-1)">-1g</button>
+                    <button class="strip-mini-btn" onclick="changeHour(-1)">-1h</button>
+                </div>
+                <span id="strip-current-label" style="font-weight:bold; color:#39ff14;">--/--/---- 00:00</span>
+                <div style="display:flex; gap:4px;">
+                    <button class="strip-mini-btn" onclick="resetToNow()" style="color:#facc15;">Adesso</button>
+                    <button class="strip-mini-btn" onclick="changeHour(1)">+1h</button>
+                    <button class="strip-mini-btn" onclick="changeDate(1)">+1g</button>
+                    <button class="strip-close-btn" onclick="toggleTimeStrip(false)">✕</button>
+                </div>
+            </div>
+
+            <div style="position:relative; width:100%;">
+                <div class="timeline-center-cursor"></div>
+                <div class="timeline-viewport" id="timeline-viewport">
+                    <div class="timeline-track" id="timeline-track"></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            <div class="hand" id="hand-hour"></div>
+            <div class="hand" id="hand-minute"></div>
+            <div class="hand" id="hand-second"></div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <script>
+        const lat = 45.05, lon = 9.69; // Piacenza
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 250, cy = 250, radius = 248;
+
+        let selectedDate = new Date();
+        let isCustomTime = false;
+        let customTimeOffsetMs = 0;
+
+        function hoursToAngle(h) { return (h / 24) * Math.PI * 2 + Math.PI / 2; }
+
+        function toggleTimeStrip(show) {
+            const overlay = document.getElementById('header-time-strip-overlay');
+            if (show) {
+                overlay.classList.add('active');
+                renderTimeStrip();
+            } else {
+                overlay.classList.remove('active');
+            }
+        }
+
+        // Genera la striscia del tempo (±15 giorni attorno alla data selezionata)
+        function renderTimeStrip() {
+            const track = document.getElementById('timeline-track');
+            const label = document.getElementById('strip-current-label');
+            if (!track) return;
+
+            const dStr = `${String(selectedDate.getDate()).padStart(2,'0')}/${String(selectedDate.getMonth()+1).padStart(2,'0')}/${selectedDate.getFullYear()}`;
+            const tStr = `${String(selectedDate.getHours()).padStart(2,'0')}:${String(selectedDate.getMinutes()).padStart(2,'0')}`;
+            label.innerText = `${dStr} • ${tStr}`;
+
+            const today = new Date();
+            track.innerHTML = '';
+
+            let activeEl = null;
+
+            for (let offset = -15; offset <= 15; offset++) {
+                const d = new Date(selectedDate);
+                d.setDate(selectedDate.getDate() + offset);
+
+                const moon = SunCalc.getMoonIllumination(d);
+                const pct = Math.round(moon.fraction * 100);
+
+                const tick = document.createElement('div');
+                tick.className = 'timeline-tick' + (offset === 0 ? ' active' : '');
+                if (d.toDateString() === today.toDateString()) tick.classList.add('is-today');
+
+                const dayNum = String(d.getDate()).padStart(2, '0');
+                const monthShort = d.toLocaleDateString('it-IT', { month: 'short' });
+
+                tick.innerHTML = `
+                    <span>${dayNum} ${monthShort}</span>
+                    <span style="font-size:0.65rem; color:#facc15;">🌙 ${pct}%</span>
+                `;
+
+                tick.onclick = () => {
+                    changeDate(offset);
+                };
+
+                track.appendChild(tick);
+                if (offset === 0) activeEl = tick;
+            }
+
+            if (activeEl) {
+                activeEl.scrollIntoView({ inline: 'center', behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function updateInputsVal() {
+            const y = selectedDate.getFullYear();
+            const m = String(selectedDate.getMonth() + 1).padStart(2, '0');
+            const d = String(selectedDate.getDate()).padStart(2, '0');
+            const hh = String(selectedDate.getHours()).padStart(2, '0');
+            const mm = String(selectedDate.getMinutes()).padStart(2, '0');
+
+            document.getElementById('input-date').value = `${y}-${m}-${d}`;
+            document.getElementById('date-display-btn').innerText = `${d}/${m}/${y}`;
+            document.getElementById('input-time').value = `${hh}:${mm}`;
+
+            if (document.getElementById('header-time-strip-overlay').classList.contains('active')) {
+                renderTimeStrip();
+            }
+        }
+
+        function changeDate(days) {
+            selectedDate.setDate(selectedDate.getDate() + days);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            drawClock();
+        }
+
+        function changeHour(hours) {
+            selectedDate.setHours(selectedDate.getHours() + hours);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            drawClock();
+        }
+
+        function onDateChanged(val) {
+            if (!val) return;
+            const [y, m, d] = val.split('-').map(Number);
+            selectedDate.setFullYear(y, m - 1, d);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            drawClock();
+        }
+
+        function onTimeChanged(val) {
+            if (!val) return;
+            const [hh, mm] = val.split(':').map(Number);
+            selectedDate.setHours(hh, mm, 0, 0);
+            isCustomTime = true;
+            customTimeOffsetMs = selectedDate.getTime() - Date.now();
+            updateInputsVal();
+            drawClock();
+        }
+
+        function resetToNow() {
+            isCustomTime = false;
+            customTimeOffsetMs = 0;
+            selectedDate = new Date();
+            updateInputsVal();
+            drawClock();
+        }
+
+        function drawClock() {
+            const times = SunCalc.getTimes(selectedDate, lat, lon);
+            ctx.clearRect(0, 0, 500, 500);
+
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI * 2); ctx.fill();
+
+            const hRise = times.sunrise.getHours() + times.sunrise.getMinutes() / 60;
+            const hSet = times.sunset.getHours() + times.sunset.getMinutes() / 60;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, hoursToAngle(hRise), hoursToAngle(hSet));
+            ctx.closePath();
+            ctx.fillStyle = '#bae6fd';
+            ctx.fill();
+
+            ctx.font = 'bold 22px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = 1; i <= 24; i++) {
+                const a = hoursToAngle(i);
+                const x = cx + radius * 0.78 * Math.cos(a);
+                const y = cy + radius * 0.78 * Math.sin(a);
+                ctx.fillStyle = '#39ff14';
+                ctx.fillText(i, x, y);
+            }
+        }
+
+        function updateHands() {
+            selectedDate = isCustomTime ? new Date(Date.now() + customTimeOffsetMs) : new Date();
+            document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString('it-IT');
+
+            const h = selectedDate.getHours() + selectedDate.getMinutes() / 60 + selectedDate.getSeconds() / 3600;
+            const m = selectedDate.getMinutes() + selectedDate.getSeconds() / 60;
+            const s = selectedDate.getSeconds() + selectedDate.getMilliseconds() / 1000;
+
+            document.getElementById('hand-hour').style.transform = `rotate(${(h / 24) * 360 - 180}deg)`;
+            document.getElementById('hand-minute').style.transform = `rotate(${(m / 60) * 360}deg)`;
+            document.getElementById('hand-second').style.transform = `rotate(${(s / 60) * 360}deg)`;
+        }
+
+        updateInputsVal();
+        drawClock();
+        setInterval(updateHands, 50);
+    </script>
+</body>
+</html>
