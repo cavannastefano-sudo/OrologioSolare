@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SunClock24 - Prova Opzione 1 con Cursore Centrale Opzione 2</title>
+    <title>SunClock24 - Prova Striscia Annuale con Selettore Anno</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
     <style>
         :root { 
@@ -130,7 +130,6 @@
             top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
         }
 
-        /* OPZIONE 1: Riquadro inferiore a altezza fissa */
         #bottom-panels-container {
             width: min(90vw, 480px);
             margin-top: 12px;
@@ -199,7 +198,6 @@
             font-size: 1rem;
         }
 
-        /* METODO OPZIONE 2 DENTRO IL RIQUADRO OPZIONE 1: Cursore fisso centrale + striscia annuale */
         #panel-strip-body {
             display: none;
             flex-direction: column;
@@ -215,10 +213,9 @@
         .timeline-wrapper {
             position: relative;
             width: 100%;
-            height: 76px;
+            height: 74px;
         }
 
-        /* Cursore fisso centrale stile Opzione 2 */
         .timeline-center-cursor {
             position: absolute;
             left: 50%;
@@ -259,14 +256,13 @@
         .timeline-track {
             display: flex;
             align-items: center;
-            /* Padding laterale del 50% così il 1° Gennaio e il 31 Dicembre arrivano esattamente al cursore centrale */
             padding: 0 50%;
             gap: 4px;
         }
 
         .timeline-tick {
             flex: 0 0 52px;
-            height: 60px;
+            height: 58px;
             border-radius: 5px;
             background: #0f172a;
             border: 1px solid #334155;
@@ -291,12 +287,45 @@
             border-bottom: 2px solid #facc15;
         }
 
+        /* Barra inferiore con selettore anno */
         .strip-footer-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 0.74rem;
             color: #cbd5e1;
+            gap: 6px;
+        }
+
+        .year-selector-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .year-mini-btn {
+            background: #1e293b;
+            color: #facc15;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .year-mini-btn:hover {
+            color: #39ff14;
+        }
+
+        #select-strip-year {
+            background: #0f172a;
+            color: #39ff14;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -347,7 +376,7 @@
                 </div>
             </div>
 
-            <!-- Vista Striscia Annuale con Cursore Centrale Fisso (Opzione 1 + Metodo Opzione 2) -->
+            <!-- Vista Striscia Annuale con Cursore Centrale Fisso e Selettore Anno -->
             <div id="panel-strip-body">
                 <div class="timeline-wrapper">
                     <div class="timeline-center-cursor"></div>
@@ -356,8 +385,13 @@
                     </div>
                 </div>
                 <div class="strip-footer-info">
-                    <span id="strip-year-label">Anno 2026 (Gen–Dic)</span>
-                    <span style="color:#facc15;">Trascina o tocca • Giallo = Oggi</span>
+                    <div class="year-selector-box">
+                        <span>Anno:</span>
+                        <button class="year-mini-btn" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                        <select id="select-strip-year" onchange="onYearSelectChanged(this.value)"></select>
+                        <button class="year-mini-btn" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                    </div>
+                    <span style="color:#facc15;">Giallo = Oggi</span>
                 </div>
             </div>
         </div>
@@ -384,6 +418,42 @@
             return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         }
 
+        function populateYearSelect(currentYear) {
+            const sel = document.getElementById('select-strip-year');
+            if (!sel) return;
+
+            const startY = Math.min(2020, currentYear - 5);
+            const endY = Math.max(2035, currentYear + 5);
+
+            if (sel.options.length === 0 || parseInt(sel.options[0].value, 10) > currentYear || parseInt(sel.options[sel.options.length - 1].value, 10) < currentYear) {
+                sel.innerHTML = '';
+                for (let y = startY; y <= endY; y++) {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    sel.appendChild(opt);
+                }
+            }
+            sel.value = String(currentYear);
+        }
+
+        function onYearSelectChanged(val) {
+            const targetYear = parseInt(val, 10);
+            if (isNaN(targetYear)) return;
+            // Mantiene mese e giorno correnti (adattando l'ultimo giorno se necessario, es. 29 feb)
+            const maxDay = new Date(targetYear, selectedDate.getMonth() + 1, 0).getDate();
+            const safeDay = Math.min(selectedDate.getDate(), maxDay);
+            applyDateChange(targetYear, selectedDate.getMonth(), safeDay, false);
+        }
+
+        function stepYear(delta) {
+            const nextYear = selectedDate.getFullYear() + delta;
+            populateYearSelect(nextYear);
+            const maxDay = new Date(nextYear, selectedDate.getMonth() + 1, 0).getDate();
+            const safeDay = Math.min(selectedDate.getDate(), maxDay);
+            applyDateChange(nextYear, selectedDate.getMonth(), safeDay, false);
+        }
+
         function toggleYearStrip() {
             isStripOpen = !isStripOpen;
             const stdBody = document.getElementById('panel-standard-body');
@@ -395,6 +465,7 @@
                 stripBody.classList.add('active');
                 btn.classList.add('active');
                 btn.innerText = '✕ Dati';
+                populateYearSelect(selectedDate.getFullYear());
                 ensureYearStripBuilt(selectedDate.getFullYear());
                 syncStripToSelectedDate(false);
             } else {
@@ -405,13 +476,11 @@
             }
         }
 
-        // Costruisce una sola volta i 365/366 giorni (1 Gennaio -> 31 Dicembre)
         function ensureYearStripBuilt(year) {
             if (builtYear === year) return;
             builtYear = year;
 
             const track = document.getElementById('timeline-track');
-            document.getElementById('strip-year-label').innerText = `Anno ${year} (1 Gen – 31 Dic)`;
             track.innerHTML = '';
 
             const todayKey = getDayKey(new Date());
@@ -439,7 +508,6 @@
                     <span style="font-size:0.64rem; color:#facc15;">🌙 ${pct}%</span>
                 `;
 
-                // Toccare una casella la porta dolcemente sotto il cursore centrale
                 tick.onclick = () => {
                     applyDateChange(dCopy.getFullYear(), dCopy.getMonth(), dCopy.getDate(), true);
                 };
@@ -451,7 +519,6 @@
             track.appendChild(fragment);
         }
 
-        // Scorre la barra in modo che il giorno selezionato si fermi esattamente sotto il cursore centrale
         function syncStripToSelectedDate(smooth = true) {
             const viewport = document.getElementById('timeline-viewport');
             const track = document.getElementById('timeline-track');
@@ -478,7 +545,6 @@
             }
         }
 
-        // Quando l'utente trascina la barra con il dito/mouse, legge quale casella passa sotto il cursore centrale
         document.getElementById('timeline-viewport').addEventListener('scroll', () => {
             if (!isStripOpen || isProgrammaticScroll) return;
 
@@ -523,6 +589,7 @@
             updateInfo();
             drawClock();
             if (isStripOpen) {
+                populateYearSelect(y);
                 ensureYearStripBuilt(y);
                 syncStripToSelectedDate(smoothScroll);
             }
@@ -554,6 +621,7 @@
             updateInfo();
             drawClock();
             if (isStripOpen) {
+                populateYearSelect(selectedDate.getFullYear());
                 ensureYearStripBuilt(selectedDate.getFullYear());
                 syncStripToSelectedDate(true);
             }
@@ -584,6 +652,7 @@
             updateInfo();
             drawClock();
             if (isStripOpen) {
+                populateYearSelect(selectedDate.getFullYear());
                 ensureYearStripBuilt(selectedDate.getFullYear());
                 syncStripToSelectedDate(true);
             }
