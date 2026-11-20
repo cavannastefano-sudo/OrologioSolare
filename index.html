@@ -309,6 +309,7 @@
 
         .info-panel-box {
             width: 100%;
+            height: 176px;
             background: rgba(0,0,0,0.25);
             padding: 10px 12px;
             border-radius: 6px;
@@ -323,7 +324,183 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+
+        .panel-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(51,65,85,0.6);
+            padding-bottom: 6px;
+        }
+
+        .panel-moon-trigger {
+            display: flex;
+            align-items: center;
             justify-content: center;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .switch-strip-btn {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: none;
+            flex-shrink: 0;
+        }
+        .switch-strip-btn.active {
+            background: #ef4444;
+            color: #ffffff;
+            border-color: #ef4444;
+        }
+
+        #panel-standard-body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        /* Striscia Annuale con Cursore Centrale Fisso e Selettore Anno */
+        #panel-strip-body {
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            flex: 1;
+            padding-top: 2px;
+            text-shadow: none;
+        }
+        #panel-strip-body.active {
+            display: flex;
+        }
+
+        .timeline-wrapper {
+            position: relative;
+            width: 100%;
+            height: 76px;
+        }
+
+        .timeline-center-cursor {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff007f;
+            box-shadow: 0 0 8px #ff007f;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 15;
+        }
+        .timeline-center-cursor::before {
+            content: "▼";
+            position: absolute;
+            top: -3px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.65rem;
+            color: #ff007f;
+        }
+
+        .timeline-viewport {
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            background: rgba(2, 6, 23, 0.9);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            scrollbar-width: none;
+            scroll-snap-type: x mandatory;
+        }
+        .timeline-viewport::-webkit-scrollbar { display: none; }
+
+        .timeline-track {
+            display: flex;
+            align-items: center;
+            padding: 0 50%;
+            gap: 4px;
+        }
+
+        .timeline-tick {
+            flex: 0 0 52px;
+            height: 60px;
+            border-radius: 5px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: #cbd5e1;
+            cursor: pointer;
+            scroll-snap-align: center;
+            box-sizing: border-box;
+            transition: border-color 0.12s, background 0.12s;
+        }
+        .timeline-tick.active {
+            border: 2px solid #39ff14;
+            background: rgba(57, 255, 20, 0.16);
+            color: #39ff14;
+            font-weight: bold;
+        }
+        .timeline-tick.is-today {
+            border-bottom: 2px solid #facc15;
+        }
+
+        .strip-footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.74rem;
+            color: #cbd5e1;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .year-selector-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .year-mini-btn {
+            background: #1e293b;
+            color: #facc15;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .year-mini-btn:hover {
+            color: #39ff14;
+        }
+
+        #select-strip-year {
+            background: #0f172a;
+            color: #39ff14;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
         }
 
         .info-grid {
@@ -339,7 +516,6 @@
             text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
         }
 
-        /* Stile personalizzato per rendere didascalie e orari della luna bianchi, in grassetto e senza bordo */
         .moon-grid-item {
             color: #ffffff !important;
             font-size: 0.82rem;
@@ -357,7 +533,6 @@
             -webkit-text-stroke: 0px transparent !important;
         }
 
-        /* Stile per le righe dei titoli delle sezioni nella tabella degli orari (Sfondo Rosso) */
         table.times-table tr.table-section-header,
         table.times-table tr.table-section-header td {
             background: #dc2626 !important;
@@ -445,20 +620,42 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box">
-            <!-- Riga Superiore: micro-luna apre gli orari, il testo della fase apre la tendina della Luna -->
-            <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; border-bottom: 1px solid rgba(51,65,85,0.6); padding-bottom: 6px;">
-                <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari"></canvas>
-                <span id="moon-phase-name" onclick="toggleMoonModal(true)" style="font-size: 0.95rem; color: #facc15; font-weight: bold; cursor: pointer;" title="Clicca per aprire il dettaglio lunare">Caricamento...</span>
+            <!-- Riga Superiore: micro-luna apre gli orari, il testo della fase apre la tendina della Luna, il tasto commuta la striscia annuale -->
+            <div class="panel-top-bar">
+                <div class="panel-moon-trigger">
+                    <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari"></canvas>
+                    <span id="moon-phase-name" onclick="toggleMoonModal(true)" style="font-size: 0.95rem; color: #facc15; font-weight: bold; cursor: pointer;" title="Clicca per aprire il dettaglio lunare">Caricamento...</span>
+                </div>
+                <button id="btn-toggle-year-strip" class="switch-strip-btn" onclick="toggleYearStrip()">⏱️ Striscia</button>
             </div>
 
-            <!-- Resto del riquadro: Cliccando qui si apre la tendina degli orari completi -->
-            <div onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Clicca per aprire tutti i tempi solari e lunari">
+            <!-- Parte inferiore Standard: Cliccando qui si apre la tendina degli orari completi -->
+            <div id="panel-standard-body" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari">
                 <div id="location-text">Ricerca posizione in corso...</div>
                 <div class="info-grid">
                     <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
                     <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
                     <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
                     <div class="moon-grid-item">Tramonta (luna):<br><span id="moon-set">--:--</span></div>
+                </div>
+            </div>
+
+            <!-- Parte inferiore Striscia Annuale con Cursore Centrale Fisso e Selettore Anno -->
+            <div id="panel-strip-body">
+                <div class="timeline-wrapper">
+                    <div class="timeline-center-cursor"></div>
+                    <div class="timeline-viewport" id="timeline-viewport">
+                        <div class="timeline-track" id="timeline-track"></div>
+                    </div>
+                </div>
+                <div class="strip-footer-info">
+                    <div class="year-selector-box">
+                        <span>Anno:</span>
+                        <button class="year-mini-btn" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                        <select id="select-strip-year" onchange="onYearSelectChanged(this.value)"></select>
+                        <button class="year-mini-btn" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                    </div>
+                    <span style="color:#facc15;">Giallo = Oggi</span>
                 </div>
             </div>
         </div>
