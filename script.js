@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Striscia Mensile Fluida + Selettori Anno e Mese in Alto + Senza Barra Inferiore Extra)
+// SunClock24 - script.js (Striscia Intero Anno + Selettori Anno e Mese + Scroll Fluido)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -133,11 +133,15 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Mensile Fluida con Selettori Anno e Mese in Alto
-let builtMonthKey = null;
+// Stato Striscia Intero Anno con Selettori Anno e Mese
+let builtYear = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
 let scrollEndTimer = null;
+let scrollRafId = null;
+let heavyUpdateTimer = null;
+let tickElements = [];
+let activeTickEl = null;
 
 // Caricamento dell'immagine reale della Luna con il nome corretto luna.jpg
 const realMoonImage = new Image();
@@ -151,7 +155,6 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
-// Garantisce visibilità e contrasto su qualsiasi sfondo (giorno/notte)
 function styleStripButtonVisibility(btn, active) {
     if (!btn) return;
     btn.style.backgroundColor = active ? '#0284c7' : '#0f172a';
@@ -188,7 +191,6 @@ function styleStripControlsVisibility() {
     });
 }
 
-// Rimuove eventuali righe/etichette inferiori ridondanti (come "Anno:" o "Giallo = Oggi")
 function removeBottomRedundantFooter() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
@@ -219,7 +221,6 @@ function removeBottomRedundantFooter() {
     });
 }
 
-// Adattamento automatico dell'altezza del riquadro inferiore in base al contenuto visibile
 function adaptBottomPanelHeight() {
     const container = document.getElementById('bottom-panels-container');
     const panelBox = container ? container.querySelector('.info-panel-box') : null;
@@ -245,8 +246,11 @@ function getDayKey(d) {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
-function getMonthKey(year, month) {
-    return `${year}-${String(month + 1).padStart(2, '0')}`;
+function syncMonthSelectorValue(monthIdx) {
+    const monthSel = document.getElementById('select-strip-month');
+    if (monthSel && String(monthIdx) !== monthSel.value) {
+        monthSel.value = String(monthIdx);
+    }
 }
 
 function ensureYearAndMonthSelectors(currentYear, currentMonth) {
@@ -347,7 +351,7 @@ function onMonthSelectChanged(val) {
     const currentYear = selectedDate.getUTCFullYear();
     const maxDay = new Date(Date.UTC(currentYear, targetMonth + 1, 0)).getUTCDate();
     const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-    applyStripDateChange(currentYear, targetMonth, safeDay, false);
+    applyStripDateChange(currentYear, targetMonth, safeDay, true);
 }
 
 function stepMonth(delta) {
@@ -356,7 +360,7 @@ function stepMonth(delta) {
     const nextMonth = base.getUTCMonth();
     const maxDay = new Date(Date.UTC(nextYear, nextMonth + 1, 0)).getUTCDate();
     const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-    applyStripDateChange(nextYear, nextMonth, safeDay, false);
+    applyStripDateChange(nextYear, nextMonth, safeDay, true);
 }
 
 function toggleYearStrip() {
@@ -376,7 +380,7 @@ function toggleYearStrip() {
             styleStripButtonVisibility(btn, true);
         }
         ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
-        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
         syncStripToSelectedDate(false);
     } else {
         if (stripBody) stripBody.classList.remove('active');
@@ -390,23 +394,36 @@ function toggleYearStrip() {
     adaptBottomPanelHeight();
 }
 
-// Costruisce solo i giorni del mese selezionato (massimo 31 giorni) per uno scorrimento fluido
-function ensureMonthStripBuilt(year, month) {
-    ensureYearAndMonthSelectors(year, month);
-    const keyMonth = getMonthKey(year, month);
-    if (builtMonthKey === keyMonth) return;
-    builtMonthKey = keyMonth;
+function setActiveTickElement(newTick) {
+    if (activeTickEl === newTick) return;
+    if (activeTickEl) {
+        activeTickEl.classList.remove('active');
+    }
+    activeTickEl = newTick || null;
+    if (activeTickEl) {
+        activeTickEl.classList.add('active');
+    }
+}
+
+// Costruisce tutti i giorni dell'anno selezionato (01 gen -> 31 dic)
+function ensureYearStripBuilt(year) {
+    ensureYearAndMonthSelectors(year, selectedDate.getUTCMonth());
+    if (builtYear === year) return;
+    builtYear = year;
 
     const track = document.getElementById('timeline-track');
     if (!track) return;
     track.innerHTML = '';
+    tickElements = [];
+    activeTickEl = null;
 
     const todayKey = getDayKey(getEffectiveDate());
-    const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    const selectedKey = getDayKey(selectedDate);
+    const cursor = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
     const fragment = document.createDocumentFragment();
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dCopy = new Date(Date.UTC(year, month, day, 12, 0, 0));
+    while (cursor.getUTCFullYear() === year) {
+        const dCopy = new Date(cursor);
         const key = getDayKey(dCopy);
         const moon = (typeof SunCalc.getMoonData === 'function')
             ? SunCalc.getMoonData(dCopy)
@@ -414,15 +431,16 @@ function ensureMonthStripBuilt(year, month) {
         const pct = Math.round(moon.fraction * 100);
 
         const tick = document.createElement('div');
-        tick.className = 'timeline-tick' + (key === todayKey ? ' is-today' : '');
+        const isSelected = (key === selectedKey);
+        tick.className = 'timeline-tick' + (key === todayKey ? ' is-today' : '') + (isSelected ? ' active' : '');
         tick.dataset.dayKey = key;
-        tick.dataset.year = year;
-        tick.dataset.month = month;
-        tick.dataset.day = day;
+        tick.dataset.year = dCopy.getUTCFullYear();
+        tick.dataset.month = dCopy.getUTCMonth();
+        tick.dataset.day = dCopy.getUTCDate();
         tick.style.textShadow = 'none';
         tick.style.webkitTextStroke = '0px transparent';
 
-        const dayNum = String(day).padStart(2, '0');
+        const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
         tick.innerHTML = `
@@ -431,16 +449,21 @@ function ensureMonthStripBuilt(year, month) {
         `;
 
         tick.onclick = () => {
-            applyStripDateChange(year, month, day, true);
+            applyStripDateChange(dCopy.getUTCFullYear(), dCopy.getUTCMonth(), dCopy.getUTCDate(), true);
         };
 
+        if (isSelected) {
+            activeTickEl = tick;
+        }
+        tickElements.push(tick);
         fragment.appendChild(tick);
+        cursor.setUTCDate(cursor.getUTCDate() + 1);
     }
 
     track.appendChild(fragment);
 }
 
-function syncStripToSelectedDate(smooth = true) {
+function syncStripToSelectedDate(smooth = false) {
     const viewport = document.getElementById('timeline-viewport');
     const track = document.getElementById('timeline-track');
     if (!viewport || !track) return;
@@ -448,11 +471,16 @@ function syncStripToSelectedDate(smooth = true) {
     const activeKey = getDayKey(selectedDate);
     let targetTick = null;
 
-    track.querySelectorAll('.timeline-tick').forEach(tick => {
-        const isMatch = tick.dataset.dayKey === activeKey;
-        tick.classList.toggle('active', isMatch);
-        if (isMatch) targetTick = tick;
-    });
+    for (let i = 0; i < tickElements.length; i++) {
+        const tick = tickElements[i];
+        if (tick.dataset.dayKey === activeKey) {
+            targetTick = tick;
+            break;
+        }
+    }
+
+    setActiveTickElement(targetTick);
+    syncMonthSelectorValue(selectedDate.getUTCMonth());
 
     if (targetTick) {
         isProgrammaticScroll = true;
@@ -462,26 +490,53 @@ function syncStripToSelectedDate(smooth = true) {
             behavior: smooth ? 'smooth' : 'auto'
         });
         clearTimeout(scrollEndTimer);
-        scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 250 : 50);
+        scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 240 : 40);
     }
 }
 
-function applyStripDateChange(y, m, d, smoothScroll = true) {
+function commitDateFromStrip(y, m, d, heavy = false) {
     selectedDate.setUTCFullYear(y, m, d);
     isCustomTime = true;
+    syncMonthSelectorValue(m);
 
     const targetOffset = getTotalOffsetHours();
     const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
     customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
     updateInputsVal();
-    if (isTimezoneOnlyMode) {
-        applyTimezonePreset();
+
+    if (heavy) {
+        if (isTimezoneOnlyMode) {
+            applyTimezonePreset();
+        } else {
+            updateSunClock(cachedLat, cachedLon);
+        }
     } else {
-        updateSunClock(cachedLat, cachedLon);
+        if (!isTimezoneOnlyMode && !isNaN(cachedLat) && !isNaN(cachedLon)) {
+            const baseOffset = getBaseLocationOffset();
+            let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
+            utcCalculationDate.setUTCHours(12, 0, 0, 0);
+            cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function')
+                ? SunCalc.getMoonData(utcCalculationDate)
+                : SunCalc.getMoonIllumination(utcCalculationDate);
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes || { rise: null, set: null });
+        }
+        clearTimeout(heavyUpdateTimer);
+        heavyUpdateTimer = setTimeout(() => {
+            if (!isStripOpen) return;
+            if (isTimezoneOnlyMode) {
+                applyTimezonePreset();
+            } else {
+                updateSunClock(cachedLat, cachedLon);
+            }
+        }, 140);
     }
+}
+
+function applyStripDateChange(y, m, d, smoothScroll = false) {
+    commitDateFromStrip(y, m, d, true);
     if (isStripOpen) {
-        ensureMonthStripBuilt(y, m);
+        ensureYearStripBuilt(y);
         syncStripToSelectedDate(smoothScroll);
     }
     adaptBottomPanelHeight();
@@ -489,47 +544,42 @@ function applyStripDateChange(y, m, d, smoothScroll = true) {
 
 const stripViewportEl = document.getElementById('timeline-viewport');
 if (stripViewportEl) {
+    stripViewportEl.style.webkitOverflowScrolling = 'touch';
+    stripViewportEl.style.touchAction = 'pan-x';
+
     stripViewportEl.addEventListener('scroll', () => {
-        if (!isStripOpen || isProgrammaticScroll) return;
+        if (!isStripOpen || isProgrammaticScroll || tickElements.length === 0) return;
 
-        const track = document.getElementById('timeline-track');
-        if (!track) return;
-        const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
+        if (scrollRafId) return;
+        scrollRafId = requestAnimationFrame(() => {
+            scrollRafId = null;
 
-        let closestTick = null;
-        let minDist = Infinity;
+            const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
+            let closestTick = null;
+            let minDist = Infinity;
 
-        track.querySelectorAll('.timeline-tick').forEach(tick => {
-            const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
-            const dist = Math.abs(centerX - tickCenter);
-            if (dist < minDist) {
-                minDist = dist;
-                closestTick = tick;
+            for (let i = 0; i < tickElements.length; i++) {
+                const tick = tickElements[i];
+                const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
+                const dist = Math.abs(centerX - tickCenter);
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestTick = tick;
+                }
+            }
+
+            if (closestTick) {
+                setActiveTickElement(closestTick);
+                const m = parseInt(closestTick.dataset.month, 10);
+                syncMonthSelectorValue(m);
+
+                if (closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
+                    const y = parseInt(closestTick.dataset.year, 10);
+                    const d = parseInt(closestTick.dataset.day, 10);
+                    commitDateFromStrip(y, m, d, false);
+                }
             }
         });
-
-        if (closestTick && closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
-            track.querySelectorAll('.timeline-tick.active').forEach(el => el.classList.remove('active'));
-            closestTick.classList.add('active');
-
-            const y = parseInt(closestTick.dataset.year, 10);
-            const m = parseInt(closestTick.dataset.month, 10);
-            const d = parseInt(closestTick.dataset.day, 10);
-
-            selectedDate.setUTCFullYear(y, m, d);
-            isCustomTime = true;
-
-            const targetOffset = getTotalOffsetHours();
-            const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
-            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
-
-            updateInputsVal();
-            if (isTimezoneOnlyMode) {
-                applyTimezonePreset();
-            } else {
-                updateSunClock(cachedLat, cachedLon);
-            }
-        }
     }, { passive: true });
 }
 
@@ -559,7 +609,7 @@ async function initClock() {
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
         if (isStripOpen) {
-            ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+            ensureYearStripBuilt(selectedDate.getUTCFullYear());
             syncStripToSelectedDate(false);
         }
         adaptBottomPanelHeight();
@@ -580,7 +630,7 @@ async function initClock() {
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
         if (isStripOpen) {
-            ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+            ensureYearStripBuilt(selectedDate.getUTCFullYear());
             syncStripToSelectedDate(false);
         }
         adaptBottomPanelHeight();
@@ -745,7 +795,7 @@ function updateInputsVal() {
 function onDateChanged(val) {
     if (!val) return;
     const parts = val.split('-');
-    applyStripDateChange(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), true);
+    applyStripDateChange(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), false);
 }
 
 function onTimeChanged(val) {
@@ -769,7 +819,7 @@ function onTimeChanged(val) {
 function changeDate(days) {
     const next = new Date(selectedDate);
     next.setUTCDate(next.getUTCDate() + days);
-    applyStripDateChange(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate(), true);
+    applyStripDateChange(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate(), false);
 }
 
 function changeHour(hours) {
@@ -789,8 +839,8 @@ function changeHour(hours) {
     }
 
     if (isStripOpen) {
-        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
-        syncStripToSelectedDate(true);
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        syncStripToSelectedDate(false);
     }
 }
 
@@ -845,8 +895,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     updateInputsVal();
     updateSunClock(cachedLat, cachedLon);
     if (isStripOpen) {
-        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
-        syncStripToSelectedDate(true);
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        syncStripToSelectedDate(false);
     }
     adaptBottomPanelHeight();
 }
@@ -872,8 +922,8 @@ function resetToNow() {
     updateSunClock(cachedLat, cachedLon);
 
     if (isStripOpen) {
-        ensureMonthStripBuilt(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
-        syncStripToSelectedDate(true);
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        syncStripToSelectedDate(false);
     }
     adaptBottomPanelHeight();
 }
@@ -1457,7 +1507,7 @@ function toggleMoonModal(show) {
 }
 
 function updateMoonDigitalPanel(illumination, moonTimes) {
-    if (isTimezoneOnlyMode) return;
+    if (isTimezoneOnlyMode || !illumination) return;
 
     const phaseNameEl = document.getElementById('moon-phase-name');
     const riseEl = document.getElementById('moon-rise');
@@ -1476,8 +1526,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     else { phaseName = "Calante"; }
 
     if (phaseNameEl) phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
-    if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-    if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+    if (riseEl && moonTimes) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+    if (setEl && moonTimes) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
 
     drawRealisticMoon('moon-canvas', illumination, 24);
     drawRealisticMoon('moon-clock-canvas', illumination, 32);
