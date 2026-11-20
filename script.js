@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine + Striscia Annuale Auto-Adattiva)
+// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine + Striscia Annuale Pulita)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -15,23 +15,23 @@ const radius = 248;
 function getPreciseStandardTimezone(lat, lon) {
     if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
         if (lon < -168.9) {
-            return 12; 
+            return 12;
         } else {
-            return -9; 
+            return -9;
         }
     }
 
-    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
-    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
-    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
-    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;    
+    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
+    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
+    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
+    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
 
     try {
         if (typeof tzlookup === 'function') {
             const tzString = tzlookup(lat, lon);
             const now = selectedDate || new Date();
             const janDate = new Date(now.getFullYear(), 0, 15);
-            
+
             const dtf = new Intl.DateTimeFormat('en-US', {
                 timeZone: tzString,
                 timeZoneName: 'shortOffset'
@@ -59,7 +59,7 @@ function getCurrentDstState() {
     if (urlParams.has('dst')) {
         return urlParams.get('dst') === 'true';
     }
-    
+
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
         if (typeof getEffectiveDST === 'function') {
@@ -116,17 +116,17 @@ function hoursToAngle(h) {
 
 const PALETTE = {
     night: '#000000', astro: '#172554', naut: '#1e3a8a',
-    civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
+    civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'
 };
 
 let cachedTimes = null;
 let cachedMoonTimes = null;
 let cachedMoonIllumination = null;
-let cachedLat = 45.05; 
+let cachedLat = 45.05;
 let cachedLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
-let customTimeOffsetMs = 0; 
+let customTimeOffsetMs = 0;
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -149,6 +149,48 @@ if (urlParams.has('auto')) {
 }
 if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
+}
+
+// Garantisce alta leggibilità del pulsante Striscia su qualsiasi sfondo (anche chiaro/azzurro)
+function styleStripButtonVisibility(btn, active) {
+    if (!btn) return;
+    btn.style.backgroundColor = active ? '#0284c7' : '#0f172a';
+    btn.style.color = active ? '#ffffff' : '#38bdf8';
+    btn.style.border = active ? '1px solid #e0f2fe' : '1px solid #38bdf8';
+    btn.style.boxShadow = '0 2px 6px rgba(0, 0, 0, 0.55)';
+    btn.style.textShadow = 'none';
+    btn.style.webkitTextStroke = '0px transparent';
+}
+
+// Rimuove eventuali etichette "Anno:" o "Giallo = Oggi" se presenti nel DOM della barra anno
+function cleanupStripYearLabels() {
+    const stripBody = document.getElementById('panel-strip-body');
+    if (!stripBody) return;
+
+    const yearBar = stripBody.querySelector('.strip-year-bar');
+    if (yearBar) {
+        yearBar.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) {
+                node.textContent = '';
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                const tag = node.tagName;
+                if (tag !== 'BUTTON' && tag !== 'SELECT') {
+                    const txt = (node.textContent || '').trim().toLowerCase();
+                    if (txt.includes('anno') || txt.includes('oggi') || txt.includes('giallo')) {
+                        node.remove();
+                    }
+                }
+            }
+        });
+    }
+
+    stripBody.querySelectorAll('span, small, label, div, p').forEach(el => {
+        if (el.id === 'timeline-viewport' || el.id === 'timeline-track' || el.classList.contains('strip-year-bar')) return;
+        const txt = (el.textContent || '').trim().toLowerCase();
+        if ((txt.includes('giallo') && txt.includes('oggi')) || txt === 'anno:' || txt === 'anno') {
+            el.remove();
+        }
+    });
 }
 
 // Adattamento automatico dell'altezza del riquadro inferiore in base al contenuto visibile
@@ -178,6 +220,7 @@ function getDayKey(d) {
 }
 
 function populateYearSelect(currentYear) {
+    cleanupStripYearLabels();
     const sel = document.getElementById('select-strip-year');
     if (!sel) return;
 
@@ -222,12 +265,15 @@ function toggleYearStrip() {
     const stripBody = document.getElementById('panel-strip-body');
     const btn = document.getElementById('btn-toggle-year-strip');
 
+    cleanupStripYearLabels();
+
     if (isStripOpen) {
         if (stdBody) stdBody.style.display = 'none';
         if (stripBody) stripBody.classList.add('active');
         if (btn) {
             btn.classList.add('active');
             btn.innerText = '✕ Dati';
+            styleStripButtonVisibility(btn, true);
         }
         populateYearSelect(selectedDate.getUTCFullYear());
         ensureYearStripBuilt(selectedDate.getUTCFullYear());
@@ -238,12 +284,14 @@ function toggleYearStrip() {
         if (btn) {
             btn.classList.remove('active');
             btn.innerText = '⏱️ Striscia';
+            styleStripButtonVisibility(btn, false);
         }
     }
     adaptBottomPanelHeight();
 }
 
 function ensureYearStripBuilt(year) {
+    cleanupStripYearLabels();
     if (builtYear === year) return;
     builtYear = year;
 
@@ -384,9 +432,12 @@ if (stripViewportEl) {
 }
 
 async function initClock() {
+    cleanupStripYearLabels();
+    styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
+
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     const isManualDst = getCurrentDstState();
-    
+
     const autoToggle = document.getElementById('auto-dst-toggle');
     const manualToggle = document.getElementById('manual-dst-toggle');
     if (autoToggle) autoToggle.checked = isAuto;
@@ -399,7 +450,7 @@ async function initClock() {
         cachedLat = parseFloat(urlParams.get('lat'));
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
-        
+
         document.getElementById('input-lat').value = cachedLat;
         document.getElementById('input-lon').value = cachedLon;
         updateTimeForLocation();
@@ -418,12 +469,12 @@ async function initClock() {
         cachedLat = 45.05;
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
-        
+
         const latInput = document.getElementById('input-lat');
         const lonInput = document.getElementById('input-lon');
         if (latInput) latInput.value = cachedLat;
         if (lonInput) lonInput.value = cachedLon;
-        
+
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
@@ -517,9 +568,9 @@ function toggleManualDST(checked) {
 function updateDstUI(isAuto) {
     const manualBox = document.getElementById('manual-dst-box');
     const manualInput = document.getElementById('manual-dst-toggle');
-    
+
     if (!manualBox || !manualInput) return;
-    
+
     if (isAuto) {
         manualBox.style.opacity = "0.4";
         manualInput.disabled = true;
@@ -533,8 +584,8 @@ function updateDstUI(isAuto) {
 
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
-    isTimezoneOnlyMode = true; 
-    
+    isTimezoneOnlyMode = true;
+
     selectedDate = getEffectiveDate();
     updateInputsVal();
 
@@ -559,9 +610,9 @@ function applyTimezonePreset() {
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
     utcCalculationDate.setUTCHours(12, 0, 0, 0);
-    
+
     cachedTimes = SunCalc.getTimes(utcCalculationDate, cachedLat, cachedLon);
-    
+
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     ctx.clearRect(0, 0, 500, 500);
@@ -602,7 +653,7 @@ function onTimeChanged(val) {
     const parts = val.split(':');
     selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
-    
+
     const targetOffset = getTotalOffsetHours();
     const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
     customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
@@ -657,11 +708,11 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         const geoData = await res.json();
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
-            const specificLocality = geoData.address.city || 
-                                     geoData.address.town || 
-                                     geoData.address.village || 
-                                     geoData.address.municipality || 
-                                     geoData.address.county || 
+            const specificLocality = geoData.address.city ||
+                                     geoData.address.town ||
+                                     geoData.address.village ||
+                                     geoData.address.municipality ||
+                                     geoData.address.county ||
                                      geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
@@ -678,8 +729,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
+        for (let opt of selectEl.options) {
+            if (parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
@@ -710,8 +761,8 @@ function resetToNow() {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
+        for (let opt of selectEl.options) {
+            if (parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
@@ -746,7 +797,7 @@ function useGPSLocation() {
             },
             (error) => {
                 updateTimeForLocation();
-                updateSunClock(cachedLat, cachedLon); 
+                updateSunClock(cachedLat, cachedLon);
                 document.getElementById('location-text').innerText = "GPS disattivato.";
             }
         );
@@ -771,7 +822,7 @@ async function searchCity() {
             const lat = parseFloat(data[0].lat);
             const lon = parseFloat(data[0].lon);
             const cityName = encodeURIComponent(data[0].display_name.split(',')[0]);
-            
+
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             const activeDst = getCurrentDstState();
             window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${cityName}&auto=${isAuto}&dst=${activeDst}`;
@@ -790,11 +841,11 @@ async function getPlaceNameAndRedirect(lat, lon) {
         const geoData = await res.json();
         if (geoData && geoData.address) {
             const country = geoData.address.country || '';
-            const specificLocality = geoData.address.city || 
-                                     geoData.address.town || 
-                                     geoData.address.village || 
-                                     geoData.address.municipality || 
-                                     geoData.address.county || 
+            const specificLocality = geoData.address.city ||
+                                     geoData.address.town ||
+                                     geoData.address.village ||
+                                     geoData.address.municipality ||
+                                     geoData.address.county ||
                                      geoData.address.state || '';
             if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
                 placeName = `${country} - ${specificLocality}`;
@@ -814,7 +865,7 @@ async function getPlaceNameAndRedirect(lat, lon) {
 
 function getCompleteMoonTimes(date, lat, lon) {
     let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
-    
+
     let times = SunCalc.getMoonTimes(targetDate, lat, lon);
     let rise = times.rise;
     let set = times.set;
@@ -867,7 +918,7 @@ function updateSunClock(lat, lon) {
     drawMinuteRingSafe();
     drawClockNumbers();
     updatePageBackground(cachedTimes);
-    
+
     updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
 
     lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
@@ -877,10 +928,10 @@ function updateSunClock(lat, lon) {
     const isDstNowActive = getCurrentDstState();
     const latFmt = parseFloat(lat).toFixed(2);
     const lonFmt = parseFloat(lon).toFixed(2);
-    
+
     const stdSign = standardTz >= 0 ? "+" : "";
     const totalSign = baseOffset >= 0 ? "+" : "";
-    
+
     let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
     if (isDstNowActive) {
         fusoText += ` (Ora legale: UTC ${totalSign}${baseOffset})`;
@@ -957,13 +1008,13 @@ function drawSunSlicesSafe(times) {
     let hSunset = timeToHours(times.sunset);
 
     let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
-    
+
     if (!hasValidSunset) {
         const baseOffset = getBaseLocationOffset();
         let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
         utcCalculationDate.setUTCHours(12, 0, 0, 0);
         const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
-        
+
         const isPolarNight = sunPos.altitude < 0;
         const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
 
@@ -996,7 +1047,7 @@ function drawSunSlicesSafe(times) {
     drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
     drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
     drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
-    
+
     drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
     drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
     drawSector(hSunset, duskH, PALETTE.civil, radius);
@@ -1118,17 +1169,19 @@ function updatePageBackground(times) {
     const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
     const currentColor = getIntervalColorSafe(h, times);
     const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
-    
+
     document.documentElement.style.backgroundColor = finalBg;
     document.body.style.backgroundColor = finalBg;
-    
+
     const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-    
+
     let metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
         metaThemeColor.setAttribute('content', finalBg);
     }
+
+    styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
 
     if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
         window.AndroidInterface.updateColors(finalBg);
@@ -1166,7 +1219,7 @@ function getIntervalColorSafe(h, times) {
     if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
     if (h >= hSunset && h < hDusk) return PALETTE.civil;
     if (h >= hDawn && h < hSunrise) return PALETTE.civil;
-    
+
     if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
     if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
 
@@ -1185,10 +1238,10 @@ function formatTime(date) {
 function drawRealisticSun(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    
+
     canvas.width = 32;
     canvas.height = 32;
-    
+
     const ctxSun = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
@@ -1210,7 +1263,7 @@ function drawRealisticSun(canvasId) {
     sunGrad.addColorStop(0.25, '#fef08a');
     sunGrad.addColorStop(0.6, '#f59e0b');
     sunGrad.addColorStop(1, '#c2410c');
-    
+
     ctxSun.fillStyle = sunGrad;
     ctxSun.beginPath();
     ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
@@ -1232,10 +1285,10 @@ function drawRealisticSun(canvasId) {
 function drawRealisticMoon(canvasId, illumination, size = 32) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    
+
     canvas.width = size;
     canvas.height = size;
-    
+
     const ctxMoon = canvas.getContext('2d');
     const width = canvas.width;
     const height = canvas.height;
@@ -1268,19 +1321,19 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     }
 
     if (illumination && typeof illumination.phase !== 'undefined') {
-        const phase = illumination.phase; 
+        const phase = illumination.phase;
         const d = r * Math.cos(phase * tau);
-        
+
         ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)';
         ctxMoon.beginPath();
-        
+
         const isWaxing = phase <= 0.5;
         ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, isWaxing);
-        
+
         let outerRx = Math.abs(d);
         let sweepFlag = (d >= 0) === isWaxing;
         ctxMoon.ellipse(cxCenter, cyCenter, outerRx, r, 0, Math.PI / 2, -Math.PI / 2, sweepFlag);
-        
+
         ctxMoon.closePath();
         ctxMoon.fill();
     }
@@ -1334,7 +1387,7 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     drawRealisticSun('sun-clock-canvas');
 
     drawRealisticMoon('big-moon-canvas', illumination, 140);
-    
+
     const bigTitleEl = document.getElementById('big-moon-phase-title');
     const bigDateEl = document.getElementById('big-moon-date-display');
     if (bigTitleEl) {
@@ -1406,7 +1459,7 @@ function populateTable(times, moonTimes, illumination) {
             <tr style="background: rgba(59, 130, 246, 0.4);"><td>Crepuscolo civile</td><td>----</td></tr>
             <tr style="background: rgba(30, 58, 138, 0.6);"><td>Crepuscolo nautico</td><td>----</td></tr>
             <tr style="background: rgba(23, 37, 84, 0.6);"><td>Crepuscolo astronomico</td><td>----</td></tr>
-            
+
             <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>----</td></tr>
             <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>----</b></td></tr>
@@ -1416,7 +1469,7 @@ function populateTable(times, moonTimes, illumination) {
     }
 
     const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
-    
+
     const events = [
         { name: "Mezzanotte solare", date: times.nadir, bg: "#000000" },
         { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
@@ -1438,7 +1491,7 @@ function populateTable(times, moonTimes, illumination) {
     events.forEach((ev, idx) => {
         const isNext = (idx === lastHighlightedEventIndex);
         const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
-        
+
         solarRowsHtml += `
             <tr style="background: ${ev.bg}; ${borderStyle}">
                 <td>${ev.name} ${isNext ? '📍' : ''}</td>
@@ -1476,7 +1529,7 @@ function updateHands() {
         const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
         selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
     }
-    
+
     document.getElementById('digital-clock').innerText = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
 
     const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
@@ -1503,7 +1556,7 @@ function updateHands() {
 
     if (cachedTimes && cachedMoonTimes) {
         updatePageBackground(cachedTimes);
-        
+
         const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
         if (currentHighlight !== lastHighlightedEventIndex) {
             lastHighlightedEventIndex = currentHighlight;
