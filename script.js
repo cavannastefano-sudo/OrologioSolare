@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Striscia Mensile Fluida + Selettori Anno e Mese Visibili + Auto-Adattamento)
+// SunClock24 - script.js (Striscia Mensile Fluida + Selettori Anno e Mese in Alto + Senza Barra Inferiore Extra)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -133,7 +133,7 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Mensile Fluida con Selettori Anno e Mese Visibili
+// Stato Striscia Mensile Fluida con Selettori Anno e Mese in Alto
 let builtMonthKey = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
@@ -188,6 +188,37 @@ function styleStripControlsVisibility() {
     });
 }
 
+// Rimuove eventuali righe/etichette inferiori ridondanti (come "Anno:" o "Giallo = Oggi")
+function removeBottomRedundantFooter() {
+    const stripBody = document.getElementById('panel-strip-body');
+    if (!stripBody) return;
+
+    const stage = stripBody.querySelector('.strip-stage');
+    if (stage) {
+        let nextEl = stage.nextElementSibling;
+        while (nextEl) {
+            const toRemove = nextEl;
+            nextEl = nextEl.nextElementSibling;
+            toRemove.remove();
+        }
+    }
+
+    stripBody.querySelectorAll('div, span, p, small, label').forEach(el => {
+        if (
+            el.id === 'timeline-viewport' ||
+            el.id === 'timeline-track' ||
+            el.classList.contains('strip-year-bar') ||
+            el.classList.contains('strip-stage') ||
+            el.classList.contains('strip-center-cursor')
+        ) return;
+
+        const txt = (el.textContent || '').trim().toLowerCase();
+        if (txt.includes('giallo') || txt.includes('oggi') || txt === 'anno:' || txt === 'anno') {
+            el.remove();
+        }
+    });
+}
+
 // Adattamento automatico dell'altezza del riquadro inferiore in base al contenuto visibile
 function adaptBottomPanelHeight() {
     const container = document.getElementById('bottom-panels-container');
@@ -222,6 +253,8 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
 
+    removeBottomRedundantFooter();
+
     let yearBar = stripBody.querySelector('.strip-year-bar');
     if (!yearBar) {
         yearBar = document.createElement('div');
@@ -235,7 +268,6 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     yearBar.style.justifyContent = 'center';
     yearBar.style.gap = '6px';
 
-    // Controlli Anno: < [select-strip-year] >
     let yearPrevBtn = document.getElementById('btn-year-prev');
     let yearSel = document.getElementById('select-strip-year');
     let yearNextBtn = document.getElementById('btn-year-next');
@@ -332,6 +364,8 @@ function toggleYearStrip() {
     const stdBody = document.getElementById('panel-standard-body');
     const stripBody = document.getElementById('panel-strip-body');
     const btn = document.getElementById('btn-toggle-year-strip');
+
+    removeBottomRedundantFooter();
 
     if (isStripOpen) {
         if (stdBody) stdBody.style.display = 'none';
