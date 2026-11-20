@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine + Striscia Annuale)
+// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine + Striscia Annuale Auto-Adattiva)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -151,6 +151,28 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+// Adattamento automatico dell'altezza del riquadro inferiore in base al contenuto visibile
+function adaptBottomPanelHeight() {
+    const container = document.getElementById('bottom-panels-container');
+    const panelBox = container ? container.querySelector('.info-panel-box') : null;
+    if (!container || !panelBox) return;
+
+    container.style.height = 'auto';
+    container.style.minHeight = '0px';
+    container.style.maxHeight = 'none';
+    panelBox.style.height = 'auto';
+    panelBox.style.minHeight = '0px';
+    panelBox.style.maxHeight = 'none';
+
+    requestAnimationFrame(() => {
+        const neededHeight = panelBox.offsetHeight;
+        if (neededHeight > 0) {
+            container.style.height = `${neededHeight}px`;
+            container.style.minHeight = `${neededHeight}px`;
+        }
+    });
+}
+
 function getDayKey(d) {
     return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
@@ -218,6 +240,7 @@ function toggleYearStrip() {
             btn.innerText = '⏱️ Striscia';
         }
     }
+    adaptBottomPanelHeight();
 }
 
 function ensureYearStripBuilt(year) {
@@ -311,6 +334,7 @@ function applyStripDateChange(y, m, d, smoothScroll = true) {
         ensureYearStripBuilt(y);
         syncStripToSelectedDate(smoothScroll);
     }
+    adaptBottomPanelHeight();
 }
 
 const stripViewportEl = document.getElementById('timeline-viewport');
@@ -386,6 +410,7 @@ async function initClock() {
             ensureYearStripBuilt(selectedDate.getUTCFullYear());
             syncStripToSelectedDate(false);
         }
+        adaptBottomPanelHeight();
         return;
     }
 
@@ -407,6 +432,7 @@ async function initClock() {
             ensureYearStripBuilt(selectedDate.getUTCFullYear());
             syncStripToSelectedDate(false);
         }
+        adaptBottomPanelHeight();
     };
 
     if (navigator.geolocation) {
@@ -443,6 +469,10 @@ let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() {
+        adaptBottomPanelHeight();
+        if (isStripOpen) {
+            syncStripToSelectedDate(false);
+        }
         if (cachedTimes) {
             ctx.clearRect(0, 0, 500, 500);
             drawSunSlicesSafe(cachedTimes);
@@ -540,6 +570,7 @@ function applyTimezonePreset() {
     drawClockNumbers();
     updatePageBackground(cachedTimes);
 
+    adaptBottomPanelHeight();
     toggleSettingsModal(false);
 }
 
@@ -668,6 +699,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         ensureYearStripBuilt(selectedDate.getUTCFullYear());
         syncStripToSelectedDate(true);
     }
+    adaptBottomPanelHeight();
 }
 
 function resetToNow() {
@@ -695,6 +727,7 @@ function resetToNow() {
         ensureYearStripBuilt(selectedDate.getUTCFullYear());
         syncStripToSelectedDate(true);
     }
+    adaptBottomPanelHeight();
 }
 
 function updateTimeForLocation() {
@@ -861,6 +894,7 @@ function updateSunClock(lat, lon) {
 
     document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
     document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+    adaptBottomPanelHeight();
 }
 
 function toTargetTime(date) {
