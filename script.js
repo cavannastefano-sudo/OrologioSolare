@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Posizione e Fase Lunare Corrette + Gestione Tabelle e Tendine + Striscia Annuale Pulita)
+// SunClock24 - script.js (Allineato a posizione.html + Pulsante Striscia Visibile + Selettore Anno senza scritte + Auto-Adattamento)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -133,7 +133,7 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Annuale con Cursore Centrale Fisso e Selettore Anno
+// Stato Striscia Annuale con Cursore Centrale Fisso e Selettore Anno (come posizione.html)
 let builtYear = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
@@ -162,8 +162,8 @@ function styleStripButtonVisibility(btn, active) {
     btn.style.webkitTextStroke = '0px transparent';
 }
 
-// Rimuove eventuali etichette "Anno:" o "Giallo = Oggi" se presenti nel DOM della barra anno
-function cleanupStripYearLabels() {
+// Rimuove solo le scritte testuali ("Anno:" e "Giallo = Oggi") mantenendo intatti <, tendina anni e >
+function removeOnlyUnwantedYearBarText() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
 
@@ -185,9 +185,20 @@ function cleanupStripYearLabels() {
     }
 
     stripBody.querySelectorAll('span, small, label, div, p').forEach(el => {
-        if (el.id === 'timeline-viewport' || el.id === 'timeline-track' || el.classList.contains('strip-year-bar')) return;
+        if (
+            el.id === 'timeline-viewport' ||
+            el.id === 'timeline-track' ||
+            el.classList.contains('strip-year-bar') ||
+            el.classList.contains('strip-stage') ||
+            el.classList.contains('strip-center-cursor')
+        ) return;
+
         const txt = (el.textContent || '').trim().toLowerCase();
-        if ((txt.includes('giallo') && txt.includes('oggi')) || txt === 'anno:' || txt === 'anno') {
+        if (
+            (txt.includes('giallo') && txt.includes('oggi')) ||
+            txt === 'anno:' ||
+            txt === 'anno'
+        ) {
             el.remove();
         }
     });
@@ -220,7 +231,7 @@ function getDayKey(d) {
 }
 
 function populateYearSelect(currentYear) {
-    cleanupStripYearLabels();
+    removeOnlyUnwantedYearBarText();
     const sel = document.getElementById('select-strip-year');
     if (!sel) return;
 
@@ -265,7 +276,7 @@ function toggleYearStrip() {
     const stripBody = document.getElementById('panel-strip-body');
     const btn = document.getElementById('btn-toggle-year-strip');
 
-    cleanupStripYearLabels();
+    removeOnlyUnwantedYearBarText();
 
     if (isStripOpen) {
         if (stdBody) stdBody.style.display = 'none';
@@ -291,7 +302,7 @@ function toggleYearStrip() {
 }
 
 function ensureYearStripBuilt(year) {
-    cleanupStripYearLabels();
+    removeOnlyUnwantedYearBarText();
     if (builtYear === year) return;
     builtYear = year;
 
@@ -432,7 +443,7 @@ if (stripViewportEl) {
 }
 
 async function initClock() {
-    cleanupStripYearLabels();
+    removeOnlyUnwantedYearBarText();
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -729,8 +740,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for (let opt of selectEl.options) {
-            if (parseFloat(opt.value) === preciseTz) {
+        for(let opt of selectEl.options) {
+            if(parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
@@ -761,8 +772,8 @@ function resetToNow() {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for (let opt of selectEl.options) {
-            if (parseFloat(opt.value) === preciseTz) {
+        for(let opt of selectEl.options) {
+            if(parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
