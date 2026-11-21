@@ -579,13 +579,13 @@
 
         .timeline-tick {
             flex: 0 0 auto;
-            min-width: 50px;
-            padding: 5px 6px;
+            min-width: 56px;
+            padding: 6px 6px;
             border-radius: 6px;
             background: rgba(30, 41, 59, 0.85);
             border: 1px solid #334155;
             color: #e2e8f0;
-            font-size: 0.7rem;
+            font-size: 0.84rem;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
@@ -1019,8 +1019,8 @@
                 const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
                 tick.innerHTML = `
-                    <span>${dayNum} ${monthShort}</span>
-                    <span style="font-size:0.64rem; color:#facc15;">🌙 ${pct}%</span>
+                    <span style="font-size:0.86rem; font-weight:bold; line-height:1.15;">${dayNum} ${monthShort}</span>
+                    <span style="font-size:0.80rem; font-weight:bold; color:#facc15; line-height:1.15;">${pct}%</span>
                 `;
 
                 tick.onclick = () => {
