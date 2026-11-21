@@ -127,10 +127,11 @@ function isDstForLocalClock(refDate) {
 // Applica la transizione esatta quando l'orologio avanza:
 // - Marzo: da 01:59 -> 02:00 diventa 03:00:00 (ora legale)
 // - Ottobre: da 02:59 -> 03:00 diventa 02:00:00 (ora solare)
+// Restituisce { date, dstChanged } così chi chiama può aggiornare subito grafica e orari.
 function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
-    if (urlParams.has('dst')) return nextDate;
+    if (urlParams.has('dst')) return { date: nextDate, dstChanged: false };
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (!isAuto || isAfricaTimezone()) return nextDate;
+    if (!isAuto || isAfricaTimezone()) return { date: nextDate, dstChanged: false };
 
     const prevY = prevDate.getUTCFullYear();
     const prevM = prevDate.getUTCMonth();
@@ -155,9 +156,10 @@ function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
     ) {
         const adjusted = new Date(nextDate.getTime());
         adjusted.setUTCHours(3, 0, 0, adjusted.getUTCMilliseconds());
+        const prevDst = getCurrentDstState();
         dstOverrideState = true;
         syncManualDstCheckbox(true);
-        return adjusted;
+        return { date: adjusted, dstChanged: (prevDst !== true) };
     }
 
     // Ottobre: 02:59 -> 02:00:00
@@ -169,12 +171,13 @@ function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
     ) {
         const adjusted = new Date(nextDate.getTime());
         adjusted.setUTCHours(2, 0, 0, adjusted.getUTCMilliseconds());
+        const prevDst = getCurrentDstState();
         dstOverrideState = false;
         syncManualDstCheckbox(false);
-        return adjusted;
+        return { date: adjusted, dstChanged: (prevDst !== false) };
     }
 
-    return nextDate;
+    return { date: nextDate, dstChanged: false };
 }
 
 function syncManualDstCheckbox(isDst) {
@@ -1317,7 +1320,12 @@ function changeDate(days) {
 function changeHour(hours) {
     const prev = new Date(selectedDate.getTime());
     const next = new Date(selectedDate.getTime() + (hours * 3600000));
-    selectedDate = (hours > 0) ? applyDstTransitionWhenAdvancing(prev, next) : next;
+    if (hours > 0) {
+        const res = applyDstTransitionWhenAdvancing(prev, next);
+        selectedDate = res.date;
+    } else {
+        selectedDate = next;
+    }
     isCustomTime = true;
     lastUpdateMs = performance.now();
     syncManualDstCheckbox(getCurrentDstState());
@@ -2173,6 +2181,7 @@ function updateHands() {
     lastUpdateMs = nowMs;
 
     const prevDate = new Date(selectedDate.getTime());
+    let dstJumped = false;
 
     if (!isCustomTime) {
         selectedDate = getEffectiveDate();
@@ -2186,13 +2195,16 @@ function updateHands() {
         }
     } else {
         const candidate = new Date(selectedDate.getTime() + deltaMs);
-        selectedDate = applyDstTransitionWhenAdvancing(prevDate, candidate);
+        const transitionRes = applyDstTransitionWhenAdvancing(prevDate, candidate);
+        selectedDate = transitionRes.date;
+        dstJumped = transitionRes.dstChanged;
 
         const targetOffset = getTotalOffsetHours();
         const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
         customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
 
         if (
+            dstJumped ||
             prevDate.getUTCFullYear() !== selectedDate.getUTCFullYear() ||
             prevDate.getUTCMonth() !== selectedDate.getUTCMonth() ||
             prevDate.getUTCDate() !== selectedDate.getUTCDate()
