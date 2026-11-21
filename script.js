@@ -586,6 +586,7 @@ const stripViewportEl = document.getElementById('timeline-viewport');
 if (stripViewportEl) {
     stripViewportEl.style.webkitOverflowScrolling = 'touch';
     stripViewportEl.style.touchAction = 'pan-x';
+    stripViewportEl.style.scrollSnapType = 'none';
 
     stripViewportEl.addEventListener('scroll', () => {
         if (!isStripOpen || isProgrammaticScroll || tickElements.length === 0) return;
@@ -691,14 +692,18 @@ if (stripViewportEl) {
     const viewport = document.getElementById('timeline-viewport');
     if (!viewport) return;
 
+    viewport.style.scrollSnapType = 'none';
+    viewport.querySelectorAll('.timeline-tick').forEach(t => {
+        t.style.scrollSnapAlign = 'none';
+    });
+
     const stage = viewport.parentElement || viewport;
     if (getComputedStyle(stage).position === 'static') {
         stage.style.position = 'relative';
     }
 
-    if (document.getElementById('strip-cursor-left') || document.getElementById('strip-cursor-right')) {
-        return;
-    }
+    let leftBtn = document.getElementById('strip-cursor-left');
+    let rightBtn = document.getElementById('strip-cursor-right');
 
     const createCursorBtn = (id, symbol, side) => {
         const btn = document.createElement('button');
@@ -710,7 +715,7 @@ if (stripViewportEl) {
         btn.style.top = '50%';
         btn.style[side] = '4px';
         btn.style.transform = 'translateY(-50%)';
-        btn.style.zIndex = '15';
+        btn.style.zIndex = '25';
         btn.style.width = '28px';
         btn.style.height = '38px';
         btn.style.borderRadius = '6px';
@@ -727,23 +732,32 @@ if (stripViewportEl) {
         btn.style.textShadow = 'none';
         btn.style.webkitTextStroke = '0px transparent';
         btn.style.userSelect = 'none';
-        btn.style.touchAction = 'manipulation';
+        btn.style.touchAction = 'none';
         return btn;
     };
 
-    const leftBtn = createCursorBtn('strip-cursor-left', '◀', 'left');
-    const rightBtn = createCursorBtn('strip-cursor-right', '▶', 'right');
-
-    stage.appendChild(leftBtn);
-    stage.appendChild(rightBtn);
+    if (!leftBtn) {
+        leftBtn = createCursorBtn('strip-cursor-left', '◀', 'left');
+        stage.appendChild(leftBtn);
+    }
+    if (!rightBtn) {
+        rightBtn = createCursorBtn('strip-cursor-right', '▶', 'right');
+        stage.appendChild(rightBtn);
+    }
 
     let holdAnimId = null;
     let holdTimeout = null;
     let currentDir = 0;
 
+    const emitScroll = () => {
+        viewport.dispatchEvent(new Event('scroll'));
+    };
+
     const stepFast = (dir) => {
+        viewport.style.scrollSnapType = 'none';
         const stepPx = Math.max(140, Math.round(viewport.clientWidth * 0.65));
         viewport.scrollLeft += dir * stepPx;
+        emitScroll();
     };
 
     const startContinuousScroll = (dir) => {
@@ -754,17 +768,22 @@ if (stripViewportEl) {
         holdTimeout = setTimeout(() => {
             const speedPxPerFrame = 18;
             const tick = () => {
-                if (currentDir !== dir || !isStripOpen) return;
+                if (currentDir !== dir) {
+                    stopContinuousScroll();
+                    return;
+                }
                 viewport.scrollLeft += dir * speedPxPerFrame;
+                emitScroll();
                 holdAnimId = requestAnimationFrame(tick);
             };
             holdAnimId = requestAnimationFrame(tick);
-        }, 180);
+        }, 160);
     };
 
     const stopContinuousScroll = () => {
         currentDir = 0;
         clearTimeout(holdTimeout);
+        holdTimeout = null;
         if (holdAnimId) {
             cancelAnimationFrame(holdAnimId);
             holdAnimId = null;
@@ -772,21 +791,34 @@ if (stripViewportEl) {
     };
 
     const bindCursorEvents = (btn, dir) => {
+        btn.onmousedown = null;
+        btn.ontouchstart = null;
+
+        btn.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            startContinuousScroll(dir);
+        });
+
         btn.addEventListener('mousedown', (e) => {
+            if (e.pointerType) return;
             e.preventDefault();
             e.stopPropagation();
             startContinuousScroll(dir);
         });
 
         btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             startContinuousScroll(dir);
-        }, { passive: true });
+        }, { passive: false });
     };
 
     bindCursorEvents(leftBtn, -1);
     bindCursorEvents(rightBtn, 1);
 
+    window.addEventListener('pointerup', stopContinuousScroll);
+    window.addEventListener('pointercancel', stopContinuousScroll);
     window.addEventListener('mouseup', stopContinuousScroll);
     window.addEventListener('touchend', stopContinuousScroll);
     window.addEventListener('touchcancel', stopContinuousScroll);
