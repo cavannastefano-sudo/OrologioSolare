@@ -12,108 +12,6 @@ const cx = 250;
 const cy = 250;
 const radius = 248;
 
-function getPreciseStandardTimezone(lat, lon) {
-    if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-        if (lon < -168.9) {
-            return 12;
-        } else {
-            return -9;
-        }
-    }
-
-    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
-    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
-    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
-    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
-
-    try {
-        if (typeof tzlookup === 'function') {
-            const tzString = tzlookup(lat, lon);
-            const now = selectedDate || new Date();
-            const janDate = new Date(now.getFullYear(), 0, 15);
-
-            const dtf = new Intl.DateTimeFormat('en-US', {
-                timeZone: tzString,
-                timeZoneName: 'shortOffset'
-            });
-            const parts = dtf.formatToParts(janDate);
-            const offsetPart = parts.find(p => p.type === 'timeZoneName');
-            if (offsetPart) {
-                const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                if (match) {
-                    const hours = parseInt(match[1], 10);
-                    const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
-                    return hours + (hours < 0 ? -minutes : minutes);
-                }
-            }
-        }
-    } catch (e) {
-        console.warn("Fallback su calcolo fuso geometrico", e);
-    }
-
-    return Math.round(lon / 15);
-}
-
-function getCurrentDstState() {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has('dst')) {
-        return urlParams.get('dst') === 'true';
-    }
-
-    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (isAuto && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-        if (typeof getEffectiveDST === 'function') {
-            const effective = getEffectiveDST(cachedLat, cachedLon, selectedDate || new Date());
-            if (effective !== undefined) return effective;
-        }
-
-        try {
-            if (typeof tzlookup === 'function') {
-                const tzString = tzlookup(cachedLat, cachedLon);
-                if (tzString.startsWith('Africa/')) return false;
-
-                const now = selectedDate || new Date();
-                const dtf = new Intl.DateTimeFormat('en-US', {
-                    timeZone: tzString,
-                    timeZoneName: 'shortOffset'
-                });
-                const parts = dtf.formatToParts(now);
-                const offsetPart = parts.find(p => p.type === 'timeZoneName');
-                if (offsetPart) {
-                    const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
-                    if (match) {
-                        const currentOffset = parseInt(match[1], 10);
-                        const standardBaseOffset = getPreciseStandardTimezone(cachedLat, cachedLon);
-                        return currentOffset > standardBaseOffset;
-                    }
-                }
-            }
-        } catch (e) {
-            console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
-        }
-    }
-
-    return localStorage.getItem('sunclock_dst') === 'true';
-}
-
-function getBaseLocationOffset() {
-    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-    const isDstNowActive = getCurrentDstState();
-    return standardTz + (isDstNowActive ? 1 : 0);
-}
-
-function getTotalOffsetHours() {
-    const tzPresetEl = document.getElementById('timezone-preset');
-    if (!tzPresetEl) return getBaseLocationOffset();
-    const baseTz = parseFloat(tzPresetEl.value);
-    const isDstNowActive = getCurrentDstState();
-    return baseTz + (isDstNowActive ? 1 : 0);
-}
-
-function hoursToAngle(h) {
-    return (h / 24) * Math.PI * 2 + Math.PI / 2;
-}
-
 const PALETTE = {
     night: '#000000', astro: '#172554', naut: '#1e3a8a',
     civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'
@@ -127,6 +25,8 @@ let cachedLon = 9.69;
 let selectedDate = new Date();
 let isCustomTime = false;
 let customTimeOffsetMs = 0;
+let lastUpdateMs = performance.now();
+let dstOverrideState = null; // null = automatico / regola 01:59->03:00 e 02:59->02:00
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -153,6 +53,199 @@ if (urlParams.has('auto')) {
 }
 if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
+}
+
+function getLastSundayOfMonth(year, month) {
+    const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
+    const dayOfWeek = lastDay.getUTCDay(); // 0 = Domenica
+    return lastDay.getUTCDate() - dayOfWeek;
+}
+
+function isEuDstByCalendar(year, month, day) {
+    const marchLastSunday = getLastSundayOfMonth(year, 2); // Marzo
+    const octLastSunday = getLastSundayOfMonth(year, 9);   // Ottobre
+
+    if (month < 2 || month > 9) return false;
+    if (month > 2 && month < 9) return true;
+    if (month === 2) return day >= marchLastSunday;
+    if (month === 9) return day < octLastSunday;
+    return false;
+}
+
+function isAfricaTimezone() {
+    if (isNaN(cachedLat) || isNaN(cachedLon) || typeof tzlookup !== 'function') return false;
+    try {
+        const tzString = tzlookup(cachedLat, cachedLon);
+        return !!(tzString && tzString.startsWith('Africa/'));
+    } catch (e) {
+        return false;
+    }
+}
+
+// Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
+function isDstForLocalClock(refDate) {
+    if (urlParams.has('dst')) {
+        return urlParams.get('dst') === 'true';
+    }
+
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    if (!isAuto) {
+        return localStorage.getItem('sunclock_dst') === 'true';
+    }
+
+    if (dstOverrideState !== null) {
+        return dstOverrideState;
+    }
+
+    if (isAfricaTimezone()) {
+        return false;
+    }
+
+    const d = refDate || selectedDate || new Date();
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth();
+    const day = d.getUTCDate();
+    const h = d.getUTCHours();
+    const min = d.getUTCMinutes();
+    const sec = d.getUTCSeconds();
+
+    const marchLastSunday = getLastSundayOfMonth(y, 2);
+    const octLastSunday = getLastSundayOfMonth(y, 9);
+
+    if (m === 2 && day === marchLastSunday) {
+        // Fino alle 01:59:59 resta in ora solare; dalle 02:00 (poi portata a 03:00) è ora legale
+        return (h > 2) || (h === 2 && (min > 0 || sec > 0));
+    }
+    if (m === 9 && day === octLastSunday) {
+        // Fino alle 02:59:59 resta in ora legale; dalle 03:00 (poi portata a 02:00) è ora solare
+        return h < 3;
+    }
+
+    return isEuDstByCalendar(y, m, day);
+}
+
+// Applica la transizione esatta quando l'orologio avanza:
+// - Marzo: da 01:59 -> 02:00 diventa 03:00:00 (ora legale)
+// - Ottobre: da 02:59 -> 03:00 diventa 02:00:00 (ora solare)
+function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
+    if (urlParams.has('dst')) return nextDate;
+    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    if (!isAuto || isAfricaTimezone()) return nextDate;
+
+    const prevY = prevDate.getUTCFullYear();
+    const prevM = prevDate.getUTCMonth();
+    const prevD = prevDate.getUTCDate();
+    const prevH = prevDate.getUTCHours();
+    const prevMin = prevDate.getUTCMinutes();
+
+    const nextY = nextDate.getUTCFullYear();
+    const nextM = nextDate.getUTCMonth();
+    const nextD = nextDate.getUTCDate();
+    const nextH = nextDate.getUTCHours();
+
+    const marchLastSunday = getLastSundayOfMonth(prevY, 2);
+    const octLastSunday = getLastSundayOfMonth(prevY, 9);
+
+    // Marzo: 01:59 -> 03:00:00
+    if (
+        prevY === nextY &&
+        prevM === 2 && nextM === 2 &&
+        prevD === marchLastSunday && nextD === marchLastSunday &&
+        prevH === 1 && prevMin === 59 && nextH >= 2
+    ) {
+        const adjusted = new Date(nextDate.getTime());
+        adjusted.setUTCHours(3, 0, 0, adjusted.getUTCMilliseconds());
+        dstOverrideState = true;
+        syncManualDstCheckbox(true);
+        return adjusted;
+    }
+
+    // Ottobre: 02:59 -> 02:00:00
+    if (
+        prevY === nextY &&
+        prevM === 9 && nextM === 9 &&
+        prevD === octLastSunday && nextD === octLastSunday &&
+        prevH === 2 && prevMin === 59 && nextH >= 3
+    ) {
+        const adjusted = new Date(nextDate.getTime());
+        adjusted.setUTCHours(2, 0, 0, adjusted.getUTCMilliseconds());
+        dstOverrideState = false;
+        syncManualDstCheckbox(false);
+        return adjusted;
+    }
+
+    return nextDate;
+}
+
+function syncManualDstCheckbox(isDst) {
+    const manualToggle = document.getElementById('manual-dst-toggle');
+    if (manualToggle && manualToggle.checked !== isDst) {
+        manualToggle.checked = isDst;
+    }
+}
+
+function getPreciseStandardTimezone(lat, lon) {
+    if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+        if (lon < -168.9) {
+            return 12;
+        } else {
+            return -9;
+        }
+    }
+
+    if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
+    if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
+    if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
+    if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
+
+    try {
+        if (typeof tzlookup === 'function') {
+            const tzString = tzlookup(lat, lon);
+            const now = selectedDate || new Date();
+            const janDate = new Date(now.getUTCFullYear(), 0, 15);
+
+            const dtf = new Intl.DateTimeFormat('en-US', {
+                timeZone: tzString,
+                timeZoneName: 'shortOffset'
+            });
+            const parts = dtf.formatToParts(janDate);
+            const offsetPart = parts.find(p => p.type === 'timeZoneName');
+            if (offsetPart) {
+                const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                if (match) {
+                    const hours = parseInt(match[1], 10);
+                    const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                    return hours + (hours < 0 ? -minutes : minutes);
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("Fallback su calcolo fuso geometrico", e);
+    }
+
+    return Math.round(lon / 15);
+}
+
+function getCurrentDstState() {
+    return isDstForLocalClock(selectedDate);
+}
+
+function getBaseLocationOffset() {
+    const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+    const isDstNowActive = getCurrentDstState();
+    return standardTz + (isDstNowActive ? 1 : 0);
+}
+
+function getTotalOffsetHours() {
+    const tzPresetEl = document.getElementById('timezone-preset');
+    if (!tzPresetEl) return getBaseLocationOffset();
+    const baseTz = parseFloat(tzPresetEl.value);
+    const isDstNowActive = getCurrentDstState();
+    return baseTz + (isDstNowActive ? 1 : 0);
+}
+
+function hoursToAngle(h) {
+    return (h / 24) * Math.PI * 2 + Math.PI / 2;
 }
 
 function removeTopDateTimeArrows() {
@@ -670,9 +763,12 @@ function syncStripToSelectedDate(smooth = false) {
 }
 
 function commitDateFromStrip(y, m, d, heavy = false) {
+    dstOverrideState = null;
     selectedDate.setUTCFullYear(y, m, d);
     isCustomTime = true;
+    lastUpdateMs = performance.now();
     syncMonthSelectorValue(m);
+    syncManualDstCheckbox(getCurrentDstState());
 
     const targetOffset = getTotalOffsetHours();
     const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
@@ -975,6 +1071,7 @@ async function initClock() {
 
         document.getElementById('input-lat').value = cachedLat;
         document.getElementById('input-lon').value = cachedLon;
+        lastUpdateMs = performance.now();
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
@@ -996,6 +1093,7 @@ async function initClock() {
         if (latInput) latInput.value = cachedLat;
         if (lonInput) lonInput.value = cachedLon;
 
+        lastUpdateMs = performance.now();
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
@@ -1065,6 +1163,7 @@ window.addEventListener('resize', function() {
 
 function toggleAutoDST(checked) {
     localStorage.setItem('sunclock_auto_dst', checked ? 'true' : 'false');
+    dstOverrideState = null;
     updateDstUI(checked);
     if (!isCustomTime) {
         updateTimeForLocation();
@@ -1078,6 +1177,7 @@ function toggleAutoDST(checked) {
 
 function toggleManualDST(checked) {
     localStorage.setItem('sunclock_dst', checked ? 'true' : 'false');
+    dstOverrideState = checked;
     if (!isCustomTime) {
         updateTimeForLocation();
     }
@@ -1109,7 +1209,9 @@ function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = true;
 
-    selectedDate = getEffectiveDate();
+    if (!isCustomTime) {
+        selectedDate = getEffectiveDate();
+    }
     updateInputsVal();
 
     let isDstNowActive = getCurrentDstState();
@@ -1149,8 +1251,22 @@ function applyTimezonePreset() {
 }
 
 function getEffectiveDate() {
-    const targetOffset = getTotalOffsetHours();
-    return new Date(Date.now() + (targetOffset * 3600000));
+    const tzPresetEl = document.getElementById('timezone-preset');
+    const baseTz = tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
+    const now = new Date();
+    const probe = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        now.getUTCHours(),
+        now.getUTCMinutes(),
+        now.getUTCSeconds(),
+        now.getUTCMilliseconds()
+    ) + (baseTz * 3600000));
+
+    const isDstNow = isDstForLocalClock(probe);
+    const totalOffset = baseTz + (isDstNow ? 1 : 0);
+    return new Date(now.getTime() + (totalOffset * 3600000));
 }
 
 function updateInputsVal() {
@@ -1174,8 +1290,11 @@ function onDateChanged(val) {
 function onTimeChanged(val) {
     if (!val) return;
     const parts = val.split(':');
+    dstOverrideState = null;
     selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
     isCustomTime = true;
+    lastUpdateMs = performance.now();
+    syncManualDstCheckbox(getCurrentDstState());
 
     const targetOffset = getTotalOffsetHours();
     const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
@@ -1196,8 +1315,12 @@ function changeDate(days) {
 }
 
 function changeHour(hours) {
-    selectedDate.setUTCHours(selectedDate.getUTCHours() + hours);
+    const prev = new Date(selectedDate.getTime());
+    const next = new Date(selectedDate.getTime() + (hours * 3600000));
+    selectedDate = (hours > 0) ? applyDstTransitionWhenAdvancing(prev, next) : next;
     isCustomTime = true;
+    lastUpdateMs = performance.now();
+    syncManualDstCheckbox(getCurrentDstState());
 
     const targetOffset = getTotalOffsetHours();
     const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
@@ -1221,6 +1344,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
     isTimezoneOnlyMode = false;
+    dstOverrideState = null;
     document.getElementById('input-lat').value = cachedLat;
     document.getElementById('input-lon').value = cachedLon;
 
@@ -1264,6 +1388,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     isCustomTime = false;
     customTimeOffsetMs = 0;
+    lastUpdateMs = performance.now();
     updateTimeForLocation();
     updateInputsVal();
     updateSunClock(cachedLat, cachedLon);
@@ -1278,6 +1403,8 @@ function resetToNow() {
     isCustomTime = false;
     isTimezoneOnlyMode = false;
     customTimeOffsetMs = 0;
+    dstOverrideState = null;
+    lastUpdateMs = performance.now();
 
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
@@ -1291,6 +1418,7 @@ function resetToNow() {
     }
 
     updateTimeForLocation();
+    syncManualDstCheckbox(getCurrentDstState());
     updateInputsVal();
     updateSunClock(cachedLat, cachedLon);
 
@@ -2040,14 +2168,46 @@ function toggleSettingsModal(show) {
 }
 
 function updateHands() {
-    const targetOffset = getTotalOffsetHours();
+    const nowMs = performance.now();
+    const deltaMs = Math.max(0, Math.min(1000, nowMs - lastUpdateMs));
+    lastUpdateMs = nowMs;
+
+    const prevDate = new Date(selectedDate.getTime());
 
     if (!isCustomTime) {
         selectedDate = getEffectiveDate();
-        updateInputsVal();
+        if (
+            prevDate.getUTCFullYear() !== selectedDate.getUTCFullYear() ||
+            prevDate.getUTCMonth() !== selectedDate.getUTCMonth() ||
+            prevDate.getUTCDate() !== selectedDate.getUTCDate()
+        ) {
+            updateInputsVal();
+            if (!isTimezoneOnlyMode) updateSunClock(cachedLat, cachedLon);
+        }
     } else {
+        const candidate = new Date(selectedDate.getTime() + deltaMs);
+        selectedDate = applyDstTransitionWhenAdvancing(prevDate, candidate);
+
+        const targetOffset = getTotalOffsetHours();
         const realEffectiveNow = new Date(Date.now() + (targetOffset * 3600000));
-        selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
+        customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+        if (
+            prevDate.getUTCFullYear() !== selectedDate.getUTCFullYear() ||
+            prevDate.getUTCMonth() !== selectedDate.getUTCMonth() ||
+            prevDate.getUTCDate() !== selectedDate.getUTCDate()
+        ) {
+            updateInputsVal();
+            if (isTimezoneOnlyMode) {
+                applyTimezonePreset();
+            } else {
+                updateSunClock(cachedLat, cachedLon);
+            }
+            if (isStripOpen) {
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            }
+        }
     }
 
     const clockStr = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
