@@ -139,7 +139,7 @@ let isStripOpen = false;
 let isProgrammaticScroll = false;
 let scrollEndTimer = null;
 let scrollRafId = null;
-let heavyUpdateTimer = null;
+let sunClockRafId = null;
 let tickElements = [];
 let activeTickEl = null;
 
@@ -545,31 +545,23 @@ function commitDateFromStrip(y, m, d, heavy = false) {
 
     updateInputsVal();
 
+    if (isTimezoneOnlyMode) {
+        applyTimezonePreset();
+        return;
+    }
+
     if (heavy) {
-        if (isTimezoneOnlyMode) {
-            applyTimezonePreset();
-        } else {
+        if (sunClockRafId) {
+            cancelAnimationFrame(sunClockRafId);
+            sunClockRafId = null;
+        }
+        updateSunClock(cachedLat, cachedLon);
+    } else if (!sunClockRafId) {
+        sunClockRafId = requestAnimationFrame(() => {
+            sunClockRafId = null;
+            if (!isStripOpen || isTimezoneOnlyMode) return;
             updateSunClock(cachedLat, cachedLon);
-        }
-    } else {
-        if (!isTimezoneOnlyMode && !isNaN(cachedLat) && !isNaN(cachedLon)) {
-            const baseOffset = getBaseLocationOffset();
-            let utcCalculationDate = new Date(selectedDate.getTime() - (baseOffset * 3600000));
-            utcCalculationDate.setUTCHours(12, 0, 0, 0);
-            cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function')
-                ? SunCalc.getMoonData(utcCalculationDate)
-                : SunCalc.getMoonIllumination(utcCalculationDate);
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes || { rise: null, set: null });
-        }
-        clearTimeout(heavyUpdateTimer);
-        heavyUpdateTimer = setTimeout(() => {
-            if (!isStripOpen) return;
-            if (isTimezoneOnlyMode) {
-                applyTimezonePreset();
-            } else {
-                updateSunClock(cachedLat, cachedLon);
-            }
-        }, 140);
+        });
     }
 }
 
