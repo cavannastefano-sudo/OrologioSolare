@@ -221,7 +221,11 @@ function ensureStripClockBar() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
 
-    const stage = stripBody.querySelector('.strip-stage');
+    stripBody.style.display = isStripOpen ? 'flex' : '';
+    stripBody.style.flexDirection = 'column';
+    stripBody.style.overflow = 'visible';
+
+    const stage = stripBody.querySelector('.strip-stage') || document.getElementById('timeline-viewport') || stripBody.lastElementChild;
     if (!stage) return;
 
     let clockBar = document.getElementById('strip-clock-bar');
@@ -231,18 +235,25 @@ function ensureStripClockBar() {
         clockBar.style.display = 'flex';
         clockBar.style.alignItems = 'center';
         clockBar.style.justifyContent = 'center';
-        clockBar.style.gap = '6px';
-        clockBar.style.marginTop = '6px';
+        clockBar.style.gap = '8px';
+        clockBar.style.marginTop = '8px';
+        clockBar.style.paddingTop = '2px';
         clockBar.style.width = '100%';
         clockBar.style.boxSizing = 'border-box';
+        clockBar.style.position = 'relative';
+        clockBar.style.zIndex = '30';
 
         clockBar.innerHTML = `
-            <button type="button" id="strip-time-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
-            <div id="strip-clock-readout" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora" style="background:#0f172a; color:#39ff14; border:1px solid #38bdf8; border-radius:6px; padding:3px 10px; font-size:0.9rem; font-weight:bold; cursor:pointer; letter-spacing:0.5px; text-shadow:none; -webkit-text-stroke:0px transparent;">00:00:00</div>
-            <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
+            <button type="button" id="strip-time-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro" style="background-color:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:3px 9px;font-weight:bold;cursor:pointer;text-shadow:none;-webkit-text-stroke:0px transparent;">&lt;</button>
+            <div id="strip-clock-readout" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora" style="background:#0f172a;color:#39ff14;border:1px solid #38bdf8;border-radius:6px;padding:3px 12px;font-size:0.95rem;font-weight:bold;cursor:pointer;letter-spacing:0.5px;text-shadow:none;-webkit-text-stroke:0px transparent;">00:00:00</div>
+            <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti" style="background-color:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:3px 9px;font-weight:bold;cursor:pointer;text-shadow:none;-webkit-text-stroke:0px transparent;">&gt;</button>
         `;
 
-        stage.insertAdjacentElement('afterend', clockBar);
+        if (stage.parentElement === stripBody) {
+            stage.insertAdjacentElement('afterend', clockBar);
+        } else {
+            stripBody.appendChild(clockBar);
+        }
     }
 
     const srcClock = document.getElementById('digital-clock');
@@ -295,6 +306,10 @@ function styleStripControlsVisibility() {
             btn.style.backgroundColor = 'rgba(15, 23, 42, 0.92)';
             btn.style.color = '#38bdf8';
             btn.style.border = '1px solid #38bdf8';
+        } else if (btn.id === 'strip-time-prev' || btn.id === 'strip-time-next') {
+            btn.style.backgroundColor = '#0f172a';
+            btn.style.color = '#38bdf8';
+            btn.style.border = '1px solid #38bdf8';
         } else {
             btn.style.backgroundColor = '#0f172a';
             btn.style.color = '#f8fafc';
@@ -344,22 +359,38 @@ function removeBottomRedundantFooter() {
 }
 
 function adaptBottomPanelHeight() {
-    const container = document.getElementById('bottom-panels-container');
-    const panelBox = container ? container.querySelector('.info-panel-box') : null;
+    ensureStripClockBar();
+
+    const stripBody = document.getElementById('panel-strip-body');
+    const container = document.getElementById('bottom-panels-container') || (stripBody && stripBody.closest('[id*="panel"], [class*="panel"]'));
+    const panelBox = container ? (container.querySelector('.info-panel-box') || container) : stripBody;
     if (!container || !panelBox) return;
 
     container.style.height = 'auto';
     container.style.minHeight = '0px';
     container.style.maxHeight = 'none';
+    container.style.overflow = 'visible';
+
     panelBox.style.height = 'auto';
     panelBox.style.minHeight = '0px';
     panelBox.style.maxHeight = 'none';
+    panelBox.style.overflow = 'visible';
+
+    if (stripBody) {
+        stripBody.style.height = 'auto';
+        stripBody.style.maxHeight = 'none';
+        stripBody.style.overflow = 'visible';
+    }
 
     requestAnimationFrame(() => {
-        const neededHeight = panelBox.offsetHeight;
+        const neededHeight = Math.max(
+            panelBox.scrollHeight || 0,
+            panelBox.offsetHeight || 0,
+            stripBody ? (stripBody.scrollHeight + 46) : 0
+        );
         if (neededHeight > 0) {
-            container.style.height = `${neededHeight}px`;
-            container.style.minHeight = `${neededHeight}px`;
+            container.style.height = `${neededHeight + 8}px`;
+            container.style.minHeight = `${neededHeight + 8}px`;
         }
     });
 }
