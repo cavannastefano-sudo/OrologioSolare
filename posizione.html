@@ -917,12 +917,26 @@
         }
 
         function goToTodayOnStrip() {
-            resetToNow();
+            isProgrammaticScroll = true;
+            clearTimeout(scrollEndTimer);
+            if (scrollRafId) {
+                cancelAnimationFrame(scrollRafId);
+                scrollRafId = null;
+            }
+
+            isCustomTime = false;
+            customTimeOffsetMs = 0;
+            updateTimeForLocation();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
             if (isStripOpen) {
                 populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
-                syncStripToSelectedDate(true);
+                syncStripToSelectedDate(false);
             }
+
+            scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, 120);
         }
 
         function onYearSelectChanged(val) {
@@ -949,7 +963,7 @@
             const currentYear = selectedDate.getUTCFullYear();
             const maxDay = new Date(Date.UTC(currentYear, targetMonth + 1, 0)).getUTCDate();
             const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-            applyStripDateChange(currentYear, targetMonth, safeDay, true);
+            applyStripDateChange(currentYear, targetMonth, safeDay, false);
         }
 
         function stepMonth(delta) {
@@ -959,7 +973,7 @@
             populateYearAndMonthSelects(nextYear, nextMonth);
             const maxDay = new Date(Date.UTC(nextYear, nextMonth + 1, 0)).getUTCDate();
             const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
-            applyStripDateChange(nextYear, nextMonth, safeDay, true);
+            applyStripDateChange(nextYear, nextMonth, safeDay, false);
         }
 
         function toggleYearStrip() {
@@ -1024,7 +1038,7 @@
                 `;
 
                 tick.onclick = () => {
-                    applyStripDateChange(dCopy.getUTCFullYear(), dCopy.getUTCMonth(), dCopy.getUTCDate(), true);
+                    applyStripDateChange(dCopy.getUTCFullYear(), dCopy.getUTCMonth(), dCopy.getUTCDate(), false);
                 };
 
                 fragment.appendChild(tick);
@@ -1034,7 +1048,7 @@
             track.appendChild(fragment);
         }
 
-        function syncStripToSelectedDate(smooth = true) {
+        function syncStripToSelectedDate(smooth = false) {
             const viewport = document.getElementById('timeline-viewport');
             const track = document.getElementById('timeline-track');
             if (!viewport || !track) return;
@@ -1052,17 +1066,17 @@
 
             if (targetTick) {
                 isProgrammaticScroll = true;
+                clearTimeout(scrollEndTimer);
                 const targetScrollLeft = targetTick.offsetLeft + (targetTick.offsetWidth / 2) - (viewport.clientWidth / 2);
                 viewport.scrollTo({
                     left: Math.max(0, targetScrollLeft),
                     behavior: smooth ? 'smooth' : 'auto'
                 });
-                clearTimeout(scrollEndTimer);
-                scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 350 : 60);
+                scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 280 : 100);
             }
         }
 
-        function applyStripDateChange(y, m, d, smoothScroll = true) {
+        function applyStripDateChange(y, m, d, smoothScroll = false) {
             selectedDate.setUTCFullYear(y, m, d);
             isCustomTime = true;
             syncMonthSelectorValue(m);
@@ -1089,6 +1103,8 @@
                 if (scrollRafId) return;
                 scrollRafId = requestAnimationFrame(() => {
                     scrollRafId = null;
+                    if (!isStripOpen || isProgrammaticScroll) return;
+
                     const track = document.getElementById('timeline-track');
                     if (!track) return;
                     const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
@@ -1406,7 +1422,7 @@
         function onDateChanged(val) {
             if (!val) return;
             const parts = val.split('-');
-            applyStripDateChange(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), true);
+            applyStripDateChange(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), false);
         }
 
         function onTimeChanged(val) {
@@ -1426,7 +1442,7 @@
         function changeDate(days) {
             const next = new Date(selectedDate);
             next.setUTCDate(next.getUTCDate() + days);
-            applyStripDateChange(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate(), true);
+            applyStripDateChange(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate(), false);
         }
 
         function changeHour(hours) {
@@ -1443,7 +1459,7 @@
             if (isStripOpen) {
                 populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
-                syncStripToSelectedDate(true);
+                syncStripToSelectedDate(false);
             }
         }
 
@@ -1457,7 +1473,7 @@
             if (isStripOpen) {
                 populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
                 ensureYearStripBuilt(selectedDate.getUTCFullYear());
-                syncStripToSelectedDate(true);
+                syncStripToSelectedDate(false);
             }
         }
 
