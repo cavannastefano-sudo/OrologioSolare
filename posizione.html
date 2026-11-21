@@ -329,7 +329,7 @@
         .info-panel-box {
             width: 100%;
             background: rgba(0,0,0,0.25);
-            padding: 10px 12px;
+            padding: 10px 10px;
             border-radius: 6px;
             font-size: 1.05rem;
             color: #39ff14;
@@ -433,28 +433,41 @@
             display: flex;
         }
 
+        /* Barra compatta su una riga per Anno, Mese e Oggi */
         .strip-year-bar {
             display: flex;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: center;
-            justify-content: center;
-            gap: 6px;
+            justify-content: space-between;
+            gap: 3px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .strip-ctrl-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 1;
+            min-width: 0;
         }
 
         .strip-year-step {
             background: #0f172a;
             color: #f8fafc;
             border: 1px solid #475569;
-            border-radius: 5px;
-            min-width: 26px;
-            height: 26px;
-            font-size: 0.8rem;
+            border-radius: 4px;
+            min-width: 20px;
+            width: 20px;
+            height: 24px;
+            font-size: 0.74rem;
             font-weight: bold;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6px;
+            padding: 0;
+            flex-shrink: 0;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
         }
@@ -467,15 +480,17 @@
             background: #2563eb;
             color: #fde047;
             border: 1px solid #93c5fd;
-            border-radius: 6px;
-            height: 26px;
-            padding: 0 10px;
-            font-size: 0.82rem;
+            border-radius: 5px;
+            height: 24px;
+            padding: 0 6px;
+            font-size: 0.74rem;
             font-weight: bold;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            white-space: nowrap;
+            flex-shrink: 0;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
         }
@@ -488,15 +503,22 @@
             background: #0f172a;
             color: #facc15;
             border: 1px solid #475569;
-            border-radius: 5px;
-            height: 26px;
-            padding: 0 6px;
-            font-size: 0.8rem;
+            border-radius: 4px;
+            height: 24px;
+            padding: 0 3px;
+            font-size: 0.72rem;
             font-weight: bold;
             cursor: pointer;
             outline: none;
+            min-width: 0;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
+        }
+        #select-strip-year {
+            width: 50px;
+        }
+        #select-strip-month {
+            width: 72px;
         }
         .strip-year-select:focus {
             border-color: #38bdf8;
@@ -730,12 +752,12 @@
             <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con selettori Anno/Mese, tasto Oggi e cursori laterali -->
             <div id="panel-strip-body">
                 <div class="strip-year-bar">
-                    <div style="display:inline-flex;align-items:center;gap:4px;">
+                    <div class="strip-ctrl-group">
                         <button type="button" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
                         <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
                         <button type="button" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
                     </div>
-                    <div style="display:inline-flex;align-items:center;gap:4px;">
+                    <div class="strip-ctrl-group">
                         <button type="button" class="strip-year-step" onclick="stepMonth(-1)" title="Mese precedente">&lt;</button>
                         <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
                         <button type="button" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
@@ -882,7 +904,7 @@
                 if (monthSel.options.length !== 12) {
                     monthSel.innerHTML = '';
                     for (let m = 0; m < 12; m++) {
-                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'long', timeZone: 'UTC' });
+                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
                         const capLabel = label.charAt(0).toUpperCase() + label.slice(1);
                         const opt = document.createElement('option');
                         opt.value = String(m);
