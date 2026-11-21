@@ -232,7 +232,7 @@ function ensureStripClockBar() {
         clockBar.style.alignItems = 'center';
         clockBar.style.justifyContent = 'center';
         clockBar.style.gap = '6px';
-        clockBar.style.marginTop = '5px';
+        clockBar.style.marginTop = '6px';
         clockBar.style.width = '100%';
         clockBar.style.boxSizing = 'border-box';
 
