@@ -413,6 +413,39 @@
             color: #ff007f;
         }
 
+        .strip-side-cursor {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 20;
+            width: 28px;
+            height: 38px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .strip-side-cursor:hover {
+            background: rgba(2, 132, 199, 0.92);
+            color: #ffffff;
+        }
+        .strip-side-cursor.left {
+            left: 4px;
+        }
+        .strip-side-cursor.right {
+            right: 4px;
+        }
+
         .timeline-viewport {
             width: 100%;
             height: 100%;
@@ -424,7 +457,7 @@
             border: 1px solid #334155;
             border-radius: 6px;
             scrollbar-width: none;
-            scroll-snap-type: x mandatory;
+            touch-action: pan-x;
         }
         .timeline-viewport::-webkit-scrollbar { display: none; }
 
@@ -448,7 +481,6 @@
             font-size: 0.7rem;
             color: #cbd5e1;
             cursor: pointer;
-            scroll-snap-align: center;
             box-sizing: border-box;
             transition: border-color 0.12s, background 0.12s;
         }
@@ -640,20 +672,22 @@
                 </div>
             </div>
 
-            <!-- Parte inferiore Striscia Annuale con Cursore Centrale Fisso e Selettore Anno -->
+            <!-- Parte inferiore Striscia Annuale con Cursore Centrale Fisso, Cursori Laterali e Selettore Anno -->
             <div id="panel-strip-body">
                 <div class="timeline-wrapper">
+                    <button type="button" id="strip-cursor-left" class="strip-side-cursor left" aria-label="Scorri a sinistra" title="Scorri a sinistra (tieni premuto per scorrimento veloce)">◀</button>
                     <div class="timeline-center-cursor"></div>
                     <div class="timeline-viewport" id="timeline-viewport">
                         <div class="timeline-track" id="timeline-track"></div>
                     </div>
+                    <button type="button" id="strip-cursor-right" class="strip-side-cursor right" aria-label="Scorri a destra" title="Scorri a destra (tieni premuto per scorrimento veloce)">▶</button>
                 </div>
                 <div class="strip-footer-info">
                     <div class="year-selector-box">
                         <span>Anno:</span>
-                        <button class="year-mini-btn" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                        <button type="button" class="year-mini-btn" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
                         <select id="select-strip-year" onchange="onYearSelectChanged(this.value)"></select>
-                        <button class="year-mini-btn" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                        <button type="button" class="year-mini-btn" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
                     </div>
                     <span style="color:#facc15;">Giallo = Oggi</span>
                 </div>
@@ -799,5 +833,87 @@
 
     <!-- Collegamento al file JavaScript esterno -->
     <script src="script.js"></script>
+
+    <!-- Scorrimento a pressione continua per i cursori laterali ◀ e ▶ della striscia -->
+    <script>
+        (function setupMainStripSideCursors() {
+            const viewport = document.getElementById('timeline-viewport');
+            const leftBtn = document.getElementById('strip-cursor-left');
+            const rightBtn = document.getElementById('strip-cursor-right');
+            const stripBody = document.getElementById('panel-strip-body');
+            if (!viewport || !leftBtn || !rightBtn) return;
+
+            let holdAnimId = null;
+            let holdTimeout = null;
+            let currentDir = 0;
+
+            const isStripReady = () => {
+                if (typeof isStripOpen !== 'undefined') return Boolean(isStripOpen);
+                if (stripBody) return stripBody.classList.contains('active') || stripBody.offsetParent !== null;
+                return viewport.offsetParent !== null;
+            };
+
+            const notifyStripScroll = () => {
+                viewport.dispatchEvent(new Event('scroll'));
+            };
+
+            const stepFast = (dir) => {
+                const stepPx = Math.max(140, Math.round(viewport.clientWidth * 0.65));
+                viewport.scrollLeft += dir * stepPx;
+                notifyStripScroll();
+            };
+
+            const startContinuousScroll = (dir) => {
+                if (!isStripReady()) return;
+                stopContinuousScroll();
+                currentDir = dir;
+                stepFast(dir);
+
+                holdTimeout = setTimeout(() => {
+                    const speedPxPerFrame = 18;
+                    const tick = () => {
+                        if (currentDir !== dir || !isStripReady()) {
+                            stopContinuousScroll();
+                            return;
+                        }
+                        viewport.scrollLeft += dir * speedPxPerFrame;
+                        notifyStripScroll();
+                        holdAnimId = requestAnimationFrame(tick);
+                    };
+                    holdAnimId = requestAnimationFrame(tick);
+                }, 180);
+            };
+
+            const stopContinuousScroll = () => {
+                currentDir = 0;
+                clearTimeout(holdTimeout);
+                if (holdAnimId) {
+                    cancelAnimationFrame(holdAnimId);
+                    holdAnimId = null;
+                }
+            };
+
+            const bindCursorEvents = (btn, dir) => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                });
+
+                btn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                }, { passive: true });
+            };
+
+            bindCursorEvents(leftBtn, -1);
+            bindCursorEvents(rightBtn, 1);
+
+            window.addEventListener('mouseup', stopContinuousScroll);
+            window.addEventListener('touchend', stopContinuousScroll);
+            window.addEventListener('touchcancel', stopContinuousScroll);
+            window.addEventListener('blur', stopContinuousScroll);
+        })();
+    </script>
 </body>
 </html>
