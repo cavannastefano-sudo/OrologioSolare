@@ -1,5 +1,5 @@
 // ==========================================
-// SunClock24 - script.js (Striscia Intero Anno + Orologio & Frecce Sotto la Barra del Tempo)
+// SunClock24 - script.js (Striscia Intero Anno + Orologio e Frecce Sotto la Striscia nella Tenda in Basso)
 // ==========================================
 
 SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
@@ -12,19 +12,9 @@ const cx = 250;
 const cy = 250;
 const radius = 248;
 
-function getMoonIlluminationData(date) {
-    if (typeof SunCalc3 !== 'undefined' && typeof SunCalc3.getMoonIllumination === 'function') {
-        return SunCalc3.getMoonIllumination(date);
-    }
-    if (typeof SunCalc !== 'undefined' && typeof SunCalc.getMoonData === 'function') {
-        return SunCalc.getMoonData(date);
-    }
-    return SunCalc.getMoonIllumination(date);
-}
-
 function getPreciseStandardTimezone(lat, lon) {
-    if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
-        if (lon < -168.8) {
+    if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+        if (lon < -168.9) {
             return 12;
         } else {
             return -9;
@@ -143,7 +133,7 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
-// Stato Striscia Intero Anno con Selettori Anno e Mese + Tasto Oggi + Orologio Sotto la Barra
+// Stato Striscia Intero Anno con Selettori Anno e Mese + Tasto Oggi + Orologio e Frecce Sotto la Striscia
 let builtYear = null;
 let isStripOpen = false;
 let isProgrammaticScroll = false;
@@ -165,58 +155,100 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
-function syncTopDateTimeArrowsVisibility() {
-    const topZone = document.querySelector('header') || document.body;
-    const hideTopArrows = isStripOpen;
+function removeTopDateTimeArrows() {
+    const dateBtn = document.getElementById('date-display-btn');
+    const dateInput = document.getElementById('input-date');
+    const digitalClock = document.getElementById('digital-clock');
+    const timeInput = document.getElementById('input-time');
 
-    topZone.querySelectorAll('button, #btn-now').forEach(el => {
-        if (el.closest('#panel-strip-body') || el.id === 'btn-toggle-year-strip') return;
-
-        const labelText = (el.innerText || el.textContent || '').trim();
-        const titleText = (el.getAttribute('title') || '').toLowerCase();
-        const isArrow = labelText === '<' || labelText === '>' || labelText === '&lt;' || labelText === '&gt;' ||
-                        titleText.includes('indietro') || titleText.includes('avanti');
-        const isNowBtn = el.id === 'btn-now' || labelText.toLowerCase() === 'adesso';
-
-        if (isArrow || isNowBtn) {
-            el.style.display = hideTopArrows ? 'none' : '';
+    const isArrowNode = (node) => {
+        if (!node) return false;
+        if (node.nodeType === Node.TEXT_NODE) {
+            const t = node.textContent.trim();
+            return t === '<' || t === '>' || t === '‹' || t === '›' || t === '◀' || t === '▶';
         }
-    });
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.closest('#panel-strip-body') || node.id === 'btn-toggle-year-strip') return false;
+            if (node.id === 'date-display-btn' || node.id === 'input-date' || node.id === 'digital-clock' || node.id === 'input-time') return false;
+            const txt = (node.innerText || node.textContent || '').trim();
+            const title = (node.getAttribute('title') || '').toLowerCase();
+            if (txt === '<' || txt === '>' || txt === '&lt;' || txt === '&gt;' || txt === '‹' || txt === '›' || txt === '◀' || txt === '▶') {
+                return true;
+            }
+            if ((node.tagName === 'BUTTON' || node.tagName === 'A' || node.tagName === 'SPAN') &&
+                (title.includes('giorno') || title.includes('data') || title.includes('ora') || title.includes('indietro') || title.includes('avanti')) &&
+                txt.length <= 2) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const removeAdjacentArrowsFrom = (anchor) => {
+        if (!anchor || !anchor.parentElement) return;
+        const parent = anchor.parentElement;
+        const children = Array.from(parent.childNodes);
+        children.forEach(child => {
+            if (isArrowNode(child)) {
+                child.remove();
+            }
+        });
+    };
+
+    removeAdjacentArrowsFrom(dateBtn);
+    removeAdjacentArrowsFrom(dateInput);
+    removeAdjacentArrowsFrom(digitalClock);
+    removeAdjacentArrowsFrom(timeInput);
+
+    const topContainer = (dateBtn && dateBtn.closest('header, nav, .top-bar, .controls-bar')) ||
+                         (digitalClock && digitalClock.closest('header, nav, .top-bar, .controls-bar')) ||
+                         document.querySelector('header');
+
+    if (topContainer) {
+        topContainer.querySelectorAll('button').forEach(btn => {
+            if (btn.closest('#panel-strip-body') || btn.id === 'btn-toggle-year-strip') return;
+            const txt = (btn.innerText || btn.textContent || '').trim();
+            const fn = (btn.getAttribute('onclick') || '');
+            if (txt === '<' || txt === '>' || txt === '‹' || txt === '›' || txt === '◀' || txt === '▶' ||
+                fn.includes('changeDate') || fn.includes('changeHour')) {
+                btn.remove();
+            }
+        });
+    }
 }
 
-function ensureStripTimeBar() {
+function ensureStripClockBar() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
 
     const stage = stripBody.querySelector('.strip-stage');
     if (!stage) return;
 
-    let timeBar = document.getElementById('strip-time-bar');
-    if (!timeBar) {
-        timeBar = document.createElement('div');
-        timeBar.id = 'strip-time-bar';
-        timeBar.style.display = 'flex';
-        timeBar.style.alignItems = 'center';
-        timeBar.style.justifyContent = 'center';
-        timeBar.style.gap = '6px';
-        timeBar.style.marginTop = '4px';
-        timeBar.style.width = '100%';
-        timeBar.style.boxSizing = 'border-box';
+    let clockBar = document.getElementById('strip-clock-bar');
+    if (!clockBar) {
+        clockBar = document.createElement('div');
+        clockBar.id = 'strip-clock-bar';
+        clockBar.style.display = 'flex';
+        clockBar.style.alignItems = 'center';
+        clockBar.style.justifyContent = 'center';
+        clockBar.style.gap = '6px';
+        clockBar.style.marginTop = '5px';
+        clockBar.style.width = '100%';
+        clockBar.style.boxSizing = 'border-box';
 
-        timeBar.innerHTML = `
-            <button type="button" id="strip-hour-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
-            <div id="strip-digital-clock" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora" style="background:#0f172a; color:#39ff14; border:1px solid #38bdf8; border-radius:5px; padding:2px 8px; height:24px; font-size:0.85rem; font-weight:bold; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; letter-spacing:0.5px; text-shadow:none; -webkit-text-stroke:0px transparent;">00:00:00</div>
-            <button type="button" id="strip-hour-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
-            <button type="button" id="strip-now-btn" class="strip-today-btn" onclick="resetToNow()" title="Torna all'ora attuale">Adesso</button>
+        clockBar.innerHTML = `
+            <button type="button" id="strip-time-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
+            <div id="strip-clock-readout" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora" style="background:#0f172a; color:#39ff14; border:1px solid #38bdf8; border-radius:6px; padding:3px 10px; font-size:0.9rem; font-weight:bold; cursor:pointer; letter-spacing:0.5px; text-shadow:none; -webkit-text-stroke:0px transparent;">00:00:00</div>
+            <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
         `;
 
-        stage.insertAdjacentElement('afterend', timeBar);
+        stage.insertAdjacentElement('afterend', clockBar);
     }
 
-    const digitalClockEl = document.getElementById('digital-clock');
-    const stripClockEl = document.getElementById('strip-digital-clock');
-    if (digitalClockEl && stripClockEl) {
-        stripClockEl.innerText = digitalClockEl.innerText || '00:00:00';
+    const srcClock = document.getElementById('digital-clock');
+    const dstClock = document.getElementById('strip-clock-readout');
+    if (srcClock && dstClock) {
+        dstClock.innerText = srcClock.innerText || '00:00:00';
     }
 }
 
@@ -232,14 +264,13 @@ function styleStripButtonVisibility(btn, active) {
 
 function styleTodayButton(btn) {
     if (!btn) return;
-    btn.style.backgroundColor = '#2563eb';
-    btn.style.color = '#fde047';
+    btn.style.backgroundColor = '#1d4ed8';
+    btn.style.color = '#fef08a';
     btn.style.border = '1px solid #93c5fd';
     btn.style.fontWeight = 'bold';
     btn.style.cursor = 'pointer';
-    btn.style.padding = '0 6px';
-    btn.style.height = '24px';
-    btn.style.borderRadius = '5px';
+    btn.style.padding = '3px 8px';
+    btn.style.borderRadius = '6px';
     btn.style.textShadow = 'none';
     btn.style.webkitTextStroke = '0px transparent';
 }
@@ -258,7 +289,7 @@ function styleStripControlsVisibility() {
     });
 
     stripBody.querySelectorAll('button').forEach(btn => {
-        if (btn.id === 'btn-strip-today' || btn.id === 'strip-now-btn') {
+        if (btn.id === 'btn-strip-today') {
             styleTodayButton(btn);
         } else if (btn.id === 'strip-cursor-left' || btn.id === 'strip-cursor-right') {
             btn.style.backgroundColor = 'rgba(15, 23, 42, 0.92)';
@@ -288,7 +319,7 @@ function removeBottomRedundantFooter() {
         while (nextEl) {
             const toRemove = nextEl;
             nextEl = nextEl.nextElementSibling;
-            if (toRemove.id !== 'strip-time-bar') {
+            if (toRemove.id !== 'strip-clock-bar') {
                 toRemove.remove();
             }
         }
@@ -298,8 +329,8 @@ function removeBottomRedundantFooter() {
         if (
             el.id === 'timeline-viewport' ||
             el.id === 'timeline-track' ||
-            el.id === 'strip-time-bar' ||
-            el.id === 'strip-digital-clock' ||
+            el.id === 'strip-clock-bar' ||
+            el.id === 'strip-clock-readout' ||
             el.classList.contains('strip-year-bar') ||
             el.classList.contains('strip-stage') ||
             el.classList.contains('strip-center-cursor')
@@ -323,6 +354,14 @@ function adaptBottomPanelHeight() {
     panelBox.style.height = 'auto';
     panelBox.style.minHeight = '0px';
     panelBox.style.maxHeight = 'none';
+
+    requestAnimationFrame(() => {
+        const neededHeight = panelBox.offsetHeight;
+        if (neededHeight > 0) {
+            container.style.height = `${neededHeight}px`;
+            container.style.minHeight = `${neededHeight}px`;
+        }
+    });
 }
 
 function getDayKey(d) {
@@ -350,12 +389,10 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     }
 
     yearBar.style.display = 'flex';
-    yearBar.style.flexWrap = 'nowrap';
+    yearBar.style.flexWrap = 'wrap';
     yearBar.style.alignItems = 'center';
-    yearBar.style.justifyContent = 'space-between';
-    yearBar.style.gap = '3px';
-    yearBar.style.width = '100%';
-    yearBar.style.boxSizing = 'border-box';
+    yearBar.style.justifyContent = 'center';
+    yearBar.style.gap = '6px';
 
     let yearPrevBtn = document.getElementById('btn-year-prev');
     let yearSel = document.getElementById('select-strip-year');
@@ -363,24 +400,24 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
 
     if (!yearPrevBtn || !yearSel || !yearNextBtn) {
         yearBar.innerHTML = `
-            <div class="strip-ctrl-group">
+            <div style="display:inline-flex;align-items:center;gap:4px;">
                 <button type="button" id="btn-year-prev" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
                 <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
                 <button type="button" id="btn-year-next" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
             </div>
-            <div class="strip-ctrl-group">
+            <div style="display:inline-flex;align-items:center;gap:4px;">
                 <button type="button" id="btn-month-prev" class="strip-year-step" onclick="stepMonth(-1)" title="Mese precedente">&lt;</button>
                 <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
                 <button type="button" id="btn-month-next" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
             </div>
-            <button type="button" id="btn-strip-today" class="strip-today-btn" onclick="goToTodayOnStrip()" title="Torna ad oggi">Oggi</button>
+            <button type="button" id="btn-strip-today" class="strip-year-step" onclick="goToTodayOnStrip()" title="Torna ad oggi">Oggi</button>
         `;
         yearSel = document.getElementById('select-strip-year');
     } else if (!document.getElementById('btn-strip-today')) {
         const todayBtn = document.createElement('button');
         todayBtn.type = 'button';
         todayBtn.id = 'btn-strip-today';
-        todayBtn.className = 'strip-today-btn';
+        todayBtn.className = 'strip-year-step';
         todayBtn.title = 'Torna ad oggi';
         todayBtn.innerText = 'Oggi';
         todayBtn.onclick = goToTodayOnStrip;
@@ -420,7 +457,7 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
         monthSel.value = String(currentMonth);
     }
 
-    ensureStripTimeBar();
+    ensureStripClockBar();
     styleStripControlsVisibility();
 }
 
@@ -475,7 +512,6 @@ function toggleYearStrip() {
     const btn = document.getElementById('btn-toggle-year-strip');
 
     removeBottomRedundantFooter();
-    syncTopDateTimeArrowsVisibility();
 
     if (isStripOpen) {
         if (stdBody) stdBody.style.display = 'none';
@@ -531,7 +567,9 @@ function ensureYearStripBuilt(year) {
     while (cursor.getUTCFullYear() === year) {
         const dCopy = new Date(cursor);
         const key = getDayKey(dCopy);
-        const moon = getMoonIlluminationData(dCopy);
+        const moon = (typeof SunCalc.getMoonData === 'function')
+            ? SunCalc.getMoonData(dCopy)
+            : SunCalc.getMoonIllumination(dCopy);
         const pct = Math.round(moon.fraction * 100);
 
         const tick = document.createElement('div');
@@ -543,6 +581,8 @@ function ensureYearStripBuilt(year) {
         tick.dataset.day = dCopy.getUTCDate();
         tick.style.textShadow = 'none';
         tick.style.webkitTextStroke = '0px transparent';
+        tick.style.minWidth = '56px';
+        tick.style.padding = '6px 6px';
 
         const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
@@ -882,9 +922,9 @@ if (stripViewportEl) {
 })();
 
 async function initClock() {
+    removeTopDateTimeArrows();
     ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
-    syncTopDateTimeArrowsVisibility();
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     const isManualDst = getCurrentDstState();
@@ -902,11 +942,8 @@ async function initClock() {
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
 
-        const latInput = document.getElementById('input-lat');
-        const lonInput = document.getElementById('input-lon');
-        if (latInput) latInput.value = cachedLat;
-        if (lonInput) lonInput.value = cachedLon;
-
+        document.getElementById('input-lat').value = cachedLat;
+        document.getElementById('input-lon').value = cachedLon;
         updateTimeForLocation();
         updateInputsVal();
         updateSunClock(cachedLat, cachedLon);
@@ -972,6 +1009,7 @@ let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function() {
+        removeTopDateTimeArrows();
         adaptBottomPanelHeight();
         if (isStripOpen) {
             syncStripToSelectedDate(false);
@@ -1091,13 +1129,9 @@ function updateInputsVal() {
     const hours = String(selectedDate.getUTCHours()).padStart(2, '0');
     const minutes = String(selectedDate.getUTCMinutes()).padStart(2, '0');
 
-    const dateInput = document.getElementById('input-date');
-    const dateBtn = document.getElementById('date-display-btn');
-    const timeInput = document.getElementById('input-time');
-
-    if (dateInput) dateInput.value = `${year}-${month}-${day}`;
-    if (dateBtn) dateBtn.innerText = `${day}/${month}/${year}`;
-    if (timeInput) timeInput.value = `${hours}:${minutes}`;
+    document.getElementById('input-date').value = `${year}-${month}-${day}`;
+    document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
+    document.getElementById('input-time').value = `${hours}:${minutes}`;
 }
 
 function onDateChanged(val) {
@@ -1156,11 +1190,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
     isTimezoneOnlyMode = false;
-
-    const latInput = document.getElementById('input-lat');
-    const lonInput = document.getElementById('input-lon');
-    if (latInput) latInput.value = cachedLat;
-    if (lonInput) lonInput.value = cachedLon;
+    document.getElementById('input-lat').value = cachedLat;
+    document.getElementById('input-lon').value = cachedLon;
 
     let placeName = fallbackName;
     try {
@@ -1189,8 +1220,8 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for (let opt of selectEl.options) {
-            if (parseFloat(opt.value) === preciseTz) {
+        for(let opt of selectEl.options) {
+            if(parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
@@ -1220,8 +1251,8 @@ function resetToNow() {
     let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
     let selectEl = document.getElementById('timezone-preset');
     if (selectEl) {
-        for (let opt of selectEl.options) {
-            if (parseFloat(opt.value) === preciseTz) {
+        for(let opt of selectEl.options) {
+            if(parseFloat(opt.value) === preciseTz) {
                 selectEl.value = opt.value;
                 break;
             }
@@ -1366,7 +1397,7 @@ function updateSunClock(lat, lon) {
 
     cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
     cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
-    cachedMoonIllumination = getMoonIlluminationData(utcCalculationDate);
+    cachedMoonIllumination = (typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate);
 
     ctx.clearRect(0, 0, 500, 500);
 
@@ -1694,15 +1725,15 @@ function formatTime(date) {
 }
 
 function drawRealisticSun(canvasId) {
-    const canvasSun = document.getElementById(canvasId);
-    if (!canvasSun) return;
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
-    canvasSun.width = 32;
-    canvasSun.height = 32;
+    canvas.width = 32;
+    canvas.height = 32;
 
-    const ctxSun = canvasSun.getContext('2d');
-    const width = canvasSun.width;
-    const height = canvasSun.height;
+    const ctxSun = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
     const r = width / 2 - 2;
 
     ctxSun.clearRect(0, 0, width, height);
@@ -1741,15 +1772,15 @@ function drawRealisticSun(canvasId) {
 }
 
 function drawRealisticMoon(canvasId, illumination, size = 32) {
-    const canvasMoon = document.getElementById(canvasId);
-    if (!canvasMoon) return;
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
 
-    canvasMoon.width = size;
-    canvasMoon.height = size;
+    canvas.width = size;
+    canvas.height = size;
 
-    const ctxMoon = canvasMoon.getContext('2d');
-    const width = canvasMoon.width;
-    const height = canvasMoon.height;
+    const ctxMoon = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
     const r = width / 2 - (size > 50 ? 1 : 2);
     const cxCenter = width / 2;
     const cyCenter = height / 2;
@@ -1988,11 +2019,11 @@ function updateHands() {
         selectedDate = new Date(realEffectiveNow.getTime() + customTimeOffsetMs);
     }
 
-    const formattedClock = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
-    const digitalClockEl = document.getElementById('digital-clock');
-    const stripClockEl = document.getElementById('strip-digital-clock');
-    if (digitalClockEl) digitalClockEl.innerText = formattedClock;
-    if (stripClockEl) stripClockEl.innerText = formattedClock;
+    const clockStr = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+    const mainClockEl = document.getElementById('digital-clock');
+    const stripClockEl = document.getElementById('strip-clock-readout');
+    if (mainClockEl) mainClockEl.innerText = clockStr;
+    if (stripClockEl) stripClockEl.innerText = clockStr;
 
     const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
     const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
