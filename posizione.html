@@ -518,7 +518,7 @@
             width: 50px;
         }
         #select-strip-month {
-            width: 72px;
+            width: 98px;
         }
         .strip-year-select:focus {
             border-color: #38bdf8;
@@ -573,14 +573,14 @@
         .timeline-track {
             display: inline-flex;
             align-items: stretch;
-            gap: 5px;
+            gap: 3px;
             padding: 0 50%;
         }
 
         .timeline-tick {
             flex: 0 0 auto;
-            min-width: 56px;
-            padding: 6px 6px;
+            min-width: 52px;
+            padding: 6px 4px;
             border-radius: 6px;
             background: rgba(30, 41, 59, 0.85);
             border: 1px solid #334155;
@@ -904,7 +904,7 @@
                 if (monthSel.options.length !== 12) {
                     monthSel.innerHTML = '';
                     for (let m = 0; m < 12; m++) {
-                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
+                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'long', timeZone: 'UTC' });
                         const capLabel = label.charAt(0).toUpperCase() + label.slice(1);
                         const opt = document.createElement('option');
                         opt.value = String(m);
