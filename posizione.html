@@ -190,6 +190,23 @@
             cursor: pointer;
         }
 
+        .dst-mode-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: inline-block;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dst-mode-dot.is-auto {
+            background-color: #39ff14;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.85);
+        }
+        .dst-mode-dot.is-manual {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.85);
+        }
+
         #clock-wrapper {
             position: relative;
             width: min(90vw, 480px);
@@ -697,6 +714,7 @@
         <label class="dst-container" id="manual-dst-box">
             <input type="checkbox" id="chk-dst" onchange="toggleDST()" style="width: 16px; height: 16px; cursor: pointer;">
             <span>☀️ Ora Legale (+1h)</span>
+            <span id="dst-mode-dot" class="dst-mode-dot is-auto" title="Modalità automatica attiva"></span>
         </label>
     </div>
 
@@ -871,7 +889,7 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
         let lastUpdateMs = performance.now();
-        let dstOverrideState = null; // null = automatico, true/false = manuale
+        let dstOverrideState = null; // null = automatico (pallino verde), true/false = manuale (pallino rosso)
 
         // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
         let builtYear = null;
@@ -882,6 +900,18 @@
 
         const realMoonImage = new Image();
         realMoonImage.src = 'luna.jpg';
+
+        function updateDstModeIndicator() {
+            const dot = document.getElementById('dst-mode-dot');
+            if (!dot) return;
+
+            const isManual = (dstOverrideState !== null);
+            dot.classList.toggle('is-auto', !isManual);
+            dot.classList.toggle('is-manual', isManual);
+            dot.title = isManual
+                ? 'Modalità manuale attiva (clicca Adesso o Oggi per tornare in automatico)'
+                : 'Modalità automatica attiva';
+        }
 
         function getLastSundayOfMonth(year, month) {
             const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
@@ -989,6 +1019,7 @@
                 const prevDst = getCurrentDstState();
                 dstOverrideState = true;
                 syncManualDstCheckbox(true);
+                updateDstModeIndicator();
                 return { date: adjusted, dstChanged: (prevDst !== true) };
             }
 
@@ -1004,6 +1035,7 @@
                 const prevDst = getCurrentDstState();
                 dstOverrideState = false;
                 syncManualDstCheckbox(false);
+                updateDstModeIndicator();
                 return { date: adjusted, dstChanged: (prevDst !== false) };
             }
 
@@ -1075,6 +1107,7 @@
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
 
@@ -1230,6 +1263,7 @@
             lastUpdateMs = performance.now();
             syncMonthSelectorValue(m);
             syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1286,6 +1320,7 @@
                             isCustomTime = true;
                             lastUpdateMs = performance.now();
                             syncManualDstCheckbox(getCurrentDstState());
+                            updateDstModeIndicator();
 
                             const cityOffsetHours = getBaseLocationOffset();
                             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1518,6 +1553,8 @@
             if (urlDst !== null) {
                 localStorage.setItem('sunclock_dst', urlDst);
                 dstOverrideState = (urlDst === 'true');
+            } else {
+                dstOverrideState = null;
             }
 
             lastUpdateMs = performance.now();
@@ -1529,6 +1566,7 @@
             manualInput.checked = savedDst;
             manualBox.style.opacity = "1.0";
             manualInput.disabled = false;
+            updateDstModeIndicator();
 
             drawRealisticSun('sun-clock-canvas');
 
@@ -1549,6 +1587,7 @@
             localStorage.setItem('sunclock_auto_dst', 'false');
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             dstOverrideState = isChecked;
+            updateDstModeIndicator();
 
             if (prevDst !== isChecked) {
                 const deltaHours = isChecked ? 1 : -1;
@@ -1611,6 +1650,7 @@
             isCustomTime = true;
             lastUpdateMs = performance.now();
             syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
             
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1638,6 +1678,7 @@
             isCustomTime = true;
             lastUpdateMs = performance.now();
             syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1661,6 +1702,7 @@
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
             updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
 
@@ -2305,6 +2347,7 @@
             if (!isCustomTime && dstOverrideState === null) {
                 selectedDate = getEffectiveDate();
                 syncManualDstCheckbox(getCurrentDstState());
+                updateDstModeIndicator();
                 updateInputsVal();
             } else {
                 const candidate = new Date(selectedDate.getTime() + deltaMs);
