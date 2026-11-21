@@ -1278,6 +1278,46 @@
             window.addEventListener('blur', stopContinuousScroll);
         })();
 
+        // Adattamento Pieghevole e riallineamento barre/colori al cambio schermo o orientamento
+        function applyFoldableAdaptation() {
+            if (isStripOpen) {
+                syncStripToSelectedDate(false);
+            }
+
+            if (cachedTimes) {
+                ctx.clearRect(0, 0, 500, 500);
+                drawSunSlicesSafe(cachedTimes);
+                drawMoonVisibilityArc(cachedMoonTimes, selectedDate);
+                drawSolarMeridianLines(cachedTimes);
+                drawMinuteRingSafe();
+                drawClockNumbers();
+                updatePageBackground(cachedTimes);
+
+                if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+                    const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+                    const currentColor = getIntervalColorSafe(h, cachedTimes);
+                    const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+                    window.AndroidInterface.updateColors(finalBg);
+                }
+            }
+        }
+
+        let foldResizeTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(foldResizeTimer);
+            foldResizeTimer = setTimeout(applyFoldableAdaptation, 120);
+        });
+
+        window.addEventListener('orientationchange', function () {
+            setTimeout(applyFoldableAdaptation, 180);
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && cachedTimes) {
+                setTimeout(() => updatePageBackground(cachedTimes), 120);
+            }
+        });
+
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
                 if (lon < -168.8) {
@@ -1856,6 +1896,10 @@
             let metaThemeColor = document.querySelector('meta[name="theme-color"]');
             if (metaThemeColor) {
                 metaThemeColor.setAttribute('content', finalBg);
+            }
+
+            if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+                window.AndroidInterface.updateColors(finalBg);
             }
         }
 
