@@ -893,6 +893,25 @@
             }
         }
 
+        function getCurrentDstStateForRef(refDate) {
+            const savedDate = selectedDate;
+            selectedDate = refDate;
+            const state = getCurrentDstState();
+            selectedDate = savedDate;
+            return state;
+        }
+
+        function syncClockForDateChange(prevDate, nextDate) {
+            const prevDst = getCurrentDstStateForRef(prevDate);
+            const nextDst = getCurrentDstStateForRef(nextDate);
+
+            if (prevDst !== nextDst) {
+                const diffHours = prevDst && !nextDst ? -1 : 1;
+                nextDate = new Date(nextDate.getTime() + (diffHours * 3600000));
+            }
+            return nextDate;
+        }
+
         function populateYearAndMonthSelects(currentYear, currentMonth) {
             const yearSel = document.getElementById('select-strip-year');
             if (yearSel) {
@@ -1094,10 +1113,14 @@
         }
 
         function applyStripDateChange(y, m, d, smoothScroll = false) {
-            selectedDate.setUTCFullYear(y, m, d);
+            const prevDate = new Date(selectedDate.getTime());
+            const candidateDate = new Date(selectedDate.getTime());
+            candidateDate.setUTCFullYear(y, m, d);
+
+            selectedDate = syncClockForDateChange(prevDate, candidateDate);
             isCustomTime = true;
             lastUpdateMs = performance.now();
-            syncMonthSelectorValue(m);
+            syncMonthSelectorValue(selectedDate.getUTCMonth());
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1107,8 +1130,8 @@
             updateSunClock(cachedLat, cachedLon);
 
             if (isStripOpen) {
-                populateYearAndMonthSelects(y, m);
-                ensureYearStripBuilt(y);
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
                 syncStripToSelectedDate(smoothScroll);
             }
         }
@@ -1150,7 +1173,11 @@
                             const y = parseInt(closestTick.dataset.year, 10);
                             const d = parseInt(closestTick.dataset.day, 10);
 
-                            selectedDate.setUTCFullYear(y, m, d);
+                            const prevDate = new Date(selectedDate.getTime());
+                            const candidateDate = new Date(selectedDate.getTime());
+                            candidateDate.setUTCFullYear(y, m, d);
+
+                            selectedDate = syncClockForDateChange(prevDate, candidateDate);
                             isCustomTime = true;
                             lastUpdateMs = performance.now();
 
