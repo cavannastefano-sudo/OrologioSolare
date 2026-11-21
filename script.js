@@ -479,13 +479,15 @@ function ensureYearStripBuilt(year) {
         tick.dataset.day = dCopy.getUTCDate();
         tick.style.textShadow = 'none';
         tick.style.webkitTextStroke = '0px transparent';
+        tick.style.minWidth = '56px';
+        tick.style.padding = '6px 6px';
 
         const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
         tick.innerHTML = `
-            <span>${dayNum} ${monthShort}</span>
-            <span style="font-size:0.64rem; color:#facc15;">🌙 ${pct}%</span>
+            <span style="font-size:0.86rem; font-weight:bold; line-height:1.15;">${dayNum} ${monthShort}</span>
+            <span style="font-size:0.80rem; font-weight:bold; color:#facc15; line-height:1.15;">${pct}%</span>
         `;
 
         tick.onclick = () => {
