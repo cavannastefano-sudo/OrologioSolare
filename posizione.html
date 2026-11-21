@@ -889,7 +889,8 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
         let lastUpdateMs = performance.now();
-        let dstOverrideState = null; // null = automatico (pallino verde), true/false = manuale (pallino rosso)
+        let dstOverrideState = null; // null = automatico, true/false = manuale
+        let userTouchedDst = false; // false = verde (automatico), true = rosso (toccato manualmente)
 
         // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
         let builtYear = null;
@@ -905,10 +906,9 @@
             const dot = document.getElementById('dst-mode-dot');
             if (!dot) return;
 
-            const isManual = (dstOverrideState !== null);
-            dot.classList.toggle('is-auto', !isManual);
-            dot.classList.toggle('is-manual', isManual);
-            dot.title = isManual
+            dot.classList.toggle('is-auto', !userTouchedDst);
+            dot.classList.toggle('is-manual', userTouchedDst);
+            dot.title = userTouchedDst
                 ? 'Modalità manuale attiva (clicca Adesso o Oggi per tornare in automatico)'
                 : 'Modalità automatica attiva';
         }
@@ -950,11 +950,6 @@
                 return urlParams.get('dst') === 'true';
             }
 
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (!isAuto) {
-                return localStorage.getItem('sunclock_dst') === 'true';
-            }
-
             if (isAfricaTimezone()) {
                 return false;
             }
@@ -990,8 +985,7 @@
         // Applica la transizione esatta quando l'orologio avanza in modalità automatica
         function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
             if (urlParams.has('dst') || dstOverrideState !== null) return { date: nextDate, dstChanged: false };
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-            if (!isAuto || isAfricaTimezone()) return { date: nextDate, dstChanged: false };
+            if (isAfricaTimezone()) return { date: nextDate, dstChanged: false };
 
             const prevY = prevDate.getUTCFullYear();
             const prevM = prevDate.getUTCMonth();
@@ -1019,7 +1013,6 @@
                 const prevDst = getCurrentDstState();
                 dstOverrideState = true;
                 syncManualDstCheckbox(true);
-                updateDstModeIndicator();
                 return { date: adjusted, dstChanged: (prevDst !== true) };
             }
 
@@ -1035,7 +1028,6 @@
                 const prevDst = getCurrentDstState();
                 dstOverrideState = false;
                 syncManualDstCheckbox(false);
-                updateDstModeIndicator();
                 return { date: adjusted, dstChanged: (prevDst !== false) };
             }
 
@@ -1103,7 +1095,7 @@
             isCustomTime = false;
             customTimeOffsetMs = 0;
             dstOverrideState = null;
-            localStorage.setItem('sunclock_auto_dst', 'true');
+            userTouchedDst = false;
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -1263,7 +1255,6 @@
             lastUpdateMs = performance.now();
             syncMonthSelectorValue(m);
             syncManualDstCheckbox(getCurrentDstState());
-            updateDstModeIndicator();
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1320,7 +1311,6 @@
                             isCustomTime = true;
                             lastUpdateMs = performance.now();
                             syncManualDstCheckbox(getCurrentDstState());
-                            updateDstModeIndicator();
 
                             const cityOffsetHours = getBaseLocationOffset();
                             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1545,17 +1535,8 @@
         }
 
         function initClock() {
-            const urlAuto = urlParams.get('auto');
-            if (urlAuto !== null) {
-                localStorage.setItem('sunclock_auto_dst', urlAuto);
-            }
-            const urlDst = urlParams.get('dst');
-            if (urlDst !== null) {
-                localStorage.setItem('sunclock_dst', urlDst);
-                dstOverrideState = (urlDst === 'true');
-            } else {
-                dstOverrideState = null;
-            }
+            dstOverrideState = null;
+            userTouchedDst = false;
 
             lastUpdateMs = performance.now();
             updateTimeForLocation();
@@ -1584,9 +1565,9 @@
             const isChecked = document.getElementById('chk-dst').checked;
             const prevDst = getCurrentDstState();
 
-            localStorage.setItem('sunclock_auto_dst', 'false');
-            localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
+            userTouchedDst = true;
             dstOverrideState = isChecked;
+            localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             updateDstModeIndicator();
 
             if (prevDst !== isChecked) {
@@ -1650,7 +1631,6 @@
             isCustomTime = true;
             lastUpdateMs = performance.now();
             syncManualDstCheckbox(getCurrentDstState());
-            updateDstModeIndicator();
             
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1678,7 +1658,6 @@
             isCustomTime = true;
             lastUpdateMs = performance.now();
             syncManualDstCheckbox(getCurrentDstState());
-            updateDstModeIndicator();
 
             const cityOffsetHours = getBaseLocationOffset();
             const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
@@ -1698,7 +1677,7 @@
             isCustomTime = false;
             customTimeOffsetMs = 0;
             dstOverrideState = null;
-            localStorage.setItem('sunclock_auto_dst', 'true');
+            userTouchedDst = false;
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -2347,7 +2326,6 @@
             if (!isCustomTime && dstOverrideState === null) {
                 selectedDate = getEffectiveDate();
                 syncManualDstCheckbox(getCurrentDstState());
-                updateDstModeIndicator();
                 updateInputsVal();
             } else {
                 const candidate = new Date(selectedDate.getTime() + deltaMs);
