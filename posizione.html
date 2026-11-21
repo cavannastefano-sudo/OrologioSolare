@@ -871,7 +871,7 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
         let lastUpdateMs = performance.now();
-        let dstOverrideState = null; // null = automatico / regola 01:59->03:00 e 02:59->02:00
+        let dstOverrideState = null; // null = automatico, true/false = manuale
 
         // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
         let builtYear = null;
@@ -912,6 +912,10 @@
 
         // Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
         function isDstForLocalClock(refDate) {
+            if (dstOverrideState !== null) {
+                return dstOverrideState;
+            }
+
             if (urlParams.has('dst')) {
                 return urlParams.get('dst') === 'true';
             }
@@ -919,10 +923,6 @@
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (!isAuto) {
                 return localStorage.getItem('sunclock_dst') === 'true';
-            }
-
-            if (dstOverrideState !== null) {
-                return dstOverrideState;
             }
 
             if (isAfricaTimezone()) {
@@ -941,11 +941,9 @@
             const octLastSunday = getLastSundayOfMonth(y, 9);
 
             if (m === 2 && day === marchLastSunday) {
-                // Fino alle 01:59:59 resta in ora solare; dalle 02:00 (poi portata a 03:00) è ora legale
                 return (h > 2) || (h === 2 && (min > 0 || sec > 0));
             }
             if (m === 9 && day === octLastSunday) {
-                // Fino alle 02:59:59 resta in ora legale; dalle 03:00 (poi portata a 02:00) è ora solare
                 return h < 3;
             }
 
@@ -959,11 +957,9 @@
             }
         }
 
-        // Applica la transizione esatta quando l'orologio avanza:
-        // - Marzo: da 01:59 -> 02:00 diventa 03:00:00 (ora legale)
-        // - Ottobre: da 02:59 -> 03:00 diventa 02:00:00 (ora solare)
+        // Applica la transizione esatta quando l'orologio avanza in modalità automatica
         function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
-            if (urlParams.has('dst')) return { date: nextDate, dstChanged: false };
+            if (urlParams.has('dst') || dstOverrideState !== null) return { date: nextDate, dstChanged: false };
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (!isAuto || isAfricaTimezone()) return { date: nextDate, dstChanged: false };
 
@@ -1075,6 +1071,7 @@
             isCustomTime = false;
             customTimeOffsetMs = 0;
             dstOverrideState = null;
+            localStorage.setItem('sunclock_auto_dst', 'true');
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -1228,7 +1225,6 @@
         }
 
         function applyStripDateChange(y, m, d, smoothScroll = false) {
-            dstOverrideState = null;
             selectedDate.setUTCFullYear(y, m, d);
             isCustomTime = true;
             lastUpdateMs = performance.now();
@@ -1286,7 +1282,6 @@
                             const y = parseInt(closestTick.dataset.year, 10);
                             const d = parseInt(closestTick.dataset.day, 10);
 
-                            dstOverrideState = null;
                             selectedDate.setUTCFullYear(y, m, d);
                             isCustomTime = true;
                             lastUpdateMs = performance.now();
@@ -1522,24 +1517,18 @@
             const urlDst = urlParams.get('dst');
             if (urlDst !== null) {
                 localStorage.setItem('sunclock_dst', urlDst);
+                dstOverrideState = (urlDst === 'true');
             }
 
-            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             const savedDst = getCurrentDstState();
             
-            document.getElementById('chk-dst').checked = savedDst;
-            
             const manualBox = document.getElementById('manual-dst-box');
             const manualInput = document.getElementById('chk-dst');
-            if (isAuto) {
-                manualBox.style.opacity = "0.4";
-                manualInput.disabled = true;
-            } else {
-                manualBox.style.opacity = "1.0";
-                manualInput.disabled = false;
-            }
+            manualInput.checked = savedDst;
+            manualBox.style.opacity = "1.0";
+            manualInput.disabled = false;
 
             drawRealisticSun('sun-clock-canvas');
 
@@ -1555,17 +1544,28 @@
 
         function toggleDST() {
             const isChecked = document.getElementById('chk-dst').checked;
+            const prevDst = getCurrentDstState();
+
+            localStorage.setItem('sunclock_auto_dst', 'false');
             localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
             dstOverrideState = isChecked;
-            lastUpdateMs = performance.now();
-            if (!isCustomTime) {
-                updateTimeForLocation();
-            } else {
-                const cityOffsetHours = getBaseLocationOffset();
-                const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
-                customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            if (prevDst !== isChecked) {
+                const deltaHours = isChecked ? 1 : -1;
+                selectedDate = new Date(selectedDate.getTime() + (deltaHours * 3600000));
+                if (isCustomTime) {
+                    isCustomTime = true;
+                }
             }
+
+            lastUpdateMs = performance.now();
+            const cityOffsetHours = getBaseLocationOffset();
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            updateInputsVal();
             updateSunClock(cachedLat, cachedLon);
+            updateHands();
         }
 
         function getEffectiveDate() {
@@ -1607,7 +1607,6 @@
         function onTimeChanged(val) {
             if (!val) return;
             const parts = val.split(':');
-            dstOverrideState = null;
             selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
             isCustomTime = true;
             lastUpdateMs = performance.now();
@@ -1658,6 +1657,7 @@
             isCustomTime = false;
             customTimeOffsetMs = 0;
             dstOverrideState = null;
+            localStorage.setItem('sunclock_auto_dst', 'true');
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -2302,7 +2302,7 @@
             const prevDate = new Date(selectedDate.getTime());
             let dstJumped = false;
 
-            if (!isCustomTime) {
+            if (!isCustomTime && dstOverrideState === null) {
                 selectedDate = getEffectiveDate();
                 syncManualDstCheckbox(getCurrentDstState());
                 updateInputsVal();
