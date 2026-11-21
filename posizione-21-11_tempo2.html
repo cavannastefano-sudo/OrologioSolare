@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SunClock24 - Posizione</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+    
+    <!-- Libreria per i calcoli solari e SunCalc3 per i calcoli lunari avanzati -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/suncalc/1.9.0/suncalc.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/suncalc3@0.2.0/suncalc3.js"></script>
+    
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Librerie per il calcolo Fuso Orario Globale (Ora Legale Automatica) -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+    <script src="timezone-manager.js"></script>
+
+    <style>
+        :root { 
+            --bg-color: #000000; 
+            color-scheme: dark;
+        }
+        html {
+            background-color: var(--bg-color);
+            transition: background-color 1s ease;
+        }
+        body {
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding-bottom: env(safe-area-inset-bottom);
+            color: #facc15;
+            transition: background-color 1s ease;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        
+        /* Stile per il logo di CavanWeb nell'angolo sinistro */
+        .logo-link {
+            display: inline-block;
+            width: 38px;
+            height: 38px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        .logo-link:hover {
+            transform: scale(1.05);
+        }
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            background: transparent;
+        }
+
+        header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            width: min(98vw, 480px);
+            margin-bottom: 8px;
+            gap: 6px;
+        }
+        h1 { 
+            margin: 0; 
+            color: #facc15; 
+            font-size: 1.15rem; 
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        #digital-clock {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 6px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            cursor: pointer;
+        }
+        #digital-clock:hover {
+            background: rgba(0,0,0,0.5);
+        }
+
+        .header-box {
+            background: rgba(0,0,0,0.25);
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-sizing: border-box;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+        }
+
+        #date-display-btn {
+            background: none;
+            border: none;
+            color: #39ff14;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            padding: 0;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+        #date-display-btn:hover {
+            color: #70ff33;
+        }
+
+        #btn-now {
+            background: rgba(57, 255, 20, 0.15);
+            color: #39ff14;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 1.15rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            text-shadow: 0 0 8px rgba(57,255,20,0.6);
+        }
+        #btn-now:hover {
+            background: rgba(57, 255, 20, 0.3);
+        }
+
+        .top-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: min(90vw, 480px);
+            margin-bottom: 8px;
+            box-sizing: border-box;
+        }
+
+        .home-btn {
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 0.82rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: none;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .home-btn:hover {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #e0f2fe;
+        }
+
+        .dst-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0,0,0,0.3);
+            padding: 4px 8px;
+            border-radius: 6px;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            font-size: 0.85rem;
+            color: #facc15;
+            cursor: pointer;
+        }
+
+        .dst-mode-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: inline-block;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dst-mode-dot.is-auto {
+            background-color: #39ff14;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.85);
+        }
+        .dst-mode-dot.is-manual {
+            background-color: #ef4444;
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.85);
+        }
+
+        #clock-wrapper {
+            position: relative;
+            width: min(90vw, 480px);
+            height: min(90vw, 480px);
+        }
+        #clock-face {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: #000; border: 4px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative; overflow: hidden;
+        }
+        
+        #clockCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        
+        #moon-canvas {
+            width: 24px !important;
+            height: 24px !important;
+            min-width: 24px !important;
+            min-height: 24px !important;
+            max-width: 24px !important;
+            max-height: 24px !important;
+            border-radius: 50%;
+            box-shadow: 0 0 4px rgba(255,255,255,0.3);
+            object-fit: cover;
+            flex-shrink: 0;
+            position: static !important;
+            background: transparent !important;
+        }
+
+        #moon-clock-canvas {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            border-radius: 50% !important;
+            border: 2px solid rgba(255, 255, 255, 0.4) !important;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5) !important;
+            background: transparent !important;
+            display: block !important;
+            position: absolute !important;
+            top: -16px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 15 !important;
+        }
+
+        #sun-clock-canvas {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            border-radius: 50% !important;
+            border: 2px solid rgba(255, 215, 0, 0.6) !important;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.7) !important;
+            background: transparent !important;
+            display: block !important;
+            position: absolute !important;
+            top: -16px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            z-index: 16 !important;
+        }
+        
+        .hand {
+            position: absolute; bottom: 50%; left: 50%;
+            transform-origin: bottom center;
+            border-top-left-radius: 4px; border-top-right-radius: 4px;
+            z-index: 10;
+        }
+        
+        #hand-hour { 
+            width: 6px; height: 38%; 
+            background: #ff007f; 
+            box-shadow: 0 0 12px #ff007f, 0 0 4px #cc0066; 
+            z-index: 12; 
+        } 
+        #hand-hour::after {
+            content: none !important;
+        }
+
+        #hand-minute { 
+            width: 4px; height: 42%; 
+            background: #39ff14; 
+            box-shadow: 0 0 12px #39ff14, 0 0 4px #22c55e;
+            z-index: 11; 
+        } 
+        #hand-second { width: 2px; height: 46%; background: #a855f7; z-index: 10; } 
+        
+        #hand-moon { 
+            width: 4px; height: 18%; 
+            background: #ffffff; 
+            box-shadow: 0 0 12px #ffffff, 0 0 4px #e2e8f0; 
+            z-index: 9; 
+        }
+        #hand-moon::after {
+            content: none !important;
+        }
+
+        #center-dot {
+            position: absolute; width: 14px; height: 14px;
+            background: #ff007f; border: 2px solid #fff; border-radius: 50%;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20;
+            box-shadow: 0 0 8px #ff007f;
+        }
+
+        #bottom-panels-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: min(90vw, 480px);
+            margin-top: 12px;
+            box-sizing: border-box;
+        }
+
+        .info-panel-box {
+            width: 100%;
+            background: rgba(0,0,0,0.25);
+            padding: 10px 10px;
+            border-radius: 6px;
+            font-size: 1.05rem;
+            color: #39ff14;
+            text-align: center;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            font-weight: bold;
+            line-height: 1.35;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .moon-header-trigger {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid rgba(51,65,85,0.6);
+            padding-bottom: 6px;
+            padding-left: 26px;
+            cursor: pointer;
+        }
+        .moon-header-trigger:hover {
+            opacity: 0.92;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 1.15rem;
+        }
+        .info-grid span { 
+            color: #39ff14; 
+            font-weight: bold; 
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+        }
+
+        .moon-grid-item {
+            color: #ffffff !important;
+            font-size: 0.82rem;
+            font-weight: bold !important;
+            opacity: 1 !important;
+            line-height: 1.25;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .moon-grid-item span {
+            color: #ffffff !important;
+            font-size: 0.95rem !important;
+            font-weight: bold !important;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+
+        /* Pulsante Striscia nell'angolo destro */
+        .panel-strip-toggle-btn {
+            margin-left: auto;
+            flex-shrink: 0;
+            background: #0f172a;
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            border-radius: 5px;
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+            white-space: nowrap;
+        }
+        .panel-strip-toggle-btn:hover,
+        .panel-strip-toggle-btn.active {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #e0f2fe;
+        }
+
+        #panel-standard-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            justify-content: center;
+        }
+
+        #panel-strip-body {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            gap: 6px;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+            padding: 2px 0;
+        }
+        #panel-strip-body.active {
+            display: flex;
+        }
+
+        /* Barra compatta su una riga per Anno, Mese e Oggi */
+        .strip-year-bar {
+            display: flex;
+            flex-wrap: nowrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 3px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .strip-ctrl-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            flex-shrink: 1;
+            min-width: 0;
+        }
+
+        .strip-year-step {
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            min-width: 22px;
+            width: 24px;
+            height: 26px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            flex-shrink: 0;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-year-step:hover {
+            border-color: #38bdf8;
+            color: #38bdf8;
+        }
+
+        .strip-today-btn {
+            background: #2563eb;
+            color: #fde047;
+            border: 1px solid #93c5fd;
+            border-radius: 5px;
+            height: 26px;
+            padding: 0 7px;
+            font-size: 0.74rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            flex-shrink: 0;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-today-btn:hover {
+            background: #1d4ed8;
+            color: #ffffff;
+        }
+
+        .strip-year-select {
+            background: #0f172a;
+            color: #facc15;
+            border: 1px solid #475569;
+            border-radius: 4px;
+            height: 26px;
+            padding: 0 3px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+            outline: none;
+            min-width: 0;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        #select-strip-year {
+            width: 62px;
+            padding: 0 4px;
+            flex-shrink: 0;
+        }
+        #select-strip-month {
+            width: 92px;
+        }
+        .strip-year-select:focus {
+            border-color: #38bdf8;
+        }
+
+        .strip-stage {
+            position: relative;
+            width: 100%;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            overflow: hidden;
+        }
+
+        /* Barra orologio con frecce < > dentro la striscia sotto il timeline */
+        .strip-clock-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 2px;
+        }
+
+        #strip-clock-readout {
+            background: #0f172a;
+            color: #39ff14;
+            border: 1px solid #38bdf8;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 0.92rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            line-height: 1.25;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        #strip-clock-readout:hover {
+            background: #1e293b;
+        }
+
+        .strip-center-cursor {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2.5px;
+            transform: translateX(-50%);
+            background: #ff007f;
+            box-shadow: 0 0 8px rgba(255, 0, 127, 0.95);
+            z-index: 4;
+            pointer-events: none;
+        }
+        .strip-center-cursor::before {
+            content: "▼";
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.62rem;
+            line-height: 1;
+            color: #ff007f;
+        }
+
+        .timeline-viewport {
+            width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            padding: 8px 0 6px 0;
+            cursor: grab;
+        }
+        .timeline-viewport::-webkit-scrollbar {
+            display: none;
+        }
+
+        .timeline-track {
+            display: inline-flex;
+            align-items: stretch;
+            gap: 3px;
+            padding: 0 50%;
+        }
+
+        .timeline-tick {
+            flex: 0 0 auto;
+            min-width: 52px;
+            padding: 6px 4px;
+            border-radius: 6px;
+            background: rgba(30, 41, 59, 0.85);
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            font-size: 0.84rem;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            line-height: 1.15;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .timeline-tick.is-today {
+            border-color: #39ff14;
+        }
+        .timeline-tick.active {
+            background: rgba(20, 83, 45, 0.88);
+            border: 2px solid #39ff14;
+            box-shadow: inset 0 0 0 1px #facc15;
+            color: #39ff14;
+        }
+
+        .strip-side-cursor {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            width: 28px;
+            height: 38px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.92);
+            color: #38bdf8;
+            border: 1px solid #38bdf8;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            user-select: none;
+            touch-action: manipulation;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-side-cursor:hover {
+            background: rgba(2, 132, 199, 0.92);
+            color: #ffffff;
+        }
+        .strip-side-cursor.left {
+            left: 4px;
+        }
+        .strip-side-cursor.right {
+            right: 4px;
+        }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e293b; padding: 20px; border-radius: 12px;
+            width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
+            border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
+        }
+        .moon-modal-content {
+            background: #0f172a; border-color: #1e293b;
+        }
+        .moon-data-box {
+            display: flex; flex-direction: column; gap: 8px;
+            background: #1e293b; padding: 10px; border-radius: 8px;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
+        }
+        .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
+        .close-btn-red {
+            background: #ef4444; color: #ffffff; border: none; border-radius: 6px;
+            width: 28px; height: 28px; font-size: 0.95rem; font-weight: bold; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .moon-step-btn {
+            background: #2b3544; color: #ffffff; border: none;
+            padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
+        }
+        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+        table.times-table th { color: #38bdf8; }
+    </style>
+</head>
+<body>
+
+    <div class="top-action-bar">
+        <a href="index.html" class="home-btn">🏠 Home</a>
+        <label class="dst-container" id="manual-dst-box">
+            <input type="checkbox" id="chk-dst" onchange="toggleDST()" style="width: 16px; height: 16px; cursor: pointer;">
+            <span>☀️ Ora Legale (+1h)</span>
+            <span id="dst-mode-dot" class="dst-mode-dot is-auto" title="Modalità automatica attiva"></span>
+        </label>
+    </div>
+
+    <header>
+        <!-- Logo CavanWeb nell'angolo sinistro -->
+        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+            <img src="SfondoN-512.png" alt="CavanWeb Logo">
+        </a>
+
+        <h1>SunClock24</h1>
+
+        <!-- Controllo Ora senza frecce in alto -->
+        <div style="display: flex; align-items: center; gap: 3px;">
+            <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
+            <div id="digital-clock" onclick="document.getElementById('input-time').showPicker()">00:00:00</div>
+        </div>
+
+        <!-- Controllo Data senza frecce in alto -->
+        <div class="header-box">
+            <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
+            <button id="date-display-btn" onclick="document.getElementById('input-date').showPicker()">--/--/----</button>
+            <button id="btn-now" onclick="resetToNow()">Adesso</button>
+        </div>
+    </header>
+
+    <div id="clock-wrapper">
+        <div id="clock-face">
+            <canvas id="clockCanvas" width="500" height="500"></canvas>
+            
+            <div class="hand" id="hand-hour">
+                <canvas id="sun-clock-canvas" width="32" height="32"></canvas>
+            </div>
+            <div class="hand" id="hand-minute"></div>
+            <div class="hand" id="hand-second"></div>
+            <div class="hand" id="hand-moon">
+                <canvas id="moon-clock-canvas" width="32" height="32"></canvas>
+            </div>
+            <div id="center-dot"></div>
+        </div>
+    </div>
+
+    <div id="bottom-panels-container">
+        <div class="info-panel-box">
+            <!-- Barra superiore: Cliccando sulla Luna/Fase si apre Dettaglio Lunare; a destra il pulsante Striscia -->
+            <div class="moon-header-trigger" onclick="toggleMoonModal(true)" title="Apri dettaglio lunare">
+                <canvas id="moon-canvas" width="24" height="24"></canvas>
+                <span id="moon-phase-name" style="font-size: 0.95rem; color: #facc15; font-weight: bold;">Caricamento...</span>
+                <button type="button" id="btn-toggle-year-strip" class="panel-strip-toggle-btn" onclick="event.stopPropagation(); toggleYearStrip();" title="Mostra/nascondi striscia annuale con cursore centrale">⏱️ Striscia</button>
+            </div>
+
+            <!-- Vista standard: Cliccando qui si apre la tendina Tutti i tempi solari e lunari -->
+            <div id="panel-standard-body" onclick="toggleTimesModal(true)" style="cursor: pointer;" title="Apri tabella orari">
+                <div id="location-text">Ricerca posizione in corso...</div>
+                <div class="info-grid">
+                    <div>Sorge (sole):<br><span id="txt-sunrise">--:--</span></div>
+                    <div>Tramonta (sole):<br><span id="txt-sunset">--:--</span></div>
+                    <div class="moon-grid-item">Sorge (luna):<br><span id="moon-rise">--:--</span></div>
+                    <div class="moon-grid-item">Tramonta (luna):<br><span id="moon-set">--:--</span></div>
+                </div>
+            </div>
+
+            <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con selettori Anno/Mese, tasto Oggi, cursori laterali e orologio con frecce sotto -->
+            <div id="panel-strip-body">
+                <div class="strip-year-bar">
+                    <div class="strip-ctrl-group">
+                        <button type="button" class="strip-year-step" onclick="stepYear(-1)" title="Anno precedente">&lt;</button>
+                        <select id="select-strip-year" class="strip-year-select" onchange="onYearSelectChanged(this.value)" title="Seleziona anno"></select>
+                        <button type="button" class="strip-year-step" onclick="stepYear(1)" title="Anno successivo">&gt;</button>
+                    </div>
+                    <div class="strip-ctrl-group">
+                        <button type="button" class="strip-year-step" onclick="stepMonth(-1)" title="Mese precedente">&lt;</button>
+                        <select id="select-strip-month" class="strip-year-select" onchange="onMonthSelectChanged(this.value)" title="Seleziona mese"></select>
+                        <button type="button" class="strip-year-step" onclick="stepMonth(1)" title="Mese successivo">&gt;</button>
+                    </div>
+                    <button type="button" id="btn-strip-today" class="strip-today-btn" onclick="goToTodayOnStrip()" title="Torna ad oggi">Oggi</button>
+                </div>
+
+                <div class="strip-stage">
+                    <button type="button" id="strip-cursor-left" class="strip-side-cursor left" aria-label="Scorri a sinistra" title="Scorri a sinistra (tieni premuto per scorrimento veloce)">◀</button>
+                    <div class="strip-center-cursor" aria-hidden="true"></div>
+                    <div id="timeline-viewport" class="timeline-viewport">
+                        <div id="timeline-track" class="timeline-track"></div>
+                    </div>
+                    <button type="button" id="strip-cursor-right" class="strip-side-cursor right" aria-label="Scorri a destra" title="Scorri a destra (tieni premuto per scorrimento veloce)">▶</button>
+                </div>
+
+                <div id="strip-clock-bar" class="strip-clock-bar">
+                    <button type="button" id="strip-time-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
+                    <div id="strip-clock-readout" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora">00:00:00</div>
+                    <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tendina 1: Tutti i tempi solari e lunari -->
+    <div id="modal-times" class="modal" onclick="if(event.target === this) toggleTimesModal(false);">
+        <div class="modal-content">
+            <div class="modal-header">
+                <strong>Tutti i tempi solari e lunari</strong>
+                <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
+            </div>
+            <table class="times-table">
+                <thead><tr><th>Evento</th><th>Tempo</th></tr></thead>
+                <tbody id="times-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Tendina 2: Dettaglio Lunare Avanzato -->
+    <div id="modal-moon" class="modal" onclick="if(event.target === this) toggleMoonModal(false);">
+        <div class="modal-content moon-modal-content" style="text-align: center;">
+            <div class="modal-header">
+                <span style="display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-moon" style="color: #facc15;"></i>
+                    <strong style="color: #facc15;">Dettaglio Lunare</strong>
+                </span>
+                <button class="close-btn-red" onclick="toggleMoonModal(false)">✕</button>
+            </div>
+            
+            <div style="margin: 15px 0; display: flex; justify-content: center;">
+                <canvas id="big-moon-canvas" width="140" height="140" style="border-radius: 50%; border: none;"></canvas>
+            </div>
+
+            <div id="big-moon-phase-title" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 4px;">--</div>
+            <div id="big-moon-date-display" style="font-size: 1.15rem; font-weight: bold; color: #ffffff; margin-bottom: 15px;">--</div>
+
+            <div class="moon-data-box">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="moon-step-btn" onclick="changeDate(-1)">◀ -1g</button>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Giorni</span>
+                    <button class="moon-step-btn" onclick="changeDate(1)">+1g ▶</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button class="moon-step-btn" onclick="changeHour(-1)">◀ -1h</button>
+                    <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Ore</span>
+                    <button class="moon-step-btn" onclick="changeHour(1)">+1h ▶</button>
+                </div>
+            </div>
+
+            <button onclick="resetToNow();" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
+        </div>
+    </div>
+
+    <script>
+        SunCalc.addTime(-18, 'astronomicalDawn', 'astronomicalDusk');
+        SunCalc.addTime(-12, 'nauticalDawn', 'nauticalDusk');
+        SunCalc.addTime(-6, 'dawn', 'dusk');
+
+        const canvas = document.getElementById('clockCanvas');
+        const ctx = canvas.getContext('2d');
+        const cx = 250;
+        const cy = 250;
+        const radius = 248;
+
+        const PALETTE = {
+            night: '#000000', astro: '#172554', naut: '#1e3a8a',
+            civil: '#3b82f6', sunriseSunset: '#f97316', golden: '#eab308', day: '#bae6fd'            
+        };
+
+        let cachedTimes = null;
+        let cachedMoonTimes = null;
+        let cachedMoonIllumination = null;
+        let lastHighlightedEventIndex = -1;
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        let cachedLat = urlParams.get('lat') ? parseFloat(urlParams.get('lat')) : 45.05;
+        let cachedLon = urlParams.get('lon') ? parseFloat(urlParams.get('lon')) : 9.69;
+        let cityName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : 'Posizione';
+
+        let selectedDate = new Date();
+        let isCustomTime = false;
+        let customTimeOffsetMs = 0;
+        let lastUpdateMs = performance.now();
+        let dstOverrideState = null; // null = automatico, true/false = manuale
+        let userTouchedDst = false; // false = verde (automatico attivo), true = rosso (manuale attivo da home o da clic)
+
+        // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
+        let builtYear = null;
+        let isStripOpen = false;
+        let isProgrammaticScroll = false;
+        let scrollEndTimer = null;
+        let scrollRafId = null;
+
+        const realMoonImage = new Image();
+        realMoonImage.src = 'luna.jpg';
+
+        function updateDstModeIndicator() {
+            const dot = document.getElementById('dst-mode-dot');
+            if (!dot) return;
+
+            dot.classList.toggle('is-auto', !userTouchedDst);
+            dot.classList.toggle('is-manual', userTouchedDst);
+            dot.title = userTouchedDst
+                ? 'Modalità manuale attiva (clicca Adesso o Oggi per tornare in automatico)'
+                : 'Modalità automatica attiva';
+        }
+
+        function getLastSundayOfMonth(year, month) {
+            const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
+            const dayOfWeek = lastDay.getUTCDay(); // 0 = Domenica
+            return lastDay.getUTCDate() - dayOfWeek;
+        }
+
+        function isEuDstByCalendar(year, month, day) {
+            const marchLastSunday = getLastSundayOfMonth(year, 2); // Marzo
+            const octLastSunday = getLastSundayOfMonth(year, 9);   // Ottobre
+
+            if (month < 2 || month > 9) return false;
+            if (month > 2 && month < 9) return true;
+            if (month === 2) return day >= marchLastSunday;
+            if (month === 9) return day < octLastSunday;
+            return false;
+        }
+
+        function isAfricaTimezone() {
+            if (isNaN(cachedLat) || isNaN(cachedLon) || typeof tzlookup !== 'function') return false;
+            try {
+                const tzString = tzlookup(cachedLat, cachedLon);
+                return !!(tzString && tzString.startsWith('Africa/'));
+            } catch (e) {
+                return false;
+            }
+        }
+
+        // Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
+        function isDstForLocalClock(refDate) {
+            if (dstOverrideState !== null) {
+                return dstOverrideState;
+            }
+
+            if (urlParams.get('auto') === 'false') {
+                return urlParams.has('dst')
+                    ? urlParams.get('dst') === 'true'
+                    : localStorage.getItem('sunclock_dst') === 'true';
+            }
+
+            if (localStorage.getItem('sunclock_auto_dst') === 'false') {
+                return localStorage.getItem('sunclock_dst') === 'true';
+            }
+
+            if (isAfricaTimezone()) {
+                return false;
+            }
+
+            const d = refDate || selectedDate || new Date();
+            const y = d.getUTCFullYear();
+            const m = d.getUTCMonth();
+            const day = d.getUTCDate();
+            const h = d.getUTCHours();
+            const min = d.getUTCMinutes();
+            const sec = d.getUTCSeconds();
+
+            const marchLastSunday = getLastSundayOfMonth(y, 2);
+            const octLastSunday = getLastSundayOfMonth(y, 9);
+
+            if (m === 2 && day === marchLastSunday) {
+                return (h > 2) || (h === 2 && (min > 0 || sec > 0));
+            }
+            if (m === 9 && day === octLastSunday) {
+                return h < 3;
+            }
+
+            return isEuDstByCalendar(y, m, day);
+        }
+
+        function syncManualDstCheckbox(isDst) {
+            const manualInput = document.getElementById('chk-dst');
+            if (manualInput && manualInput.checked !== isDst) {
+                manualInput.checked = isDst;
+            }
+        }
+
+        // Applica la transizione esatta quando l'orologio avanza in modalità automatica
+        function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
+            if (userTouchedDst || dstOverrideState !== null || localStorage.getItem('sunclock_auto_dst') === 'false') {
+                return { date: nextDate, dstChanged: false };
+            }
+            if (isAfricaTimezone()) return { date: nextDate, dstChanged: false };
+
+            const prevY = prevDate.getUTCFullYear();
+            const prevM = prevDate.getUTCMonth();
+            const prevD = prevDate.getUTCDate();
+            const prevH = prevDate.getUTCHours();
+            const prevMin = prevDate.getUTCMinutes();
+
+            const nextY = nextDate.getUTCFullYear();
+            const nextM = nextDate.getUTCMonth();
+            const nextD = nextDate.getUTCDate();
+            const nextH = nextDate.getUTCHours();
+
+            const marchLastSunday = getLastSundayOfMonth(prevY, 2);
+            const octLastSunday = getLastSundayOfMonth(prevY, 9);
+
+            // Marzo: 01:59 -> 03:00:00
+            if (
+                prevY === nextY &&
+                prevM === 2 && nextM === 2 &&
+                prevD === marchLastSunday && nextD === marchLastSunday &&
+                prevH === 1 && prevMin === 59 && nextH >= 2
+            ) {
+                const adjusted = new Date(nextDate.getTime());
+                adjusted.setUTCHours(3, 0, 0, adjusted.getUTCMilliseconds());
+                const prevDst = getCurrentDstState();
+                dstOverrideState = true;
+                syncManualDstCheckbox(true);
+                return { date: adjusted, dstChanged: (prevDst !== true) };
+            }
+
+            // Ottobre: 02:59 -> 02:00:00
+            if (
+                prevY === nextY &&
+                prevM === 9 && nextM === 9 &&
+                prevD === octLastSunday && nextD === octLastSunday &&
+                prevH === 2 && prevMin === 59 && nextH >= 3
+            ) {
+                const adjusted = new Date(nextDate.getTime());
+                adjusted.setUTCHours(2, 0, 0, adjusted.getUTCMilliseconds());
+                const prevDst = getCurrentDstState();
+                dstOverrideState = false;
+                syncManualDstCheckbox(false);
+                return { date: adjusted, dstChanged: (prevDst !== false) };
+            }
+
+            return { date: nextDate, dstChanged: false };
+        }
+
+        function getDayKey(d) {
+            return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+        }
+
+        function syncMonthSelectorValue(monthIdx) {
+            const monthSel = document.getElementById('select-strip-month');
+            if (monthSel && String(monthIdx) !== monthSel.value) {
+                monthSel.value = String(monthIdx);
+            }
+        }
+
+        function populateYearAndMonthSelects(currentYear, currentMonth) {
+            const yearSel = document.getElementById('select-strip-year');
+            if (yearSel) {
+                const startY = Math.min(2020, currentYear - 5);
+                const endY = Math.max(2035, currentYear + 5);
+
+                if (
+                    yearSel.options.length === 0 ||
+                    parseInt(yearSel.options[0].value, 10) > currentYear ||
+                    parseInt(yearSel.options[yearSel.options.length - 1].value, 10) < currentYear
+                ) {
+                    yearSel.innerHTML = '';
+                    for (let y = startY; y <= endY; y++) {
+                        const opt = document.createElement('option');
+                        opt.value = y;
+                        opt.textContent = y;
+                        yearSel.appendChild(opt);
+                    }
+                }
+                yearSel.value = String(currentYear);
+            }
+
+            const monthSel = document.getElementById('select-strip-month');
+            if (monthSel) {
+                if (monthSel.options.length !== 12) {
+                    monthSel.innerHTML = '';
+                    for (let m = 0; m < 12; m++) {
+                        const label = new Date(Date.UTC(2026, m, 1)).toLocaleDateString('it-IT', { month: 'long', timeZone: 'UTC' });
+                        const capLabel = label.charAt(0).toUpperCase() + label.slice(1);
+                        const opt = document.createElement('option');
+                        opt.value = String(m);
+                        opt.textContent = capLabel;
+                        monthSel.appendChild(opt);
+                    }
+                }
+                monthSel.value = String(currentMonth);
+            }
+        }
+
+        function goToTodayOnStrip() {
+            isProgrammaticScroll = true;
+            clearTimeout(scrollEndTimer);
+            if (scrollRafId) {
+                cancelAnimationFrame(scrollRafId);
+                scrollRafId = null;
+            }
+
+            isCustomTime = false;
+            customTimeOffsetMs = 0;
+            dstOverrideState = null;
+            userTouchedDst = false;
+            localStorage.setItem('sunclock_auto_dst', 'true');
+            lastUpdateMs = performance.now();
+            updateTimeForLocation();
+            syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            if (isStripOpen) {
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            }
+
+            scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, 120);
+        }
+
+        function onYearSelectChanged(val) {
+            const targetYear = parseInt(val, 10);
+            if (isNaN(targetYear)) return;
+            const currentMonth = selectedDate.getUTCMonth();
+            const maxDay = new Date(Date.UTC(targetYear, currentMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(targetYear, currentMonth, safeDay, false);
+        }
+
+        function stepYear(delta) {
+            const nextYear = selectedDate.getUTCFullYear() + delta;
+            const currentMonth = selectedDate.getUTCMonth();
+            populateYearAndMonthSelects(nextYear, currentMonth);
+            const maxDay = new Date(Date.UTC(nextYear, currentMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(nextYear, currentMonth, safeDay, false);
+        }
+
+        function onMonthSelectChanged(val) {
+            const targetMonth = parseInt(val, 10);
+            if (isNaN(targetMonth)) return;
+            const currentYear = selectedDate.getUTCFullYear();
+            const maxDay = new Date(Date.UTC(currentYear, targetMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(currentYear, targetMonth, safeDay, false);
+        }
+
+        function stepMonth(delta) {
+            const base = new Date(Date.UTC(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth() + delta, 1, 12, 0, 0));
+            const nextYear = base.getUTCFullYear();
+            const nextMonth = base.getUTCMonth();
+            populateYearAndMonthSelects(nextYear, nextMonth);
+            const maxDay = new Date(Date.UTC(nextYear, nextMonth + 1, 0)).getUTCDate();
+            const safeDay = Math.min(selectedDate.getUTCDate(), maxDay);
+            applyStripDateChange(nextYear, nextMonth, safeDay, false);
+        }
+
+        function toggleYearStrip() {
+            isStripOpen = !isStripOpen;
+            const stdBody = document.getElementById('panel-standard-body');
+            const stripBody = document.getElementById('panel-strip-body');
+            const btn = document.getElementById('btn-toggle-year-strip');
+
+            if (isStripOpen) {
+                if (stdBody) stdBody.style.display = 'none';
+                if (stripBody) stripBody.classList.add('active');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerText = '✕ Dati';
+                }
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            } else {
+                if (stripBody) stripBody.classList.remove('active');
+                if (stdBody) stdBody.style.display = 'flex';
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.innerText = '⏱️ Striscia';
+                }
+            }
+        }
+
+        function ensureYearStripBuilt(year) {
+            if (builtYear === year) return;
+            builtYear = year;
+
+            const track = document.getElementById('timeline-track');
+            if (!track) return;
+            track.innerHTML = '';
+
+            const todayKey = getDayKey(getEffectiveDate());
+            const cursor = new Date(Date.UTC(year, 0, 1, 12, 0, 0));
+            const fragment = document.createDocumentFragment();
+
+            while (cursor.getUTCFullYear() === year) {
+                const dCopy = new Date(cursor);
+                const key = getDayKey(dCopy);
+                const moon = (typeof SunCalc3 !== 'undefined' && SunCalc3.getMoonIllumination)
+                    ? SunCalc3.getMoonIllumination(dCopy)
+                    : ((typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(dCopy) : SunCalc.getMoonIllumination(dCopy));
+                const pct = Math.round(moon.fraction * 100);
+
+                const tick = document.createElement('div');
+                tick.className = 'timeline-tick' + (key === todayKey ? ' is-today' : '');
+                tick.dataset.dayKey = key;
+                tick.dataset.year = dCopy.getUTCFullYear();
+                tick.dataset.month = dCopy.getUTCMonth();
+                tick.dataset.day = dCopy.getUTCDate();
+
+                const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
+                const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
+
+                tick.innerHTML = `
+                    <span style="font-size:0.86rem; font-weight:bold; line-height:1.15;">${dayNum} ${monthShort}</span>
+                    <span style="font-size:0.80rem; font-weight:bold; color:#facc15; line-height:1.15;">${pct}%</span>
+                `;
+
+                tick.onclick = () => {
+                    applyStripDateChange(dCopy.getUTCFullYear(), dCopy.getUTCMonth(), dCopy.getUTCDate(), false);
+                };
+
+                fragment.appendChild(tick);
+                cursor.setUTCDate(cursor.getUTCDate() + 1);
+            }
+
+            track.appendChild(fragment);
+        }
+
+        function syncStripToSelectedDate(smooth = false) {
+            const viewport = document.getElementById('timeline-viewport');
+            const track = document.getElementById('timeline-track');
+            if (!viewport || !track) return;
+
+            const activeKey = getDayKey(selectedDate);
+            let targetTick = null;
+
+            track.querySelectorAll('.timeline-tick').forEach(tick => {
+                const isMatch = tick.dataset.dayKey === activeKey;
+                tick.classList.toggle('active', isMatch);
+                if (isMatch) targetTick = tick;
+            });
+
+            syncMonthSelectorValue(selectedDate.getUTCMonth());
+
+            if (targetTick) {
+                isProgrammaticScroll = true;
+                clearTimeout(scrollEndTimer);
+                const targetScrollLeft = targetTick.offsetLeft + (targetTick.offsetWidth / 2) - (viewport.clientWidth / 2);
+                viewport.scrollTo({
+                    left: Math.max(0, targetScrollLeft),
+                    behavior: smooth ? 'smooth' : 'auto'
+                });
+                scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, smooth ? 280 : 100);
+            }
+        }
+
+        function applyStripDateChange(y, m, d, smoothScroll = false) {
+            selectedDate.setUTCFullYear(y, m, d);
+            isCustomTime = true;
+            lastUpdateMs = performance.now();
+            syncMonthSelectorValue(m);
+            syncManualDstCheckbox(getCurrentDstState());
+
+            const cityOffsetHours = getBaseLocationOffset();
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            if (isStripOpen) {
+                populateYearAndMonthSelects(y, m);
+                ensureYearStripBuilt(y);
+                syncStripToSelectedDate(smoothScroll);
+            }
+        }
+
+        const stripViewportEl = document.getElementById('timeline-viewport');
+        if (stripViewportEl) {
+            stripViewportEl.addEventListener('scroll', () => {
+                if (!isStripOpen || isProgrammaticScroll) return;
+
+                if (scrollRafId) return;
+                scrollRafId = requestAnimationFrame(() => {
+                    scrollRafId = null;
+                    if (!isStripOpen || isProgrammaticScroll) return;
+
+                    const track = document.getElementById('timeline-track');
+                    if (!track) return;
+                    const centerX = stripViewportEl.scrollLeft + (stripViewportEl.clientWidth / 2);
+
+                    let closestTick = null;
+                    let minDist = Infinity;
+
+                    track.querySelectorAll('.timeline-tick').forEach(tick => {
+                        const tickCenter = tick.offsetLeft + (tick.offsetWidth / 2);
+                        const dist = Math.abs(centerX - tickCenter);
+                        if (dist < minDist) {
+                            minDist = dist;
+                            closestTick = tick;
+                        }
+                    });
+
+                    if (closestTick) {
+                        track.querySelectorAll('.timeline-tick.active').forEach(el => el.classList.remove('active'));
+                        closestTick.classList.add('active');
+
+                        const m = parseInt(closestTick.dataset.month, 10);
+                        syncMonthSelectorValue(m);
+
+                        if (closestTick.dataset.dayKey !== getDayKey(selectedDate)) {
+                            const y = parseInt(closestTick.dataset.year, 10);
+                            const d = parseInt(closestTick.dataset.day, 10);
+
+                            selectedDate.setUTCFullYear(y, m, d);
+                            isCustomTime = true;
+                            lastUpdateMs = performance.now();
+                            syncManualDstCheckbox(getCurrentDstState());
+
+                            const cityOffsetHours = getBaseLocationOffset();
+                            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+                            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+                            updateInputsVal();
+                            updateSunClock(cachedLat, cachedLon);
+                        }
+                    }
+                });
+            }, { passive: true });
+        }
+
+        // Supporto Mouse: Rotella + Trascinamento Drag
+        (function enableMouseStripNavigation() {
+            const viewport = document.getElementById('timeline-viewport');
+            if (!viewport) return;
+
+            viewport.addEventListener('wheel', (e) => {
+                if (!isStripOpen) return;
+                const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+                if (delta !== 0) {
+                    e.preventDefault();
+                    viewport.scrollLeft += delta;
+                }
+            }, { passive: false });
+
+            let isMouseDragging = false;
+            let dragStartX = 0;
+            let dragStartScrollLeft = 0;
+            let hasDragged = false;
+
+            viewport.addEventListener('mousedown', (e) => {
+                if (e.button !== 0 || !isStripOpen) return;
+                isMouseDragging = true;
+                hasDragged = false;
+                dragStartX = e.clientX;
+                dragStartScrollLeft = viewport.scrollLeft;
+                viewport.style.cursor = 'grabbing';
+                viewport.style.userSelect = 'none';
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isMouseDragging) return;
+                const dx = e.clientX - dragStartX;
+                if (Math.abs(dx) > 4) {
+                    hasDragged = true;
+                }
+                viewport.scrollLeft = dragStartScrollLeft - dx;
+            });
+
+            window.addEventListener('mouseup', () => {
+                if (!isMouseDragging) return;
+                isMouseDragging = false;
+                viewport.style.cursor = 'grab';
+                viewport.style.userSelect = '';
+                if (hasDragged) {
+                    setTimeout(() => { hasDragged = false; }, 0);
+                }
+            });
+
+            viewport.addEventListener('click', (e) => {
+                if (hasDragged) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            }, true);
+        })();
+
+        // Cursori Laterali Sinistro (◀) e Destro (▶)
+        (function setupSideStripCursors() {
+            const viewport = document.getElementById('timeline-viewport');
+            const leftBtn = document.getElementById('strip-cursor-left');
+            const rightBtn = document.getElementById('strip-cursor-right');
+            if (!viewport || !leftBtn || !rightBtn) return;
+
+            let holdAnimId = null;
+            let holdTimeout = null;
+            let currentDir = 0;
+
+            const stepFast = (dir) => {
+                const stepPx = Math.max(140, Math.round(viewport.clientWidth * 0.65));
+                viewport.scrollLeft += dir * stepPx;
+            };
+
+            const startContinuousScroll = (dir) => {
+                stopContinuousScroll();
+                currentDir = dir;
+                stepFast(dir);
+
+                holdTimeout = setTimeout(() => {
+                    const speedPxPerFrame = 18;
+                    const tick = () => {
+                        if (currentDir !== dir || !isStripOpen) return;
+                        viewport.scrollLeft += dir * speedPxPerFrame;
+                        holdAnimId = requestAnimationFrame(tick);
+                    };
+                    holdAnimId = requestAnimationFrame(tick);
+                }, 180);
+            };
+
+            const stopContinuousScroll = () => {
+                currentDir = 0;
+                clearTimeout(holdTimeout);
+                if (holdAnimId) {
+                    cancelAnimationFrame(holdAnimId);
+                    holdAnimId = null;
+                }
+            };
+
+            const bindCursorEvents = (btn, dir) => {
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                });
+
+                btn.addEventListener('touchstart', (e) => {
+                    e.stopPropagation();
+                    startContinuousScroll(dir);
+                }, { passive: true });
+            };
+
+            bindCursorEvents(leftBtn, -1);
+            bindCursorEvents(rightBtn, 1);
+
+            window.addEventListener('mouseup', stopContinuousScroll);
+            window.addEventListener('touchend', stopContinuousScroll);
+            window.addEventListener('touchcancel', stopContinuousScroll);
+            window.addEventListener('blur', stopContinuousScroll);
+        })();
+
+        // Adattamento Pieghevole e riallineamento barre/colori al cambio schermo o orientamento
+        function applyFoldableAdaptation() {
+            if (isStripOpen) {
+                syncStripToSelectedDate(false);
+            }
+
+            if (cachedTimes) {
+                ctx.clearRect(0, 0, 500, 500);
+                drawSunSlicesSafe(cachedTimes);
+                drawMoonVisibilityArc(cachedMoonTimes, selectedDate);
+                drawSolarMeridianLines(cachedTimes);
+                drawMinuteRingSafe();
+                drawClockNumbers();
+                updatePageBackground(cachedTimes);
+
+                if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+                    const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+                    const currentColor = getIntervalColorSafe(h, cachedTimes);
+                    const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+                    window.AndroidInterface.updateColors(finalBg);
+                }
+            }
+        }
+
+        let foldResizeTimer = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(foldResizeTimer);
+            foldResizeTimer = setTimeout(applyFoldableAdaptation, 120);
+        });
+
+        window.addEventListener('orientationchange', function () {
+            setTimeout(applyFoldableAdaptation, 180);
+        });
+
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && cachedTimes) {
+                setTimeout(() => updatePageBackground(cachedTimes), 120);
+            }
+        });
+
+        function getPreciseStandardTimezone(lat, lon) {
+            if (lat >= 65.4 && lat <= 66.5 && lon >= -169.8 && lon <= -168.0) {
+                if (lon < -168.8) {
+                    return 12; 
+                } else {
+                    return -9; 
+                }
+            }
+
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; 
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; 
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = selectedDate || new Date();
+                    const janDate = new Date(now.getUTCFullYear(), 0, 15);
+                    
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(janDate);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+            return Math.round(lon / 15);
+        }
+
+        function getCurrentDstState() {
+            return isDstForLocalClock(selectedDate);
+        }
+
+        function getBaseLocationOffset() {
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const isDstNowActive = getCurrentDstState();
+            return standardTz + (isDstNowActive ? 1 : 0);
+        }
+
+        function initClock() {
+            const urlAuto = urlParams.get('auto');
+            const urlDst = urlParams.get('dst');
+
+            if (urlAuto === 'false') {
+                localStorage.setItem('sunclock_auto_dst', 'false');
+                const manualDstFromHome = (urlDst !== null)
+                    ? (urlDst === 'true')
+                    : (localStorage.getItem('sunclock_dst') === 'true');
+                localStorage.setItem('sunclock_dst', manualDstFromHome ? 'true' : 'false');
+                dstOverrideState = manualDstFromHome;
+                userTouchedDst = true;
+            } else if (urlAuto === 'true') {
+                localStorage.setItem('sunclock_auto_dst', 'true');
+                dstOverrideState = null;
+                userTouchedDst = false;
+            } else if (localStorage.getItem('sunclock_auto_dst') === 'false') {
+                const manualDstSaved = (urlDst !== null)
+                    ? (urlDst === 'true')
+                    : (localStorage.getItem('sunclock_dst') === 'true');
+                localStorage.setItem('sunclock_dst', manualDstSaved ? 'true' : 'false');
+                dstOverrideState = manualDstSaved;
+                userTouchedDst = true;
+            } else {
+                dstOverrideState = null;
+                userTouchedDst = false;
+            }
+
+            lastUpdateMs = performance.now();
+            updateTimeForLocation();
+            const savedDst = getCurrentDstState();
+            
+            const manualBox = document.getElementById('manual-dst-box');
+            const manualInput = document.getElementById('chk-dst');
+            manualInput.checked = savedDst;
+            manualBox.style.opacity = "1.0";
+            manualInput.disabled = false;
+            updateDstModeIndicator();
+
+            drawRealisticSun('sun-clock-canvas');
+
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            if (isStripOpen) {
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            }
+        }
+
+        function toggleDST() {
+            const isChecked = document.getElementById('chk-dst').checked;
+            const prevDst = getCurrentDstState();
+
+            userTouchedDst = true;
+            dstOverrideState = isChecked;
+            localStorage.setItem('sunclock_auto_dst', 'false');
+            localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
+            updateDstModeIndicator();
+
+            if (prevDst !== isChecked) {
+                const deltaHours = isChecked ? 1 : -1;
+                selectedDate = new Date(selectedDate.getTime() + (deltaHours * 3600000));
+                if (isCustomTime) {
+                    isCustomTime = true;
+                }
+            }
+
+            lastUpdateMs = performance.now();
+            const cityOffsetHours = getBaseLocationOffset();
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+            updateHands();
+        }
+
+        function getEffectiveDate() {
+            const standardTz = getPreciseStandardTimezone(cachedLat, cachedLon);
+            const now = new Date();
+            const probe = new Date(Date.UTC(
+                now.getUTCFullYear(),
+                now.getUTCMonth(),
+                now.getUTCDate(),
+                now.getUTCHours(),
+                now.getUTCMinutes(),
+                now.getUTCSeconds(),
+                now.getUTCMilliseconds()
+            ) + (standardTz * 3600000));
+
+            const isDstNow = isDstForLocalClock(probe);
+            const cityOffsetHours = standardTz + (isDstNow ? 1 : 0);
+            return new Date(now.getTime() + (cityOffsetHours * 3600000));
+        }
+
+        function updateInputsVal() {
+            const year = selectedDate.getUTCFullYear();
+            const month = String(selectedDate.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(selectedDate.getUTCDate()).padStart(2, '0');
+            const hours = String(selectedDate.getUTCHours()).padStart(2, '0');
+            const minutes = String(selectedDate.getUTCMinutes()).padStart(2, '0');
+
+            document.getElementById('input-date').value = `${year}-${month}-${day}`;
+            document.getElementById('date-display-btn').innerText = `${day}/${month}/${year}`;
+            document.getElementById('input-time').value = `${hours}:${minutes}`;
+        }
+
+        function onDateChanged(val) {
+            if (!val) return;
+            const parts = val.split('-');
+            applyStripDateChange(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), false);
+        }
+
+        function onTimeChanged(val) {
+            if (!val) return;
+            const parts = val.split(':');
+            selectedDate.setUTCHours(parseInt(parts[0], 10), parseInt(parts[1], 10), 0, 0);
+            isCustomTime = true;
+            lastUpdateMs = performance.now();
+            syncManualDstCheckbox(getCurrentDstState());
+            
+            const cityOffsetHours = getBaseLocationOffset();
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+        }
+
+        function changeDate(days) {
+            const next = new Date(selectedDate);
+            next.setUTCDate(next.getUTCDate() + days);
+            applyStripDateChange(next.getUTCFullYear(), next.getUTCMonth(), next.getUTCDate(), false);
+        }
+
+        function changeHour(hours) {
+            const prev = new Date(selectedDate.getTime());
+            const next = new Date(selectedDate.getTime() + (hours * 3600000));
+            if (hours > 0) {
+                const res = applyDstTransitionWhenAdvancing(prev, next);
+                selectedDate = res.date;
+            } else {
+                selectedDate = next;
+            }
+            isCustomTime = true;
+            lastUpdateMs = performance.now();
+            syncManualDstCheckbox(getCurrentDstState());
+
+            const cityOffsetHours = getBaseLocationOffset();
+            const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+            customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            if (isStripOpen) {
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            }
+        }
+
+        function resetToNow() {
+            isCustomTime = false;
+            customTimeOffsetMs = 0;
+            dstOverrideState = null;
+            userTouchedDst = false;
+            localStorage.setItem('sunclock_auto_dst', 'true');
+            lastUpdateMs = performance.now();
+            updateTimeForLocation();
+            syncManualDstCheckbox(getCurrentDstState());
+            updateDstModeIndicator();
+            updateInputsVal();
+            updateSunClock(cachedLat, cachedLon);
+
+            if (isStripOpen) {
+                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                syncStripToSelectedDate(false);
+            }
+        }
+
+        function updateTimeForLocation() {
+            if (!isCustomTime) {
+                selectedDate = getEffectiveDate();
+            }
+        }
+
+        function toTargetTime(date) {
+            if (!isValidDate(date)) return null;
+            const cityOffsetHours = getBaseLocationOffset();
+            return new Date(date.getTime() + (cityOffsetHours * 3600000));
+        }
+
+        function getCompleteMoonTimes(date, lat, lon) {
+            let targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate(), 12, 0, 0));
+            
+            let times = SunCalc.getMoonTimes(targetDate, lat, lon);
+            let rise = times.rise;
+            let set = times.set;
+
+            let startDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0));
+            let endDay = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
+
+            if (!isValidDate(rise) || !isValidDate(set) || (rise < startDay || rise > endDay) || (set < startDay || set > endDay) || times.alwaysUp || times.alwaysDown) {
+                let dPrev = new Date(targetDate);
+                dPrev.setUTCDate(targetDate.getUTCDate() - 1);
+                let pTimes = SunCalc.getMoonTimes(dPrev, lat, lon);
+
+                let dNext = new Date(targetDate);
+                dNext.setUTCDate(targetDate.getUTCDate() + 1);
+                let nTimes = SunCalc.getMoonTimes(dNext, lat, lon);
+
+                if (!isValidDate(rise) || rise < startDay || rise > endDay) {
+                    if (isValidDate(pTimes.rise) && pTimes.rise >= startDay && pTimes.rise <= endDay) rise = pTimes.rise;
+                    else if (isValidDate(nTimes.rise) && nTimes.rise >= startDay && nTimes.rise <= endDay) rise = nTimes.rise;
+                    else if (isValidDate(pTimes.rise)) rise = pTimes.rise;
+                    else if (isValidDate(nTimes.rise)) rise = nTimes.rise;
+                }
+
+                if (!isValidDate(set) || set < startDay || set > endDay) {
+                    if (isValidDate(pTimes.set) && pTimes.set >= startDay && pTimes.set <= endDay) set = pTimes.set;
+                    else if (isValidDate(nTimes.set) && nTimes.set >= startDay && nTimes.set <= endDay) set = nTimes.set;
+                    else if (isValidDate(pTimes.set)) set = pTimes.set;
+                    else if (isValidDate(nTimes.set)) set = nTimes.set;
+                }
+            }
+            return { rise: rise, set: set, alwaysUp: times.alwaysUp, alwaysDown: times.alwaysDown };
+        }
+
+        function updateSunClock(lat, lon) {
+            const standardTz = getPreciseStandardTimezone(lat, lon);
+            const isDstNowActive = getCurrentDstState();
+            const totalTzOffset = getBaseLocationOffset();
+            let utcCalculationDate = new Date(selectedDate.getTime() - (totalTzOffset * 3600000));
+            utcCalculationDate.setUTCHours(12, 0, 0, 0);
+
+            cachedTimes = SunCalc.getTimes(utcCalculationDate, lat, lon);
+            cachedMoonTimes = getCompleteMoonTimes(utcCalculationDate, lat, lon);
+            
+            cachedMoonIllumination = (typeof SunCalc3 !== 'undefined' && SunCalc3.getMoonIllumination) 
+                ? SunCalc3.getMoonIllumination(utcCalculationDate) 
+                : ((typeof SunCalc.getMoonData === 'function') ? SunCalc.getMoonData(utcCalculationDate) : SunCalc.getMoonIllumination(utcCalculationDate));
+
+            ctx.clearRect(0, 0, 500, 500);
+
+            drawSunSlicesSafe(cachedTimes);
+            drawMoonVisibilityArc(cachedMoonTimes, selectedDate);
+            drawSolarMeridianLines(cachedTimes);
+            drawMinuteRingSafe();
+            drawClockNumbers();
+            updatePageBackground(cachedTimes);
+
+            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+            
+            lastHighlightedEventIndex = getNextEventIndex(cachedTimes, selectedDate);
+            populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+
+            const latFmt = parseFloat(lat).toFixed(2);
+            const lonFmt = parseFloat(lon).toFixed(2);
+
+            const stdSign = standardTz >= 0 ? "+" : "";
+            const totalSign = totalTzOffset >= 0 ? "+" : "";
+            
+            let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
+            if (isDstNowActive) {
+                fusoText += ` (Ora legale: UTC ${totalSign}${totalTzOffset})`;
+            }
+
+            document.getElementById('location-text').innerHTML = `
+                <div style="font-size: 1.15rem; margin-bottom: 4px;">${cityName}</div>
+                <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
+                <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">${fusoText}</div>
+            `;
+
+            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
+            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+        }
+
+        function timeToHours(date) {
+            if (!date || !isValidDate(date)) return null;
+            const targetDate = toTargetTime(date);
+            return targetDate.getUTCHours() + targetDate.getUTCMinutes() / 60 + targetDate.getUTCSeconds() / 3600;
+        }
+
+        function hoursToAngle(h) {
+            return (h / 24) * Math.PI * 2 + Math.PI / 2;
+        }
+
+        function isValidDate(d) {
+            return d instanceof Date && !isNaN(d);
+        }
+
+        function drawMoonVisibilityArc(moonTimes, refDate) {
+            if (moonTimes.alwaysUp) {
+                ctx.save();
+                ctx.beginPath();
+                let arcRadius = radius - 7;
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = '#64748b';
+                ctx.arc(cx, cy, arcRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+                return;
+            }
+
+            if (!isValidDate(moonTimes.rise) || !isValidDate(moonTimes.set)) return;
+
+            let startH = timeToHours(moonTimes.rise);
+            let endH = timeToHours(moonTimes.set);
+
+            if (startH === null || endH === null) return;
+
+            ctx.save();
+            ctx.beginPath();
+            let arcRadius = radius - 7;
+            ctx.lineWidth = 8;
+            ctx.strokeStyle = '#64748b';
+
+            if (endH < startH) {
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(24));
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(0), hoursToAngle(endH));
+                ctx.stroke();
+            } else {
+                ctx.arc(cx, cy, arcRadius, hoursToAngle(startH), hoursToAngle(endH));
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function getIntervalColorSafe(h, times) {
+            const hSunrise = timeToHours(times.sunrise);
+            const hSunset = timeToHours(times.sunset);
+
+            if (!isValidDate(times.sunrise) || !isValidDate(times.sunset) || hSunrise === null || hSunset === null) {
+                const dstOffset = getBaseLocationOffset();
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
+                utcCalculationDate.setUTCHours(12, 0, 0, 0);
+                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+                return sunPos.altitude < 0 ? PALETTE.night : PALETTE.day;
+            }
+
+            const hDawn = timeToHours(times.dawn) ?? (hSunrise - 1.0);
+            const hDusk = timeToHours(times.dusk) ?? (hSunset + 1.0);
+            const hNautDawn = timeToHours(times.nauticalDawn) ?? (hDawn - 0.8);
+            const hNautDusk = timeToHours(times.nauticalDusk) ?? (hDusk + 0.8);
+            const hAstroDawn = timeToHours(times.astronomicalDawn) ?? (hNautDawn - 0.8);
+            const hAstroDusk = timeToHours(times.astronomicalDusk) ?? (hNautDusk + 0.8);
+
+            const hSunriseEndVal = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            const hGoldenEndVal = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            const hGoldenStartVal = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            const hSunsetStartVal = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
+            if (h >= hSunrise && h < hSunriseEndVal) return PALETTE.sunriseSunset;
+            if (h >= hSunriseEndVal && h < hGoldenEndVal) return PALETTE.golden;
+            if (h >= hGoldenEndVal && h < hGoldenStartVal) return PALETTE.day;
+            if (h >= hGoldenStartVal && h < hSunsetStartVal) return PALETTE.golden;
+            if (h >= hSunsetStartVal && h < hSunset) return PALETTE.sunriseSunset;
+            if (h >= hSunset && h < hDusk) return PALETTE.civil;
+            if (h >= hDawn && h < hSunrise) return PALETTE.civil;
+            
+            if (h >= hNautDawn && h < hDawn) return PALETTE.naut;
+            if (h >= hDusk && h < hNautDusk) return PALETTE.naut;
+
+            if (h >= hAstroDawn && h < hNautDawn) return PALETTE.astro;
+            if (h >= hDusk && h < hAstroDusk) return PALETTE.astro;
+
+            return PALETTE.night;
+        }
+
+        function drawSunSlicesSafe(times) {
+            let hSunrise = timeToHours(times.sunrise);
+            let hSunset = timeToHours(times.sunset);
+
+            let hasValidSunset = isValidDate(times.sunrise) && isValidDate(times.sunset) && hSunrise !== null && hSunset !== null;
+            
+            if (!hasValidSunset) {
+                const dstOffset = getBaseLocationOffset();
+                let utcCalculationDate = new Date(selectedDate.getTime() - (dstOffset * 3600000));
+                utcCalculationDate.setUTCHours(12, 0, 0, 0);
+                const sunPos = SunCalc.getPosition(utcCalculationDate, cachedLat, cachedLon);
+                
+                const isPolarNight = sunPos.altitude < 0;
+                const fallbackColor = isPolarNight ? PALETTE.night : PALETTE.day;
+
+                for (let i = 0; i < 24; i += 0.25) {
+                    drawSector(i, i + 0.25, fallbackColor, radius);
+                }
+                return;
+            }
+
+            ctx.fillStyle = PALETTE.night;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            let dawnH = timeToHours(times.dawn) ?? (hSunrise - 1.0);
+            let duskH = timeToHours(times.dusk) ?? (hSunset + 1.0);
+            let nautDawnH = timeToHours(times.nauticalDawn) ?? (dawnH - 0.8);
+            let nautDuskH = timeToHours(times.nauticalDusk) ?? (duskH + 0.8);
+            let astroDawnH = timeToHours(times.astronomicalDawn) ?? (nautDawnH - 0.8);
+            let astroDuskH = timeToHours(times.astronomicalDusk) ?? (nautDuskH + 0.8);
+
+            let sunriseEndH = timeToHours(times.sunriseEnd) ?? (hSunrise + 0.2);
+            let goldenEndH = timeToHours(times.goldenHourEnd) ?? (hSunrise + 1.0);
+            let goldenStartH = timeToHours(times.goldenHour) ?? (hSunset - 1.0);
+            let sunsetStartH = timeToHours(times.sunsetStart) ?? (hSunset - 0.2);
+
+            drawSector(astroDawnH, nautDawnH, PALETTE.astro, radius);
+            drawSector(nautDawnH, dawnH, PALETTE.naut, radius);
+            drawSector(dawnH, hSunrise, PALETTE.civil, radius);
+            drawSector(hSunrise, sunriseEndH, PALETTE.sunriseSunset, radius);
+            drawSector(sunriseEndH, goldenEndH, PALETTE.golden, radius);
+            drawSector(goldenEndH, goldenStartH, PALETTE.day, radius);
+            
+            drawSector(goldenStartH, sunsetStartH, PALETTE.golden, radius);
+            drawSector(sunsetStartH, hSunset, PALETTE.sunriseSunset, radius);
+            drawSector(hSunset, duskH, PALETTE.civil, radius);
+            drawSector(duskH, nautDuskH, PALETTE.naut, radius);
+            drawSector(nautDuskH, astroDuskH, PALETTE.astro, radius);
+        }
+
+        function drawSector(startH, endH, color, r) {
+            if (startH === null || endH === null || isNaN(startH) || isNaN(endH)) return;
+            startH = (startH + 24) % 24;
+            endH = (endH + 24) % 24;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            if (endH < startH) {
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(24));
+                ctx.arc(cx, cy, r, hoursToAngle(0), hoursToAngle(endH));
+            } else {
+                ctx.arc(cx, cy, r, hoursToAngle(startH), hoursToAngle(endH));
+            }
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+        }
+
+        function drawSolarMeridianLines(times) {
+            if (isValidDate(times.solarNoon)) {
+                const noonHours = timeToHours(times.solarNoon);
+                if (noonHours !== null) {
+                    const noonAngle = hoursToAngle(noonHours);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + radius * Math.cos(noonAngle), cy + radius * Math.sin(noonAngle));
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+
+            if (isValidDate(times.nadir)) {
+                const nadirHours = timeToHours(times.nadir);
+                if (nadirHours !== null) {
+                    const nadirAngle = hoursToAngle(nadirHours);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(cx + radius * Math.cos(nadirAngle), cy + radius * Math.sin(nadirAngle));
+                    ctx.strokeStyle = '#ef4444';
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+                }
+            }
+        }
+
+        function drawMinuteRingSafe() {
+            for (let i = 0; i < 60; i++) {
+                const angle = (i / 60) * Math.PI * 2 - Math.PI / 2;
+                const len = (i % 5 === 0) ? 18 : 10;
+
+                const x1 = cx + (radius - len) * Math.cos(angle);
+                const y1 = cy + (radius - len) * Math.sin(angle);
+                const x2 = cx + radius * Math.cos(angle);
+                const y2 = cy + radius * Math.sin(angle);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = '#facc15';
+                ctx.lineWidth = (i % 5 === 0) ? 4.5 : 3;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = '#ff0000';
+                ctx.lineWidth = (i % 5 === 0) ? 2 : 1.2;
+                ctx.stroke();
+            }
+        }
+
+        function drawClockNumbers() {
+            ctx.font = 'bold 26px sans-serif';
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            const hRadius = radius * 0.65;
+            for (let i = 1; i <= 24; i++) {
+                const angleRad = hoursToAngle(i);
+                const hx = cx + hRadius * Math.cos(angleRad);
+                const hy = cy + hRadius * Math.sin(angleRad);
+
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ff0000';
+                ctx.strokeText(i, hx, hy);
+
+                ctx.fillStyle = '#39ff14';
+                ctx.fillText(i, hx, hy);
+            }
+
+            ctx.font = 'bold 26px sans-serif';
+            const mRadius = radius * 0.86;
+            for (let m = 0; m < 60; m += 5) {
+                const angleRad = (m / 60) * Math.PI * 2 - Math.PI / 2;
+                const mx = cx + mRadius * Math.cos(angleRad);
+                const my = cy + mRadius * Math.sin(angleRad);
+
+                const minText = String(m).padStart(2, '0');
+
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ff0000';
+                ctx.strokeText(minText, mx, my);
+
+                ctx.fillStyle = '#39ff14';
+                ctx.fillText(minText, mx, my);
+            }
+        }
+
+        function updatePageBackground(times) {
+            if (!times) return;
+            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+            const currentColor = getIntervalColorSafe(h, times);
+            const finalBg = currentColor === PALETTE.night ? '#000000' : currentColor;
+            
+            document.documentElement.style.backgroundColor = finalBg;
+            document.body.style.backgroundColor = finalBg;
+            
+            const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
+            document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+            
+            let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+            if (metaThemeColor) {
+                metaThemeColor.setAttribute('content', finalBg);
+            }
+
+            if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
+                window.AndroidInterface.updateColors(finalBg);
+            }
+        }
+
+        function formatTime(date) {
+            const targetDate = toTargetTime(date);
+            if (!isValidDate(targetDate)) return "--:--";
+            return targetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+        }
+
+        function drawRealisticSun(canvasId) {
+            const canvasSun = document.getElementById(canvasId);
+            if (!canvasSun) return;
+            
+            canvasSun.width = 32;
+            canvasSun.height = 32;
+            
+            const ctxSun = canvasSun.getContext('2d');
+            const width = canvasSun.width;
+            const height = canvasSun.height;
+            const r = width / 2 - 2;
+
+            ctxSun.clearRect(0, 0, width, height);
+
+            ctxSun.save();
+            ctxSun.beginPath();
+            ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+            ctxSun.closePath();
+            ctxSun.clip();
+
+            ctxSun.fillStyle = '#f59e0b';
+            ctxSun.fillRect(0, 0, width, height);
+
+            let sunGrad = ctxSun.createRadialGradient(width / 2 - 4, height / 2 - 4, 2, width / 2, height / 2, r);
+            sunGrad.addColorStop(0, '#ffffff');
+            sunGrad.addColorStop(0.25, '#fef08a');
+            sunGrad.addColorStop(0.6, '#f59e0b');
+            sunGrad.addColorStop(1, '#c2410c');
+            
+            ctxSun.fillStyle = sunGrad;
+            ctxSun.beginPath();
+            ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+            ctxSun.fill();
+
+            ctxSun.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctxSun.beginPath(); ctxSun.arc(width * 0.38, height * 0.38, r * 0.25, 0, Math.PI * 2); ctxSun.fill();
+            ctxSun.beginPath(); ctxSun.arc(width * 0.62, height * 0.62, r * 0.2, 0, Math.PI * 2); ctxSun.fill();
+
+            ctxSun.restore();
+
+            ctxSun.strokeStyle = 'rgba(254, 240, 138, 0.9)';
+            ctxSun.lineWidth = 1.5;
+            ctxSun.beginPath();
+            ctxSun.arc(width / 2, height / 2, r, 0, Math.PI * 2);
+            ctxSun.stroke();
+        }
+
+        function drawRealisticMoon(canvasId, illumination, size = 32) {
+            const canvasMoon = document.getElementById(canvasId);
+            if (!canvasMoon) return;
+            
+            canvasMoon.width = size;
+            canvasMoon.height = size;
+            
+            const ctxMoon = canvasMoon.getContext('2d');
+            const width = canvasMoon.width;
+            const height = canvasMoon.height;
+            const r = width / 2 - (size > 50 ? 1 : 2);
+            const cxCenter = width / 2;
+            const cyCenter = height / 2;
+            const tau = Math.PI * 2;
+
+            ctxMoon.clearRect(0, 0, width, height);
+
+            ctxMoon.save();
+            ctxMoon.beginPath();
+            ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
+            ctxMoon.closePath();
+            ctxMoon.clip();
+
+            if (realMoonImage.complete && realMoonImage.naturalWidth !== 0) {
+                const zoomFactor = 1.55;
+                const drawSize = r * 2 * zoomFactor;
+                const offset = (drawSize - (r * 2)) / 2;
+                ctxMoon.drawImage(realMoonImage, (cxCenter - r) - offset, (cyCenter - r) - offset, drawSize, drawSize);
+            } else {
+                let bgGrad = ctxMoon.createRadialGradient(cxCenter - r * 0.3, cyCenter - r * 0.3, r * 0.1, cxCenter, cyCenter, r);
+                bgGrad.addColorStop(0, '#f1f5f9');
+                bgGrad.addColorStop(0.4, '#cbd5e1');
+                bgGrad.addColorStop(0.8, '#64748b');
+                bgGrad.addColorStop(1, '#334155');
+                ctxMoon.fillStyle = bgGrad;
+                ctxMoon.fillRect(0, 0, width, height);
+            }
+
+            if (illumination && typeof illumination.phase !== 'undefined') {
+                const phase = illumination.phase; 
+                const d = r * Math.cos(phase * tau);
+                
+                ctxMoon.fillStyle = 'rgba(0, 0, 0, 0.88)';
+                ctxMoon.beginPath();
+                
+                const isWaxing = phase <= 0.5;
+                ctxMoon.arc(cxCenter, cyCenter, r, -Math.PI / 2, Math.PI / 2, isWaxing);
+                
+                let outerRx = Math.abs(d);
+                let sweepFlag = (d >= 0) === isWaxing;
+                ctxMoon.ellipse(cxCenter, cyCenter, outerRx, r, 0, Math.PI / 2, -Math.PI / 2, sweepFlag);
+                
+                ctxMoon.closePath();
+                ctxMoon.fill();
+            }
+
+            ctxMoon.restore();
+
+            if (size <= 50) {
+                ctxMoon.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+                ctxMoon.lineWidth = 1.5;
+                ctxMoon.beginPath();
+                ctxMoon.arc(cxCenter, cyCenter, r, 0, tau);
+                ctxMoon.stroke();
+            }
+        }
+
+        function toggleMoonModal(show) {
+            const modal = document.getElementById('modal-moon');
+            if (modal) {
+                modal.style.display = show ? 'flex' : 'none';
+                if (show && cachedMoonIllumination && cachedMoonTimes) {
+                    updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+                }
+            }
+        }
+
+        function updateMoonDigitalPanel(illumination, moonTimes) {
+            const phaseNameEl = document.getElementById('moon-phase-name');
+            const riseEl = document.getElementById('moon-rise');
+            const setEl = document.getElementById('moon-set');
+            const phase = illumination.phase;
+
+            let phaseName = "";
+
+            if (phase < 0.03 || phase > 0.97) { phaseName = "Luna Nuova"; }
+            else if (phase < 0.22) { phaseName = "Crescente"; }
+            else if (phase < 0.28) { phaseName = "Primo Quarto"; }
+            else if (phase < 0.47) { phaseName = "Gibbosa Crescente"; }
+            else if (phase < 0.53) { phaseName = "Luna Piena"; }
+            else if (phase < 0.72) { phaseName = "Gibbosa Calante"; }
+            else if (phase < 0.78) { phaseName = "Ultimo Quarto"; }
+            else { phaseName = "Calante"; }
+
+            if (phaseNameEl) phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+            if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+
+            drawRealisticMoon('moon-canvas', illumination, 24);
+            drawRealisticMoon('moon-clock-canvas', illumination, 32);
+            drawRealisticSun('sun-clock-canvas');
+
+            drawRealisticMoon('big-moon-canvas', illumination, 140);
+            
+            const bigTitleEl = document.getElementById('big-moon-phase-title');
+            const bigDateEl = document.getElementById('big-moon-date-display');
+            if (bigTitleEl) bigTitleEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
+            if (bigDateEl && selectedDate) {
+                const dStr = `${String(selectedDate.getUTCDate()).padStart(2, '0')}/${String(selectedDate.getUTCMonth() + 1).padStart(2, '0')}/${selectedDate.getUTCFullYear()}`;
+                const tStr = `${String(selectedDate.getUTCHours()).padStart(2, '0')}:${String(selectedDate.getUTCMinutes()).padStart(2, '0')}`;
+                bigDateEl.innerText = `${dStr} - ${tStr}`;
+            }
+        }
+
+        function getNextEventIndex(times, refDate) {
+            if (!times) return 0;
+
+            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+
+            const events = [
+                { name: "Mezzanotte solare", hours: timeToHours(times.nadir), index: 0 },
+                { name: "Alba astronomica", hours: timeToHours(times.astronomicalDawn), index: 1 },
+                { name: "Alba Nautica", hours: timeToHours(times.nauticalDawn), index: 2 },
+                { name: "Alba Civile", hours: timeToHours(times.dawn), index: 3 },
+                { name: "Alba", hours: timeToHours(times.sunrise), index: 4 },
+                { name: "Fine dell'alba", hours: timeToHours(times.sunriseEnd), index: 5 },
+                { name: "Fine dell'ora d'oro", hours: timeToHours(times.goldenHourEnd), index: 6 },
+                { name: "Mezzogiorno solare", hours: timeToHours(times.solarNoon), index: 7 },
+                { name: "Inizio dell'ora d'oro", hours: timeToHours(times.goldenHour), index: 8 },
+                { name: "Inizio del tramonto", hours: timeToHours(times.sunsetStart), index: 9 },
+                { name: "Tramonto", hours: timeToHours(times.sunset), index: 10 },
+                { name: "Crepuscolo civile", hours: timeToHours(times.dusk), index: 11 },
+                { name: "Crepuscolo nautico", hours: timeToHours(times.nauticalDusk), index: 12 },
+                { name: "Crepuscolo astronomico", hours: timeToHours(times.astronomicalDusk), index: 13 }
+            ];
+
+            for (let i = 0; i < events.length; i++) {
+                if (events[i].hours !== null && !isNaN(events[i].hours)) {
+                    let evH = (events[i].hours + 24) % 24;
+                    if (evH >= h) {
+                        return events[i].index;
+                    }
+                }
+            }
+            return 0;
+        }
+
+        function populateTable(times, moonTimes, illumination) {
+            const tbody = document.getElementById('times-table-body');
+            const phasePct = illumination ? Math.round(illumination.fraction * 100) : 0;
+            
+            const events = [
+                { name: "Mezzanotte solare", date: times.nadir, bg: "#000000" },
+                { name: "Alba astronomica", date: times.astronomicalDawn, bg: "rgba(23, 37, 84, 0.6)" },
+                { name: "Alba Nautica", date: times.nauticalDawn, bg: "rgba(30, 58, 138, 0.6)" },
+                { name: "Alba Civile", date: times.dawn, bg: "rgba(59, 130, 246, 0.4)" },
+                { name: "Alba", date: times.sunrise, bg: "rgba(249, 115, 22, 0.4)" },
+                { name: "Fine dell'alba", date: times.sunriseEnd, bg: "rgba(234, 179, 8, 0.4)" },
+                { name: "Fine dell'ora d'oro", date: times.goldenHourEnd, bg: "rgba(234, 179, 8, 0.5)" },
+                { name: "Mezzogiorno solare", date: times.solarNoon, bg: "rgba(186, 230, 253, 0.3); color: #ffffff;" },
+                { name: "Inizio dell'ora d'oro", date: times.goldenHour, bg: "rgba(234, 179, 8, 0.5)" },
+                { name: "Inizio del tramonto", date: times.sunsetStart, bg: "rgba(234, 179, 8, 0.4)" },
+                { name: "Tramonto", date: times.sunset, bg: "rgba(249, 115, 22, 0.4)" },
+                { name: "Crepuscolo civile", date: times.dusk, bg: "rgba(59, 130, 246, 0.4)" },
+                { name: "Crepuscolo nautico", date: times.nauticalDusk, bg: "rgba(30, 58, 138, 0.6)" },
+                { name: "Crepuscolo astronomico", date: times.astronomicalDusk, bg: "rgba(23, 37, 84, 0.6)" }
+            ];
+
+            let solarRowsHtml = "";
+            events.forEach((ev, idx) => {
+                const isNext = (idx === lastHighlightedEventIndex);
+                const borderStyle = isNext ? "border: 2px solid #ffffff; box-shadow: 0 0 8px rgba(255,255,255,0.8); font-weight: bold;" : "";
+                
+                solarRowsHtml += `
+                    <tr style="background: ${ev.bg}; ${borderStyle}">
+                        <td>${ev.name} ${isNext ? '📍' : ''}</td>
+                        <td>${formatTime(ev.date)}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = `
+                <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>☀️ Dati Solari e Crepuscoli</b></td></tr>
+                ${solarRowsHtml}
+
+                <tr style="background: #7f1d1d; color: #facc15;"><td colspan="2"><b>🌙 Dati Lunari</b></td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Fase Lunare</td><td>${phasePct}% illuminata</td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Sorge (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.rise) : '----'}</b></td></tr>
+                <tr style="background: rgba(30, 41, 59, 0.9); color: #ffffff;"><td>Tramonta (luna):</td><td><b>${moonTimes ? formatTime(moonTimes.set) : '----'}</b></td></tr>
+            `;
+        }
+
+        function toggleTimesModal(show) {
+            document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
+        }
+
+        function updateHands() {
+            const nowMs = performance.now();
+            const deltaMs = Math.max(0, Math.min(1000, nowMs - lastUpdateMs));
+            lastUpdateMs = nowMs;
+
+            const prevDate = new Date(selectedDate.getTime());
+            let dstJumped = false;
+
+            if (!isCustomTime && dstOverrideState === null) {
+                selectedDate = getEffectiveDate();
+                syncManualDstCheckbox(getCurrentDstState());
+                updateInputsVal();
+            } else {
+                const candidate = new Date(selectedDate.getTime() + deltaMs);
+                const transitionRes = applyDstTransitionWhenAdvancing(prevDate, candidate);
+                selectedDate = transitionRes.date;
+                dstJumped = transitionRes.dstChanged;
+
+                const cityOffsetHours = getBaseLocationOffset();
+                const realEffectiveNow = new Date(Date.now() + (cityOffsetHours * 3600000));
+                customTimeOffsetMs = selectedDate.getTime() - realEffectiveNow.getTime();
+            }
+
+            if (
+                dstJumped ||
+                prevDate.getUTCFullYear() !== selectedDate.getUTCFullYear() ||
+                prevDate.getUTCMonth() !== selectedDate.getUTCMonth() ||
+                prevDate.getUTCDate() !== selectedDate.getUTCDate()
+            ) {
+                updateInputsVal();
+                updateSunClock(cachedLat, cachedLon);
+                if (isStripOpen) {
+                    populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
+                    ensureYearStripBuilt(selectedDate.getUTCFullYear());
+                    syncStripToSelectedDate(false);
+                }
+            }
+            
+            const clockStr = selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' });
+            const mainClockEl = document.getElementById('digital-clock');
+            const stripClockEl = document.getElementById('strip-clock-readout');
+            if (mainClockEl) mainClockEl.innerText = clockStr;
+            if (stripClockEl) stripClockEl.innerText = clockStr;
+
+            const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
+            const m = selectedDate.getUTCMinutes() + selectedDate.getUTCSeconds() / 60;
+            const s = selectedDate.getUTCSeconds() + selectedDate.getUTCMilliseconds() / 1000;
+
+            const hourDeg = (h / 24) * 360 - 180;
+            document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+
+            const minuteDeg = (m / 60) * 360;
+            document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+
+            const secDeg = (s / 60) * 360;
+            document.getElementById('hand-second').style.transform = `rotate(${secDeg}deg)`;
+
+            let moonEquivalentHour = h;
+            if (cachedMoonIllumination && typeof cachedMoonIllumination.phase !== 'undefined') {
+                let phaseOffsetHours = cachedMoonIllumination.phase * 24;
+                moonEquivalentHour = (h + phaseOffsetHours) % 24;
+            }
+
+            const moonDeg = (moonEquivalentHour / 24) * 360 - 180;
+            document.getElementById('hand-moon').style.transform = `rotate(${moonDeg}deg)`;
+
+            if (cachedTimes && cachedMoonTimes) {
+                updatePageBackground(cachedTimes);
+                
+                const currentHighlight = getNextEventIndex(cachedTimes, selectedDate);
+                if (currentHighlight !== lastHighlightedEventIndex) {
+                    lastHighlightedEventIndex = currentHighlight;
+                    populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
+                }
+            }
+        }
+
+        initClock();
+        setInterval(updateHands, 50);
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.service.worker.js');
+        }
+    </script>
+</body>
+</html>
