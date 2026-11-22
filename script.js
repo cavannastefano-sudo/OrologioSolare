@@ -33,6 +33,11 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
+// Stato zoom e pan della mappa dei fusi orari
+let mapZoomScale = 1;
+let mapPanX = 0;
+let mapPanY = 0;
+
 // Stato Striscia Intero Anno con Selettori Anno e Mese + Tasto Oggi + Orologio e Frecce Sotto la Striscia
 let builtYear = null;
 let isStripOpen = false;
@@ -2464,6 +2469,101 @@ function toggleSettingsModal(show) {
     document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
 }
 
+function getTzMapTargetElement(modal) {
+    if (!modal) return null;
+    return document.getElementById('tz-map-img') || modal.querySelector('img, svg, canvas');
+}
+
+function applyTzMapTransform() {
+    const modal = document.getElementById('modal-tz-map');
+    const target = getTzMapTargetElement(modal);
+    const label = document.getElementById('tz-map-zoom-label');
+
+    if (target) {
+        target.style.transformOrigin = 'center center';
+        target.style.transition = 'transform 0.12s ease-out';
+        target.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoomScale})`;
+    }
+    if (label) {
+        label.innerText = `${Math.round(mapZoomScale * 100)}%`;
+    }
+}
+
+function setTzMapZoom(nextScale) {
+    mapZoomScale = Math.max(1, Math.min(5, Number(nextScale.toFixed(2))));
+    if (mapZoomScale === 1) {
+        mapPanX = 0;
+        mapPanY = 0;
+    }
+    applyTzMapTransform();
+}
+
+function zoomTzMapIn() {
+    setTzMapZoom(mapZoomScale + 0.4);
+}
+
+function zoomTzMapOut() {
+    setTzMapZoom(mapZoomScale - 0.4);
+}
+
+function resetTzMapZoom() {
+    mapZoomScale = 1;
+    mapPanX = 0;
+    mapPanY = 0;
+    applyTzMapTransform();
+}
+
+function setupTzMapZoom() {
+    const modal = document.getElementById('modal-tz-map');
+    if (!modal || modal.dataset.zoomInitialized === 'true') return;
+    modal.dataset.zoomInitialized = 'true';
+
+    const target = getTzMapTargetElement(modal);
+    const host = document.getElementById('tz-map-viewport') || modal;
+
+    host.addEventListener('wheel', (e) => {
+        if (modal.style.display !== 'flex') return;
+        e.preventDefault();
+        setTzMapZoom(mapZoomScale + (e.deltaY < 0 ? 0.3 : -0.3));
+    }, { passive: false });
+
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    if (target) {
+        target.style.cursor = 'grab';
+        target.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || mapZoomScale <= 1) return;
+            isPanning = true;
+            startX = e.clientX - mapPanX;
+            startY = e.clientY - mapPanY;
+            target.style.cursor = 'grabbing';
+        });
+
+        target.addEventListener('dblclick', () => {
+            if (mapZoomScale > 1) {
+                resetTzMapZoom();
+            } else {
+                setTzMapZoom(2.2);
+            }
+        });
+    }
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        mapPanX = e.clientX - startX;
+        mapPanY = e.clientY - startY;
+        applyTzMapTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isPanning) return;
+        isPanning = false;
+        if (target) target.style.cursor = 'grab';
+    });
+}
+
 function toggleTimeZoneMapModal(show) {
     const modal = document.getElementById('modal-tz-map');
     if (!modal) return;
@@ -2472,6 +2572,8 @@ function toggleTimeZoneMapModal(show) {
         if (settingsModal) {
             settingsModal.style.display = 'none';
         }
+        setupTzMapZoom();
+        resetTzMapZoom();
         modal.style.display = 'flex';
     } else {
         modal.style.display = 'none';
