@@ -451,28 +451,44 @@
             display: flex;
         }
 
-        /* Barra in basso Sorgere / Tramontare del Sole dentro la striscia */
+        /* Barra in basso Sorgere / Tramontare del Sole dentro la striscia (identica all'immagine) */
         .strip-sun-bar {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
             width: 100%;
             box-sizing: border-box;
             margin-top: 2px;
-            padding: 6px 8px;
+            padding: 5px 10px;
             border-radius: 6px;
-            background: rgba(15, 23, 42, 0.88);
-            border: 1px solid #334155;
-            font-size: 0.84rem;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #475569;
+            font-size: 0.86rem;
             font-weight: bold;
-            color: #facc15;
-            line-height: 1.25;
+            color: #f8fafc;
+            line-height: 1.2;
             text-shadow: none !important;
             -webkit-text-stroke: 0px transparent !important;
         }
-        .strip-sun-bar span {
-            color: #39ff14;
-            font-size: 0.92rem;
+        .strip-sun-bar .sun-rise-label {
+            white-space: nowrap;
+            color: #fb923c;
+            font-size: 0.86rem;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+        .strip-sun-bar .sun-set-label {
+            white-space: nowrap;
+            color: #facc15;
+            font-size: 0.86rem;
+            line-height: 1.2;
+            font-weight: bold;
+        }
+        .strip-sun-bar strong {
+            color: #f8fafc;
+            font-size: 0.86rem;
+            line-height: 1.2;
             font-weight: bold;
         }
 
@@ -876,10 +892,10 @@
                     <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
                 </div>
 
-                <!-- Barra in basso Sorgere / Tramontare del Sole nella striscia -->
+                <!-- Barra in basso Sorge / Tramonta del Sole identica all'immagine -->
                 <div id="strip-sun-bar" class="strip-sun-bar">
-                    <div>☀️ Sorge (sole):<br><span id="strip-txt-sunrise">--:--</span></div>
-                    <div>🌅 Tramonta (sole):<br><span id="strip-txt-sunset">--:--</span></div>
+                    <span class="sun-rise-label">🌅 Sorge: <strong id="strip-txt-sunrise">--:--</strong></span>
+                    <span class="sun-set-label">🌇 Tramonta: <strong id="strip-txt-sunset">--:--</strong></span>
                 </div>
             </div>
         </div>
@@ -1115,7 +1131,6 @@
             }
 
             if (rule === 'au') {
-                // Prima domenica di ottobre -> prima domenica di aprile (emisfero sud)
                 const octFirst = getNthSundayOfMonth(year, 9, 1);
                 const aprFirst = getNthSundayOfMonth(year, 3, 1);
                 if (month > 9 || month < 3) return true;
@@ -1133,7 +1148,6 @@
             }
 
             if (rule === 'nz') {
-                // Ultima domenica di settembre -> prima domenica di aprile
                 const sepLast = getLastSundayOfMonth(year, 8);
                 const aprFirst = getNthSundayOfMonth(year, 3, 1);
                 if (month > 8 || month < 3) return true;
@@ -1186,7 +1200,6 @@
             return null;
         }
 
-        // Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
         function isDstForLocalClock(refDate) {
             if (dstOverrideState !== null) {
                 return dstOverrideState;
@@ -1222,7 +1235,6 @@
             }
         }
 
-        // Applica la transizione esatta quando l'orologio avanza in modalità automatica
         function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
             if (userTouchedDst || dstOverrideState !== null || localStorage.getItem('sunclock_auto_dst') === 'false') {
                 return { date: nextDate, dstChanged: false };
