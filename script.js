@@ -1614,7 +1614,7 @@ function applyTimezonePreset() {
     document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
-    updateMoonModalRiseSetStrip(null, true);
+    syncMoonModalRiseSet(null, true);
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
@@ -2374,46 +2374,12 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     }
 }
 
-function updateMoonModalRiseSetStrip(moonTimes, forceDash = false) {
-    const modal = document.getElementById('modal-moon');
-    if (!modal) return;
+function syncMoonModalRiseSet(moonTimes, forceDash = false) {
+    const legacyStrip = document.getElementById('moon-modal-riseset-strip');
+    if (legacyStrip) legacyStrip.remove();
 
-    let stripEl = document.getElementById('moon-modal-riseset-strip');
-    if (!stripEl) {
-        const bigMoonCanvas = document.getElementById('big-moon-canvas');
-        const bigDateEl = document.getElementById('big-moon-date-display');
-        const bigTitleEl = document.getElementById('big-moon-phase-title');
-        const anchor = (bigDateEl && bigDateEl.parentElement) ||
-                       (bigTitleEl && bigTitleEl.parentElement) ||
-                       (bigMoonCanvas && bigMoonCanvas.parentElement) ||
-                       modal.querySelector('.modal-content, .moon-modal-body') ||
-                       modal;
-
-        stripEl = document.createElement('div');
-        stripEl.id = 'moon-modal-riseset-strip';
-        stripEl.style.display = 'flex';
-        stripEl.style.alignItems = 'center';
-        stripEl.style.justifyContent = 'space-between';
-        stripEl.style.gap = '10px';
-        stripEl.style.width = '100%';
-        stripEl.style.boxSizing = 'border-box';
-        stripEl.style.marginTop = '10px';
-        stripEl.style.padding = '6px 10px';
-        stripEl.style.borderRadius = '8px';
-        stripEl.style.background = 'rgba(15, 23, 42, 0.9)';
-        stripEl.style.border = '1px solid #475569';
-        stripEl.style.fontSize = '0.86rem';
-        stripEl.style.fontWeight = 'bold';
-        stripEl.style.color = '#f8fafc';
-        stripEl.style.textShadow = 'none';
-        stripEl.style.webkitTextStroke = '0px transparent';
-
-        if (bigDateEl && bigDateEl.parentElement) {
-            bigDateEl.insertAdjacentElement('afterend', stripEl);
-        } else if (anchor) {
-            anchor.appendChild(stripEl);
-        }
-    }
+    const modalRiseEl = document.getElementById('modal-moon-rise');
+    const modalSetEl = document.getElementById('modal-moon-set');
 
     const riseTxt = forceDash
         ? '----'
@@ -2422,10 +2388,8 @@ function updateMoonModalRiseSetStrip(moonTimes, forceDash = false) {
         ? '----'
         : (moonTimes && isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : '--:--');
 
-    stripEl.innerHTML = `
-        <span style="white-space:nowrap;color:#38bdf8;">🌙 Sorge: <strong style="color:#f8fafc;">${riseTxt}</strong></span>
-        <span style="white-space:nowrap;color:#facc15;">🌘 Tramonta: <strong style="color:#f8fafc;">${setTxt}</strong></span>
-    `;
+    if (modalRiseEl) modalRiseEl.innerText = riseTxt;
+    if (modalSetEl) modalSetEl.innerText = setTxt;
 }
 
 function toggleMoonModal(show) {
@@ -2434,11 +2398,11 @@ function toggleMoonModal(show) {
         modal.style.display = show ? 'flex' : 'none';
         if (show) {
             if (isTimezoneOnlyMode) {
-                updateMoonModalRiseSetStrip(null, true);
+                syncMoonModalRiseSet(null, true);
             } else if (cachedMoonIllumination && cachedMoonTimes) {
                 updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
             } else {
-                updateMoonModalRiseSetStrip(cachedMoonTimes, false);
+                syncMoonModalRiseSet(cachedMoonTimes, false);
             }
         }
     }
@@ -2463,9 +2427,12 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
     else if (phase < 0.78) { phaseName = "Ultimo Quarto"; }
     else { phaseName = "Calante"; }
 
+    const riseFormatted = (moonTimes && isValidDate(moonTimes.rise)) ? formatTime(moonTimes.rise) : "--:--";
+    const setFormatted = (moonTimes && isValidDate(moonTimes.set)) ? formatTime(moonTimes.set) : "--:--";
+
     if (phaseNameEl) phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
-    if (riseEl && moonTimes) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-    if (setEl && moonTimes) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+    if (riseEl) riseEl.innerText = riseFormatted;
+    if (setEl) setEl.innerText = setFormatted;
 
     drawRealisticMoon('moon-canvas', illumination, 24);
     drawRealisticMoon('moon-clock-canvas', illumination, 32);
@@ -2486,10 +2453,10 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
         bigDateEl.innerText = `${dStr} - ${tStr}`;
         bigDateEl.style.fontSize = '1.15rem';
         bigDateEl.style.fontWeight = 'bold';
-        bigDateEl.style.color = '#f8fafc';
+        bigDateEl.style.color = '#ffffff';
     }
 
-    updateMoonModalRiseSetStrip(moonTimes, false);
+    syncMoonModalRiseSet(moonTimes, false);
 }
 
 function getNextEventIndex(times, refDate) {
@@ -2888,7 +2855,7 @@ function updateHands() {
 
     const moonModalEl = document.getElementById('modal-moon');
     if (moonModalEl && moonModalEl.style.display === 'flex') {
-        updateMoonModalRiseSetStrip(cachedMoonTimes, isTimezoneOnlyMode);
+        syncMoonModalRiseSet(cachedMoonTimes, isTimezoneOnlyMode);
     }
 }
 
