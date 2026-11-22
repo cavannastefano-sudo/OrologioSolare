@@ -725,7 +725,7 @@
     </div>
 
     <!-- Modale Dettaglio Fase Lunare (Tendina con le freccine) -->
-    <div id="modal-moon" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px;">
+    <div id="modal-moon" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px;" onclick="if(event.target === this) toggleMoonModal(false);">
         <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 20px; width: 100%; max-width: 340px; text-align: center; color: #f8fafc; box-shadow: 0 10px 25px rgba(0,0,0,0.6);">
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -742,7 +742,7 @@
             <div id="big-moon-date-display" style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">--/--/---- --:--</div>
 
             <!-- Controlli Giorni e Ore con Freccine -->
-            <div style="background: #1e293b; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px;">
+            <div style="background: #1e293b; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button onclick="changeDate(-1)" style="background: #334155; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 1rem; cursor: pointer;">◀ -1g</button>
                     <span style="font-size: 0.9rem; font-weight: bold;">Giorni</span>
@@ -753,6 +753,12 @@
                     <span style="font-size: 0.9rem; font-weight: bold;">Ore</span>
                     <button onclick="changeHour(1)" style="background: #334155; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 1rem; cursor: pointer;">+1h ▶</button>
                 </div>
+            </div>
+
+            <!-- Barra Sorge / Tramonta Luna -->
+            <div id="moon-modal-riseset-strip" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; padding: 8px 10px; border-radius: 10px; background: #1e293b; border: 1px solid #334155; font-size: 0.85rem; font-weight: bold; color: #e2e8f0; line-height: 1.25;">
+                <div>🌙 Sorge (luna):<br><span id="modal-moon-rise" style="color: #ffffff; font-size: 0.96rem; font-weight: bold;">--:--</span></div>
+                <div>🌘 Tramonta (luna):<br><span id="modal-moon-set" style="color: #ffffff; font-size: 0.96rem; font-weight: bold;">--:--</span></div>
             </div>
 
             <button onclick="resetToNow()" style="width: 100%; background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 8px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
