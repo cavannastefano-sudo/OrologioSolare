@@ -33,6 +33,11 @@ let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 
+// Stato Zoom Mappa Fusi / Finestra Mappa
+let mapZoomScale = 1;
+let mapPanX = 0;
+let mapPanY = 0;
+
 // Stato Striscia Intero Anno con Selettori Anno e Mese + Tasto Oggi + Orologio e Frecce Sotto la Striscia
 let builtYear = null;
 let isStripOpen = false;
@@ -74,6 +79,49 @@ function getSelectedBaseTimezone() {
         return parseFloat(tzPresetEl.value);
     }
     return getPreciseStandardTimezone(cachedLat, cachedLon);
+}
+
+// Seleziona nella tendina #timezone-preset il fuso orario della posizione corrente
+function selectTimezoneForCurrentLocation(lat = cachedLat, lon = cachedLon) {
+    const preciseTz = getPreciseStandardTimezone(lat, lon);
+    const selectEl = document.getElementById('timezone-preset');
+    if (!selectEl) return preciseTz;
+
+    let matched = false;
+    for (let opt of selectEl.options) {
+        if (Math.abs(parseFloat(opt.value) - preciseTz) < 0.001) {
+            selectEl.value = opt.value;
+            matched = true;
+            break;
+        }
+    }
+
+    if (!matched) {
+        const newOpt = document.createElement('option');
+        newOpt.value = String(preciseTz);
+        newOpt.textContent = formatOffsetLabel(preciseTz);
+        selectEl.appendChild(newOpt);
+        selectEl.value = String(preciseTz);
+    }
+
+    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    return preciseTz;
+}
+
+// Scorre in alto verso l'intestazione dove vengono mostrati posizione e fuso orario
+function scrollToTopTimezoneHeader() {
+    const headerAnchor =
+        document.getElementById('timezone-header') ||
+        document.getElementById('tz-header') ||
+        document.getElementById('location-text') ||
+        document.querySelector('[id*="timezone"], [class*="timezone"]') ||
+        document.querySelector('header');
+
+    if (headerAnchor && typeof headerAnchor.scrollIntoView === 'function') {
+        headerAnchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 
 function updateSettingsDstNotice() {
@@ -1337,6 +1385,7 @@ async function initClock() {
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
 
+        selectTimezoneForCurrentLocation(cachedLat, cachedLon);
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
         lastUpdateMs = performance.now();
@@ -1348,6 +1397,7 @@ async function initClock() {
             syncStripToSelectedDate(false);
         }
         adaptBottomPanelHeight(true);
+        scrollToTopTimezoneHeader();
         return;
     }
 
@@ -1356,6 +1406,7 @@ async function initClock() {
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
 
+        selectTimezoneForCurrentLocation(cachedLat, cachedLon);
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
         lastUpdateMs = performance.now();
@@ -1384,7 +1435,7 @@ async function initClock() {
                 if (gpsFinished) return;
                 gpsFinished = true;
                 clearTimeout(gpsTimeout);
-                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
+                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente", true);
             },
             (error) => {
                 if (gpsFinished) return;
@@ -1612,12 +1663,13 @@ function changeHour(hours) {
     }
 }
 
-async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
+async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione", shouldScrollTop = false) {
     cachedLat = lat;
     cachedLon = lon;
     isTimezoneOnlyMode = false;
     dstOverrideState = null;
 
+    selectTimezoneForCurrentLocation(cachedLat, cachedLon);
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     let placeName = fallbackName;
@@ -1644,16 +1696,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     currentPlaceDisplayName = placeName;
 
-    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-    let selectEl = document.getElementById('timezone-preset');
-    if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
-                selectEl.value = opt.value;
-                break;
-            }
-        }
-    }
+    selectTimezoneForCurrentLocation(cachedLat, cachedLon);
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     updateDstUI(isAuto);
@@ -1669,6 +1712,10 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
         syncStripToSelectedDate(false);
     }
     adaptBottomPanelHeight(true);
+
+    if (shouldScrollTop) {
+        scrollToTopTimezoneHeader();
+    }
 }
 
 function resetToNow() {
@@ -1678,16 +1725,7 @@ function resetToNow() {
     dstOverrideState = null;
     lastUpdateMs = performance.now();
 
-    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-    let selectEl = document.getElementById('timezone-preset');
-    if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
-                selectEl.value = opt.value;
-                break;
-            }
-        }
-    }
+    selectTimezoneForCurrentLocation(cachedLat, cachedLon);
 
     updateTimeForLocation();
     syncManualDstCheckbox(getCurrentDstState());
@@ -1712,7 +1750,7 @@ function useGPSLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "GPS");
+                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "GPS", true);
                 toggleSettingsModal(false);
             },
             (error) => {
@@ -2076,6 +2114,20 @@ function drawClockNumbers() {
     }
 }
 
+function syncTzMapModalTheme(finalBg) {
+    const modal = document.getElementById('modal-tz-map');
+    if (!modal) return;
+    const isDark = (finalBg === '#000000' || finalBg === '#172554' || finalBg === '#1e3a8a');
+    modal.style.backgroundColor = isDark ? 'rgba(0, 0, 0, 0.78)' : 'rgba(15, 23, 42, 0.55)';
+
+    const box = modal.querySelector('.modal-content, .tz-map-box, .map-modal-content') || modal.firstElementChild;
+    if (box && box !== modal) {
+        box.style.backgroundColor = finalBg;
+        box.style.color = isDark ? '#f8fafc' : '#0f172a';
+        box.style.borderColor = isDark ? '#38bdf8' : '#0284c7';
+    }
+}
+
 function updatePageBackground(times) {
     if (!times) return;
     const h = selectedDate.getUTCHours() + selectedDate.getUTCMinutes() / 60 + selectedDate.getUTCSeconds() / 3600;
@@ -2093,6 +2145,7 @@ function updatePageBackground(times) {
         metaThemeColor.setAttribute('content', finalBg);
     }
 
+    syncTzMapModalTheme(finalBg);
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
 
     if (window.AndroidInterface && typeof window.AndroidInterface.updateColors === 'function') {
@@ -2434,6 +2487,141 @@ function toggleSettingsModal(show) {
     document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
 }
 
+// ==========================================
+// Zoom Mappa nella Finestra #modal-tz-map
+// ==========================================
+function getTzMapTargetElement(modal) {
+    if (!modal) return null;
+    return modal.querySelector('img, svg, canvas, #tz-map-canvas, #tz-map-container, .tz-map-inner, .map-container');
+}
+
+function applyTzMapTransform() {
+    const modal = document.getElementById('modal-tz-map');
+    const target = getTzMapTargetElement(modal);
+    const label = document.getElementById('tz-map-zoom-label');
+
+    if (target) {
+        target.style.transformOrigin = 'center center';
+        target.style.transition = 'transform 0.12s ease-out';
+        target.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoomScale})`;
+    }
+    if (label) {
+        label.innerText = `${Math.round(mapZoomScale * 100)}%`;
+    }
+}
+
+function setTzMapZoom(nextScale) {
+    mapZoomScale = Math.max(1, Math.min(5, Number(nextScale.toFixed(2))));
+    if (mapZoomScale === 1) {
+        mapPanX = 0;
+        mapPanY = 0;
+    }
+    applyTzMapTransform();
+}
+
+function zoomTzMapIn() {
+    if (map && typeof map.zoomIn === 'function') {
+        map.zoomIn();
+        return;
+    }
+    setTzMapZoom(mapZoomScale + 0.35);
+}
+
+function zoomTzMapOut() {
+    if (map && typeof map.zoomOut === 'function') {
+        map.zoomOut();
+        return;
+    }
+    setTzMapZoom(mapZoomScale - 0.35);
+}
+
+function resetTzMapZoom() {
+    if (map && typeof map.setView === 'function') {
+        map.setView([cachedLat || 20, cachedLon || 0], 2);
+        return;
+    }
+    mapZoomScale = 1;
+    mapPanX = 0;
+    mapPanY = 0;
+    applyTzMapTransform();
+}
+
+function setupTzMapZoom() {
+    const modal = document.getElementById('modal-tz-map');
+    if (!modal || modal.dataset.zoomInitialized === 'true') return;
+    modal.dataset.zoomInitialized = 'true';
+
+    const target = getTzMapTargetElement(modal);
+    const host = (target && target.parentElement && target.parentElement !== modal) ? target.parentElement : modal;
+
+    if (!document.getElementById('tz-map-zoom-controls')) {
+        const controls = document.createElement('div');
+        controls.id = 'tz-map-zoom-controls';
+        controls.style.display = 'flex';
+        controls.style.alignItems = 'center';
+        controls.style.justifyContent = 'center';
+        controls.style.gap = '8px';
+        controls.style.marginTop = '10px';
+        controls.style.zIndex = '40';
+
+        controls.innerHTML = `
+            <button type="button" onclick="zoomTzMapOut()" title="Riduci zoom" style="background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:4px 10px;font-weight:bold;cursor:pointer;">-</button>
+            <span id="tz-map-zoom-label" style="min-width:48px;text-align:center;font-weight:bold;color:#facc15;">100%</span>
+            <button type="button" onclick="zoomTzMapIn()" title="Aumenta zoom" style="background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:4px 10px;font-weight:bold;cursor:pointer;">+</button>
+            <button type="button" onclick="resetTzMapZoom()" title="Ripristina zoom" style="background:#1e293b;color:#f8fafc;border:1px solid #64748b;border-radius:6px;padding:4px 10px;font-weight:bold;cursor:pointer;">1:1</button>
+        `;
+
+        if (target && target.parentElement) {
+            target.insertAdjacentElement('afterend', controls);
+        } else {
+            modal.appendChild(controls);
+        }
+    }
+
+    host.addEventListener('wheel', (e) => {
+        if (modal.style.display !== 'flex') return;
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.25 : -0.25;
+        setTzMapZoom(mapZoomScale + delta);
+    }, { passive: false });
+
+    let isPanning = false;
+    let startX = 0;
+    let startY = 0;
+
+    if (target) {
+        target.style.cursor = 'grab';
+        target.addEventListener('mousedown', (e) => {
+            if (e.button !== 0 || mapZoomScale <= 1) return;
+            isPanning = true;
+            startX = e.clientX - mapPanX;
+            startY = e.clientY - mapPanY;
+            target.style.cursor = 'grabbing';
+        });
+
+        target.addEventListener('dblclick', () => {
+            if (mapZoomScale > 1) {
+                resetTzMapZoom();
+            } else {
+                setTzMapZoom(2);
+            }
+        });
+    }
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        mapPanX = e.clientX - startX;
+        mapPanY = e.clientY - startY;
+        applyTzMapTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (!isPanning) return;
+        isPanning = false;
+        if (target) target.style.cursor = 'grab';
+    });
+}
+
 function toggleTimeZoneMapModal(show) {
     const modal = document.getElementById('modal-tz-map');
     if (!modal) return;
@@ -2442,7 +2630,14 @@ function toggleTimeZoneMapModal(show) {
         if (settingsModal) {
             settingsModal.style.display = 'none';
         }
+        setupTzMapZoom();
+        resetTzMapZoom();
+        const currentBg = document.body.style.backgroundColor || '#000000';
+        syncTzMapModalTheme(currentBg);
         modal.style.display = 'flex';
+        if (map && typeof map.invalidateSize === 'function') {
+            setTimeout(() => map.invalidateSize(), 60);
+        }
     } else {
         modal.style.display = 'none';
     }
