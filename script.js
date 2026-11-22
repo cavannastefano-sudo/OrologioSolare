@@ -632,7 +632,8 @@ function updateCompactSunTimesRow() {
         row.style.borderRadius = '6px';
         row.style.background = 'rgba(15, 23, 42, 0.85)';
         row.style.border = '1px solid #475569';
-        row.style.fontSize = '0.84rem';
+        row.style.fontSize = '0.86rem';
+        row.style.lineHeight = '1.2';
         row.style.fontWeight = 'bold';
         row.style.color = '#f8fafc';
         row.style.textShadow = 'none';
@@ -643,6 +644,10 @@ function updateCompactSunTimesRow() {
         } else {
             stripBody.appendChild(row);
         }
+    } else {
+        row.style.fontSize = '0.86rem';
+        row.style.lineHeight = '1.2';
+        row.style.fontWeight = 'bold';
     }
 
     const sunriseTxt = isTimezoneOnlyMode
@@ -658,8 +663,8 @@ function updateCompactSunTimesRow() {
             : (document.getElementById('txt-sunset')?.innerText || '--:--'));
 
     row.innerHTML = `
-        <span style="white-space:nowrap;color:#fb923c;">🌅 Sorge: <strong style="color:#f8fafc;">${sunriseTxt}</strong></span>
-        <span style="white-space:nowrap;color:#facc15;">🌇 Tramonta: <strong style="color:#f8fafc;">${sunsetTxt}</strong></span>
+        <span style="white-space:nowrap;color:#fb923c;font-size:0.86rem;line-height:1.2;font-weight:bold;">🌅 Sorge: <strong style="color:#f8fafc;font-size:0.86rem;line-height:1.2;font-weight:bold;">${sunriseTxt}</strong></span>
+        <span style="white-space:nowrap;color:#facc15;font-size:0.86rem;line-height:1.2;font-weight:bold;">🌇 Tramonta: <strong style="color:#f8fafc;font-size:0.86rem;line-height:1.2;font-weight:bold;">${sunsetTxt}</strong></span>
     `;
 }
 
