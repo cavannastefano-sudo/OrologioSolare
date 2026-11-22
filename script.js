@@ -68,7 +68,43 @@ function formatOffsetLabel(offsetHours) {
     return `UTC ${sign}${whole}:${String(mins).padStart(2, '0')}`;
 }
 
+// Aggiorna la tendina #timezone-preset con il fuso del luogo (senza far partire la modalità lineette)
+function syncTimezoneDropdownToLocation(lat = cachedLat, lon = cachedLon) {
+    const preciseTz = getPreciseStandardTimezone(lat, lon);
+    const selectEl = document.getElementById('timezone-preset');
+    if (!selectEl) return preciseTz;
+
+    if (!selectEl.dataset.manualBound) {
+        selectEl.dataset.manualBound = 'true';
+        selectEl.addEventListener('change', () => {
+            applyTimezonePreset();
+        });
+    }
+
+    let matched = false;
+    for (let opt of selectEl.options) {
+        if (Math.abs(parseFloat(opt.value) - preciseTz) < 0.001) {
+            selectEl.value = opt.value;
+            matched = true;
+            break;
+        }
+    }
+
+    if (!matched) {
+        const newOpt = document.createElement('option');
+        newOpt.value = String(preciseTz);
+        newOpt.textContent = formatOffsetLabel(preciseTz);
+        selectEl.appendChild(newOpt);
+        selectEl.value = String(preciseTz);
+    }
+
+    return preciseTz;
+}
+
 function getSelectedBaseTimezone() {
+    if (!isTimezoneOnlyMode) {
+        return getPreciseStandardTimezone(cachedLat, cachedLon);
+    }
     const tzPresetEl = document.getElementById('timezone-preset');
     if (tzPresetEl && tzPresetEl.value !== '' && !isNaN(parseFloat(tzPresetEl.value))) {
         return parseFloat(tzPresetEl.value);
@@ -147,6 +183,10 @@ function formatCoordinatesShort(lat, lon) {
 }
 
 function syncSettingsCoordsDisplay(lat = cachedLat, lon = cachedLon) {
+    if (!isTimezoneOnlyMode) {
+        syncTimezoneDropdownToLocation(lat, lon);
+    }
+
     const coords = formatCoordinatesShort(lat, lon);
     const latEl = document.getElementById('settings-lat-display');
     const lonEl = document.getElementById('settings-lon-display');
@@ -497,6 +537,9 @@ function getBaseLocationOffset() {
 }
 
 function getTotalOffsetHours() {
+    if (!isTimezoneOnlyMode) {
+        return getBaseLocationOffset();
+    }
     const tzPresetEl = document.getElementById('timezone-preset');
     if (!tzPresetEl) return getBaseLocationOffset();
     const baseTz = parseFloat(tzPresetEl.value);
@@ -1333,6 +1376,7 @@ async function initClock() {
     drawRealisticSun('sun-clock-canvas');
 
     if (urlParams.has('lat') && urlParams.has('lon')) {
+        isTimezoneOnlyMode = false;
         cachedLat = parseFloat(urlParams.get('lat'));
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
@@ -1352,6 +1396,7 @@ async function initClock() {
     }
 
     const loadDefaultLocation = () => {
+        isTimezoneOnlyMode = false;
         cachedLat = 45.05;
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
@@ -1478,6 +1523,7 @@ function updateDstUI(isAuto) {
     updateSettingsDstNotice();
 }
 
+// Attivata SOLO quando si cambia manualmente la tendina #timezone-preset -> mostra le lineette
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = true;
@@ -1488,7 +1534,7 @@ function applyTimezonePreset() {
     updateInputsVal();
 
     const baseTz = parseFloat(tzVal);
-    const fusoText = `Fuso ${formatOffsetLabel(baseTz)}`;
+    const fusoText = `--- Fuso ${formatOffsetLabel(baseTz)} ---`;
 
     document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
     document.getElementById('txt-sunrise').innerText = "----";
@@ -1518,8 +1564,9 @@ function applyTimezonePreset() {
 }
 
 function getEffectiveDate() {
-    const tzPresetEl = document.getElementById('timezone-preset');
-    const baseTz = tzPresetEl ? parseFloat(tzPresetEl.value) : getPreciseStandardTimezone(cachedLat, cachedLon);
+    const baseTz = isTimezoneOnlyMode
+        ? (parseFloat(document.getElementById('timezone-preset')?.value) || getPreciseStandardTimezone(cachedLat, cachedLon))
+        : getPreciseStandardTimezone(cachedLat, cachedLon);
     const now = new Date();
     const probe = new Date(Date.UTC(
         now.getUTCFullYear(),
@@ -1612,6 +1659,7 @@ function changeHour(hours) {
     }
 }
 
+// Quando cambi posizione / viaggi: aggiorna tutti e 3 i punti fuso nelle impostazioni e mostra sempre i dati completi
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
@@ -1644,16 +1692,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
 
     currentPlaceDisplayName = placeName;
 
-    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-    let selectEl = document.getElementById('timezone-preset');
-    if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
-                selectEl.value = opt.value;
-                break;
-            }
-        }
-    }
+    syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     updateDstUI(isAuto);
@@ -1678,16 +1717,7 @@ function resetToNow() {
     dstOverrideState = null;
     lastUpdateMs = performance.now();
 
-    let preciseTz = getPreciseStandardTimezone(cachedLat, cachedLon);
-    let selectEl = document.getElementById('timezone-preset');
-    if (selectEl) {
-        for(let opt of selectEl.options) {
-            if(parseFloat(opt.value) === preciseTz) {
-                selectEl.value = opt.value;
-                break;
-            }
-        }
-    }
+    syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     updateTimeForLocation();
     syncManualDstCheckbox(getCurrentDstState());
