@@ -26,7 +26,7 @@ let selectedDate = new Date();
 let isCustomTime = false;
 let customTimeOffsetMs = 0;
 let lastUpdateMs = performance.now();
-let dstOverrideState = null; // null = automatico / regola 01:59->03:00 e 02:59->02:00
+let dstOverrideState = null; // null = automatico / regola fuso
 let map = null;
 let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
@@ -55,31 +55,219 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+function formatCoordinatesShort(lat, lon) {
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+    if (isNaN(latNum) || isNaN(lonNum)) {
+        return { latText: '--', lonText: '--', latNumStr: '', lonNumStr: '' };
+    }
+
+    const latDir = latNum >= 0 ? 'N' : 'S';
+    const lonDir = lonNum >= 0 ? 'E' : 'O';
+
+    const latFormatted = Math.abs(latNum).toFixed(2).replace('.', ',');
+    const lonFormatted = Math.abs(lonNum).toFixed(2).replace('.', ',');
+
+    return {
+        latText: `${latFormatted}° ${latDir}`,
+        lonText: `${lonFormatted}° ${lonDir}`,
+        latNumStr: latNum.toFixed(2),
+        lonNumStr: lonNum.toFixed(2)
+    };
+}
+
 function getLastSundayOfMonth(year, month) {
     const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
     const dayOfWeek = lastDay.getUTCDay(); // 0 = Domenica
     return lastDay.getUTCDate() - dayOfWeek;
 }
 
-function isEuDstByCalendar(year, month, day) {
-    const marchLastSunday = getLastSundayOfMonth(year, 2); // Marzo
-    const octLastSunday = getLastSundayOfMonth(year, 9);   // Ottobre
+function getNthSundayOfMonth(year, month, nth) {
+    const firstDow = new Date(Date.UTC(year, month, 1, 12, 0, 0)).getUTCDay(); // 0 = Domenica
+    const firstSunday = 1 + ((7 - firstDow) % 7);
+    return firstSunday + ((nth - 1) * 7);
+}
 
-    if (month < 2 || month > 9) return false;
-    if (month > 2 && month < 9) return true;
-    if (month === 2) return day >= marchLastSunday;
-    if (month === 9) return day < octLastSunday;
+function getDstRuleForLocation(lat = cachedLat, lon = cachedLon) {
+    let tz = '';
+    try {
+        if (!isNaN(lat) && !isNaN(lon) && typeof tzlookup === 'function') {
+            tz = tzlookup(lat, lon) || '';
+        }
+    } catch (e) {
+        tz = '';
+    }
+
+    if (!tz && isTimezoneOnlyMode) {
+        const tzPresetEl = document.getElementById('timezone-preset');
+        const offsetVal = tzPresetEl ? parseFloat(tzPresetEl.value) : null;
+        if (offsetVal !== null && !isNaN(offsetVal)) {
+            if (offsetVal >= -10 && offsetVal <= -4) return 'us';
+            if (offsetVal >= 0 && offsetVal <= 4) return 'eu';
+            if (offsetVal >= 9.5 && offsetVal <= 12) return 'au';
+            return 'none';
+        }
+    }
+
+    if (!tz) return 'eu';
+
+    if (tz.startsWith('Africa/') || tz.startsWith('Asia/') || tz.startsWith('Indian/')) {
+        return 'none';
+    }
+
+    const noDstZones = new Set([
+        'America/Phoenix',
+        'America/Hermosillo',
+        'America/Mazatlan',
+        'America/Cancun',
+        'America/Regina',
+        'America/Swift_Current',
+        'America/Panama',
+        'America/Jamaica',
+        'America/Bogota',
+        'America/Lima',
+        'America/Guayaquil',
+        'America/Caracas',
+        'America/La_Paz',
+        'America/Santiago',
+        'America/Argentina/Buenos_Aires',
+        'America/Sao_Paulo',
+        'America/Montevideo',
+        'Pacific/Honolulu',
+        'Pacific/Guam',
+        'Australia/Perth',
+        'Australia/Brisbane',
+        'Australia/Darwin'
+    ]);
+    if (noDstZones.has(tz)) {
+        return 'none';
+    }
+
+    if (tz === 'Pacific/Auckland') {
+        return 'nz';
+    }
+    if (tz.startsWith('Australia/')) {
+        return 'au';
+    }
+    if (tz.startsWith('America/') || tz === 'Pacific/Honolulu') {
+        return 'us';
+    }
+    if (tz.startsWith('Europe/') || tz === 'Atlantic/Canary' || tz === 'Atlantic/Faroe' || tz === 'Atlantic/Reykjavik') {
+        return tz === 'Atlantic/Reykjavik' ? 'none' : 'eu';
+    }
+
+    return 'eu';
+}
+
+function evaluateDstByRule(rule, year, month, day, hour = 12, minute = 0, second = 0) {
+    if (rule === 'none') return false;
+
+    if (rule === 'eu') {
+        const marchLast = getLastSundayOfMonth(year, 2); // Marzo
+        const octLast = getLastSundayOfMonth(year, 9);   // Ottobre
+        if (month < 2 || month > 9) return false;
+        if (month > 2 && month < 9) return true;
+        if (month === 2) {
+            if (day > marchLast) return true;
+            if (day < marchLast) return false;
+            return (hour > 2) || (hour === 2 && (minute > 0 || second > 0));
+        }
+        if (month === 9) {
+            if (day < octLast) return true;
+            if (day > octLast) return false;
+            return hour < 3;
+        }
+        return false;
+    }
+
+    if (rule === 'us') {
+        const marchSecond = getNthSundayOfMonth(year, 2, 2); // 2ª domenica di marzo
+        const novFirst = getNthSundayOfMonth(year, 10, 1);  // 1ª domenica di novembre
+        if (month < 2 || month > 10) return false;
+        if (month > 2 && month < 10) return true;
+        if (month === 2) {
+            if (day > marchSecond) return true;
+            if (day < marchSecond) return false;
+            return (hour > 2) || (hour === 2 && (minute > 0 || second > 0));
+        }
+        if (month === 10) {
+            if (day < novFirst) return true;
+            if (day > novFirst) return false;
+            return hour < 2;
+        }
+        return false;
+    }
+
+    if (rule === 'au') {
+        // Prima domenica di ottobre -> prima domenica di aprile (emisfero sud)
+        const octFirst = getNthSundayOfMonth(year, 9, 1);
+        const aprFirst = getNthSundayOfMonth(year, 3, 1);
+        if (month > 9 || month < 3) return true;
+        if (month === 9) {
+            if (day > octFirst) return true;
+            if (day < octFirst) return false;
+            return (hour > 2) || (hour === 2 && (minute > 0 || second > 0));
+        }
+        if (month === 3) {
+            if (day < aprFirst) return true;
+            if (day > aprFirst) return false;
+            return hour < 3;
+        }
+        return false;
+    }
+
+    if (rule === 'nz') {
+        // Ultima domenica di settembre -> prima domenica di aprile
+        const sepLast = getLastSundayOfMonth(year, 8);
+        const aprFirst = getNthSundayOfMonth(year, 3, 1);
+        if (month > 8 || month < 3) return true;
+        if (month === 8) {
+            if (day > sepLast) return true;
+            if (day < sepLast) return false;
+            return (hour > 2) || (hour === 2 && (minute > 0 || second > 0));
+        }
+        if (month === 3) {
+            if (day < aprFirst) return true;
+            if (day > aprFirst) return false;
+            return hour < 3;
+        }
+        return false;
+    }
+
     return false;
 }
 
-function isAfricaTimezone() {
-    if (isNaN(cachedLat) || isNaN(cachedLon) || typeof tzlookup !== 'function') return false;
-    try {
-        const tzString = tzlookup(cachedLat, cachedLon);
-        return !!(tzString && tzString.startsWith('Africa/'));
-    } catch (e) {
-        return false;
+function getDstTransitionHoursForRule(rule, year, month, day) {
+    if (rule === 'eu') {
+        if (month === 2 && day === getLastSundayOfMonth(year, 2)) {
+            return { springFromH: 1, springFromM: 59, springToH: 3, fallFromH: null, fallFromM: null, fallToH: null };
+        }
+        if (month === 9 && day === getLastSundayOfMonth(year, 9)) {
+            return { springFromH: null, springFromM: null, springToH: null, fallFromH: 2, fallFromM: 59, fallToH: 2 };
+        }
+    } else if (rule === 'us') {
+        if (month === 2 && day === getNthSundayOfMonth(year, 2, 2)) {
+            return { springFromH: 1, springFromM: 59, springToH: 3, fallFromH: null, fallFromM: null, fallToH: null };
+        }
+        if (month === 10 && day === getNthSundayOfMonth(year, 10, 1)) {
+            return { springFromH: null, springFromM: null, springToH: null, fallFromH: 1, fallFromM: 59, fallToH: 1 };
+        }
+    } else if (rule === 'au') {
+        if (month === 9 && day === getNthSundayOfMonth(year, 9, 1)) {
+            return { springFromH: 1, springFromM: 59, springToH: 3, fallFromH: null, fallFromM: null, fallToH: null };
+        }
+        if (month === 3 && day === getNthSundayOfMonth(year, 3, 1)) {
+            return { springFromH: null, springFromM: null, springToH: null, fallFromH: 2, fallFromM: 59, fallToH: 2 };
+        }
+    } else if (rule === 'nz') {
+        if (month === 8 && day === getLastSundayOfMonth(year, 8)) {
+            return { springFromH: 1, springFromM: 59, springToH: 3, fallFromH: null, fallFromM: null, fallToH: null };
+        }
+        if (month === 3 && day === getNthSundayOfMonth(year, 3, 1)) {
+            return { springFromH: null, springFromM: null, springToH: null, fallFromH: 2, fallFromM: 59, fallToH: 2 };
+        }
     }
+    return null;
 }
 
 // Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
@@ -97,40 +285,27 @@ function isDstForLocalClock(refDate) {
         return dstOverrideState;
     }
 
-    if (isAfricaTimezone()) {
-        return false;
-    }
-
+    const rule = getDstRuleForLocation(cachedLat, cachedLon);
     const d = refDate || selectedDate || new Date();
-    const y = d.getUTCFullYear();
-    const m = d.getUTCMonth();
-    const day = d.getUTCDate();
-    const h = d.getUTCHours();
-    const min = d.getUTCMinutes();
-    const sec = d.getUTCSeconds();
-
-    const marchLastSunday = getLastSundayOfMonth(y, 2);
-    const octLastSunday = getLastSundayOfMonth(y, 9);
-
-    if (m === 2 && day === marchLastSunday) {
-        // Fino alle 01:59:59 resta in ora solare; dalle 02:00 (poi portata a 03:00) è ora legale
-        return (h > 2) || (h === 2 && (min > 0 || sec > 0));
-    }
-    if (m === 9 && day === octLastSunday) {
-        // Fino alle 02:59:59 resta in ora legale; dalle 03:00 (poi portata a 02:00) è ora solare
-        return h < 3;
-    }
-
-    return isEuDstByCalendar(y, m, day);
+    return evaluateDstByRule(
+        rule,
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+    );
 }
 
-// Applica la transizione esatta quando l'orologio avanza:
-// - Marzo: da 01:59 -> 02:00 diventa 03:00:00 (ora legale)
-// - Ottobre: da 02:59 -> 03:00 diventa 02:00:00 (ora solare)
+// Applica la transizione esatta quando l'orologio avanza in base alla regola del fuso
 function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
     if (urlParams.has('dst')) return { date: nextDate, dstChanged: false };
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-    if (!isAuto || isAfricaTimezone()) return { date: nextDate, dstChanged: false };
+    if (!isAuto) return { date: nextDate, dstChanged: false };
+
+    const rule = getDstRuleForLocation(cachedLat, cachedLon);
+    if (rule === 'none') return { date: nextDate, dstChanged: false };
 
     const prevY = prevDate.getUTCFullYear();
     const prevM = prevDate.getUTCMonth();
@@ -143,33 +318,29 @@ function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
     const nextD = nextDate.getUTCDate();
     const nextH = nextDate.getUTCHours();
 
-    const marchLastSunday = getLastSundayOfMonth(prevY, 2);
-    const octLastSunday = getLastSundayOfMonth(prevY, 9);
+    const tr = getDstTransitionHoursForRule(rule, prevY, prevM, prevD);
+    if (!tr) return { date: nextDate, dstChanged: false };
 
-    // Marzo: 01:59 -> 03:00:00
     if (
-        prevY === nextY &&
-        prevM === 2 && nextM === 2 &&
-        prevD === marchLastSunday && nextD === marchLastSunday &&
-        prevH === 1 && prevMin === 59 && nextH >= 2
+        tr.springFromH !== null &&
+        prevY === nextY && prevM === nextM && prevD === nextD &&
+        prevH === tr.springFromH && prevMin === tr.springFromM && nextH > tr.springFromH
     ) {
         const adjusted = new Date(nextDate.getTime());
-        adjusted.setUTCHours(3, 0, 0, adjusted.getUTCMilliseconds());
+        adjusted.setUTCHours(tr.springToH, 0, 0, adjusted.getUTCMilliseconds());
         const prevDst = getCurrentDstState();
         dstOverrideState = true;
         syncManualDstCheckbox(true);
         return { date: adjusted, dstChanged: (prevDst !== true) };
     }
 
-    // Ottobre: 02:59 -> 02:00:00
     if (
-        prevY === nextY &&
-        prevM === 9 && nextM === 9 &&
-        prevD === octLastSunday && nextD === octLastSunday &&
-        prevH === 2 && prevMin === 59 && nextH >= 3
+        tr.fallFromH !== null &&
+        prevY === nextY && prevM === nextM && prevD === nextD &&
+        prevH === tr.fallFromH && prevMin === tr.fallFromM && nextH > tr.fallFromH
     ) {
         const adjusted = new Date(nextDate.getTime());
-        adjusted.setUTCHours(2, 0, 0, adjusted.getUTCMilliseconds());
+        adjusted.setUTCHours(tr.fallToH, 0, 0, adjusted.getUTCMilliseconds());
         const prevDst = getCurrentDstState();
         dstOverrideState = false;
         syncManualDstCheckbox(false);
@@ -477,7 +648,6 @@ function adaptBottomPanelHeight(forceMeasure = false) {
         stripBody.style.overflow = 'visible';
     }
 
-    // Evita di ricalcolare/modificare l'altezza ad ogni singolo giorno durante lo scorrimento veloce
     if (!forceMeasure && container.dataset.heightLocked === 'true') {
         return;
     }
@@ -1080,8 +1250,12 @@ async function initClock() {
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
 
-        document.getElementById('input-lat').value = cachedLat;
-        document.getElementById('input-lon').value = cachedLon;
+        const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
+        const latInput = document.getElementById('input-lat');
+        const lonInput = document.getElementById('input-lon');
+        if (latInput) latInput.value = shortCoords.latNumStr;
+        if (lonInput) lonInput.value = shortCoords.lonNumStr;
+
         lastUpdateMs = performance.now();
         updateTimeForLocation();
         updateInputsVal();
@@ -1099,10 +1273,11 @@ async function initClock() {
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
 
+        const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
         const latInput = document.getElementById('input-lat');
         const lonInput = document.getElementById('input-lon');
-        if (latInput) latInput.value = cachedLat;
-        if (lonInput) lonInput.value = cachedLon;
+        if (latInput) latInput.value = shortCoords.latNumStr;
+        if (lonInput) lonInput.value = shortCoords.lonNumStr;
 
         lastUpdateMs = performance.now();
         updateTimeForLocation();
@@ -1366,8 +1541,12 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLon = lon;
     isTimezoneOnlyMode = false;
     dstOverrideState = null;
-    document.getElementById('input-lat').value = cachedLat;
-    document.getElementById('input-lon').value = cachedLon;
+
+    const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
+    const latInput = document.getElementById('input-lat');
+    const lonInput = document.getElementById('input-lon');
+    if (latInput) latInput.value = shortCoords.latNumStr;
+    if (lonInput) lonInput.value = shortCoords.lonNumStr;
 
     let placeName = fallbackName;
     try {
@@ -1595,8 +1774,7 @@ function updateSunClock(lat, lon) {
 
     const standardTz = getPreciseStandardTimezone(lat, lon);
     const isDstNowActive = getCurrentDstState();
-    const latFmt = parseFloat(lat).toFixed(2);
-    const lonFmt = parseFloat(lon).toFixed(2);
+    const coords = formatCoordinatesShort(lat, lon);
 
     const stdSign = standardTz >= 0 ? "+" : "";
     const totalSign = baseOffset >= 0 ? "+" : "";
@@ -1608,7 +1786,7 @@ function updateSunClock(lat, lon) {
 
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
+        <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${coords.latText} | Lon: ${coords.lonText}</div>
         <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">${fusoText}</div>
     `;
 
@@ -2186,6 +2364,78 @@ function toggleTimesModal(show) {
 
 function toggleSettingsModal(show) {
     document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
+}
+
+function getDstRuleSummaryList() {
+    return [
+        {
+            area: "Europa e aree UE-like",
+            rule: "Inizia l'ultima domenica di marzo (02:00 → 03:00) e finisce l'ultima domenica di ottobre (03:00 → 02:00)."
+        },
+        {
+            area: "Nord America (USA e Canada, dove applicata)",
+            rule: "Inizia la 2ª domenica di marzo (02:00 → 03:00) e finisce la 1ª domenica di novembre (02:00 → 01:00). Escluse zone senza ora legale (es. Phoenix, Hawaii, gran parte del Saskatchewan)."
+        },
+        {
+            area: "Australia (stati con ora legale)",
+            rule: "Emisfero australe: inizia la 1ª domenica di ottobre e finisce la 1ª domenica di aprile. Perth, Brisbane e Darwin non applicano l'ora legale."
+        },
+        {
+            area: "Nuova Zelanda",
+            rule: "Emisfero australe: inizia l'ultima domenica di settembre e finisce la 1ª domenica di aprile."
+        },
+        {
+            area: "Asia, gran parte dell'Africa e Sud America",
+            rule: "In molte nazioni l'ora legale non viene applicata e il fuso resta costante tutto l'anno; in alcuni paesi (es. Cile o aree con regole proprie) seguono calendari dedicati."
+        },
+        {
+            area: "Controllo manuale in SunClock24",
+            rule: "Puoi sempre disattivare l'ora legale automatica o forzare +1h / 0h manualmente, e verificare la regola rilevata per la posizione corrente."
+        }
+    ];
+}
+
+function renderDstRulesModalContent() {
+    const bodyEl = document.getElementById('dst-rules-modal-body');
+    if (!bodyEl) return;
+
+    const currentRule = typeof getDstRuleForLocation === 'function'
+        ? getDstRuleForLocation(cachedLat, cachedLon)
+        : 'eu';
+
+    const ruleLabels = {
+        eu: "Europa (ultima domenica di marzo → ultima domenica di ottobre)",
+        us: "Nord America (2ª domenica di marzo → 1ª domenica di novembre)",
+        au: "Australia DST (1ª domenica di ottobre → 1ª domenica di aprile)",
+        nz: "Nuova Zelanda (ultima domenica di settembre → 1ª domenica di aprile)",
+        none: "Nessuna ora legale automatica per il fuso selezionato"
+    };
+
+    const itemsHtml = getDstRuleSummaryList().map(item => `
+        <div style="background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;">
+            <div style="color: #38bdf8; font-weight: bold; margin-bottom: 3px;">${item.area}</div>
+            <div style="color: #e2e8f0;">${item.rule}</div>
+        </div>
+    `).join('');
+
+    bodyEl.innerHTML = `
+        <div style="background: rgba(57, 255, 20, 0.1); border: 1px solid #39ff14; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; color: #bbf7d0;">
+            <strong>Regola attiva ora:</strong><br>
+            ${ruleLabels[currentRule] || ruleLabels.eu}
+        </div>
+        ${itemsHtml}
+    `;
+}
+
+function toggleDstRulesModal(show) {
+    const modal = document.getElementById('modal-dst-rules');
+    if (!modal) return;
+    if (show) {
+        renderDstRulesModalContent();
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
+    }
 }
 
 function updateHands() {
