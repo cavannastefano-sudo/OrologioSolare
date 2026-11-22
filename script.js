@@ -612,6 +612,57 @@ function removeTopDateTimeArrows() {
     }
 }
 
+function updateCompactSunTimesRow() {
+    const stripBody = document.getElementById('panel-strip-body');
+    const clockBar = document.getElementById('strip-clock-bar');
+    if (!stripBody) return;
+
+    let row = document.getElementById('strip-sun-times-row');
+    if (!row) {
+        row = document.createElement('div');
+        row.id = 'strip-sun-times-row';
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.justifyContent = 'space-between';
+        row.style.gap = '10px';
+        row.style.width = '100%';
+        row.style.boxSizing = 'border-box';
+        row.style.marginTop = '10px';
+        row.style.padding = '5px 10px';
+        row.style.borderRadius = '6px';
+        row.style.background = 'rgba(15, 23, 42, 0.85)';
+        row.style.border = '1px solid #475569';
+        row.style.fontSize = '0.84rem';
+        row.style.fontWeight = 'bold';
+        row.style.color = '#f8fafc';
+        row.style.textShadow = 'none';
+        row.style.webkitTextStroke = '0px transparent';
+
+        if (clockBar && clockBar.parentElement === stripBody) {
+            clockBar.insertAdjacentElement('afterend', row);
+        } else {
+            stripBody.appendChild(row);
+        }
+    }
+
+    const sunriseTxt = isTimezoneOnlyMode
+        ? '----'
+        : (cachedTimes && isValidDate(cachedTimes.sunrise)
+            ? formatTime(cachedTimes.sunrise)
+            : (document.getElementById('txt-sunrise')?.innerText || '--:--'));
+
+    const sunsetTxt = isTimezoneOnlyMode
+        ? '----'
+        : (cachedTimes && isValidDate(cachedTimes.sunset)
+            ? formatTime(cachedTimes.sunset)
+            : (document.getElementById('txt-sunset')?.innerText || '--:--'));
+
+    row.innerHTML = `
+        <span style="white-space:nowrap;color:#fb923c;">🌅 Sorge: <strong style="color:#f8fafc;">${sunriseTxt}</strong></span>
+        <span style="white-space:nowrap;color:#facc15;">🌇 Tramonta: <strong style="color:#f8fafc;">${sunsetTxt}</strong></span>
+    `;
+}
+
 function ensureStripClockBar() {
     const stripBody = document.getElementById('panel-strip-body');
     if (!stripBody) return;
@@ -630,8 +681,8 @@ function ensureStripClockBar() {
         clockBar.style.display = 'flex';
         clockBar.style.alignItems = 'center';
         clockBar.style.justifyContent = 'center';
-        clockBar.style.gap = '8px';
-        clockBar.style.marginTop = '8px';
+        clockBar.style.gap = '10px';
+        clockBar.style.marginTop = '14px';
         clockBar.style.paddingTop = '2px';
         clockBar.style.width = '100%';
         clockBar.style.boxSizing = 'border-box';
@@ -649,6 +700,9 @@ function ensureStripClockBar() {
         } else {
             stripBody.appendChild(clockBar);
         }
+    } else {
+        clockBar.style.marginTop = '14px';
+        clockBar.style.gap = '10px';
     }
 
     const srcClock = document.getElementById('digital-clock');
@@ -656,6 +710,8 @@ function ensureStripClockBar() {
     if (srcClock && dstClock) {
         dstClock.innerText = srcClock.innerText || '00:00:00';
     }
+
+    updateCompactSunTimesRow();
 }
 
 function styleStripButtonVisibility(btn, active) {
@@ -729,7 +785,7 @@ function removeBottomRedundantFooter() {
         while (nextEl) {
             const toRemove = nextEl;
             nextEl = nextEl.nextElementSibling;
-            if (toRemove.id !== 'strip-clock-bar') {
+            if (toRemove.id !== 'strip-clock-bar' && toRemove.id !== 'strip-sun-times-row') {
                 toRemove.remove();
             }
         }
@@ -741,6 +797,7 @@ function removeBottomRedundantFooter() {
             el.id === 'timeline-track' ||
             el.id === 'strip-clock-bar' ||
             el.id === 'strip-clock-readout' ||
+            el.id === 'strip-sun-times-row' ||
             el.classList.contains('strip-year-bar') ||
             el.classList.contains('strip-stage') ||
             el.classList.contains('strip-center-cursor')
@@ -822,7 +879,8 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     yearBar.style.flexWrap = 'wrap';
     yearBar.style.alignItems = 'center';
     yearBar.style.justifyContent = 'center';
-    yearBar.style.gap = '6px';
+    yearBar.style.gap = '10px';
+    yearBar.style.marginBottom = '14px';
 
     let yearPrevBtn = document.getElementById('btn-year-prev');
     let yearSel = document.getElementById('select-strip-year');
@@ -967,6 +1025,7 @@ function toggleYearStrip() {
             styleStripButtonVisibility(btn, false);
         }
     }
+    ensureStripClockBar();
     adaptBottomPanelHeight(true);
 }
 
@@ -1015,15 +1074,20 @@ function ensureYearStripBuilt(year) {
         tick.dataset.day = dCopy.getUTCDate();
         tick.style.textShadow = 'none';
         tick.style.webkitTextStroke = '0px transparent';
-        tick.style.minWidth = '56px';
-        tick.style.padding = '6px 6px';
+        tick.style.minWidth = '64px';
+        tick.style.padding = '8px 8px';
+        tick.style.display = 'flex';
+        tick.style.flexDirection = 'column';
+        tick.style.alignItems = 'center';
+        tick.style.justifyContent = 'center';
+        tick.style.gap = '6px';
 
         const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
         tick.innerHTML = `
-            <span style="font-size:0.86rem; font-weight:bold; line-height:1.15;">${dayNum} ${monthShort}</span>
-            <span style="font-size:0.80rem; font-weight:bold; color:#facc15; line-height:1.15;">${pct}%</span>
+            <span style="font-size:0.88rem; font-weight:bold; line-height:1.25;">${dayNum} ${monthShort}</span>
+            <span style="font-size:0.82rem; font-weight:bold; color:#facc15; line-height:1.25;">${pct}%</span>
         `;
 
         tick.onclick = () => {
@@ -1565,6 +1629,7 @@ function applyTimezonePreset() {
     drawClockNumbers();
     updatePageBackground(cachedTimes);
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
+    updateCompactSunTimesRow();
 
     adaptBottomPanelHeight(false);
     toggleSettingsModal(false);
@@ -1903,6 +1968,7 @@ function updateSunClock(lat, lon) {
     document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
     document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
     syncSettingsCoordsDisplay(lat, lon);
+    updateCompactSunTimesRow();
     adaptBottomPanelHeight(false);
 }
 
