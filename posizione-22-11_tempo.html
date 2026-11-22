@@ -914,7 +914,7 @@
         let lastUpdateMs = performance.now();
         let dstOverrideState = null; // null = automatico, true/false = manuale locale su questa pagina
         let userTouchedDst = false; // false = verde (automatico attivo), true = rosso (manuale attivo)
-        let startedWithAutoDst = true; // true se all'ingresso l'automatico era attivo (non tocca la home se cambi flag qui)
+        let startedWithAutoDst = true; // true se all'ingresso l'automatico era attivo
 
         // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
         let builtYear = null;
@@ -1123,22 +1123,32 @@
             }
         }
 
-        function goToTodayOnStrip() {
-            isProgrammaticScroll = true;
-            clearTimeout(scrollEndTimer);
-            if (scrollRafId) {
-                cancelAnimationFrame(scrollRafId);
-                scrollRafId = null;
+        function applyNowOrTodayAction(syncStrip = false) {
+            if (syncStrip) {
+                isProgrammaticScroll = true;
+                clearTimeout(scrollEndTimer);
+                if (scrollRafId) {
+                    cancelAnimationFrame(scrollRafId);
+                    scrollRafId = null;
+                }
             }
 
             isCustomTime = false;
             customTimeOffsetMs = 0;
-            dstOverrideState = null;
-            userTouchedDst = false;
-            if (!startedWithAutoDst) {
-                localStorage.setItem('sunclock_auto_dst', 'true');
-                startedWithAutoDst = true;
+
+            if (startedWithAutoDst) {
+                dstOverrideState = null;
+                userTouchedDst = false;
+            } else {
+                const manualDstSaved = (urlParams.get('dst') !== null)
+                    ? (urlParams.get('dst') === 'true')
+                    : (localStorage.getItem('sunclock_dst') === 'true');
+                localStorage.setItem('sunclock_auto_dst', 'false');
+                localStorage.setItem('sunclock_dst', manualDstSaved ? 'true' : 'false');
+                dstOverrideState = manualDstSaved;
+                userTouchedDst = true;
             }
+
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -1152,7 +1162,13 @@
                 syncStripToSelectedDate(false);
             }
 
-            scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, 120);
+            if (syncStrip) {
+                scrollEndTimer = setTimeout(() => { isProgrammaticScroll = false; }, 120);
+            }
+        }
+
+        function goToTodayOnStrip() {
+            applyNowOrTodayAction(true);
         }
 
         function onYearSelectChanged(val) {
@@ -1744,26 +1760,7 @@
         }
 
         function resetToNow() {
-            isCustomTime = false;
-            customTimeOffsetMs = 0;
-            dstOverrideState = null;
-            userTouchedDst = false;
-            if (!startedWithAutoDst) {
-                localStorage.setItem('sunclock_auto_dst', 'true');
-                startedWithAutoDst = true;
-            }
-            lastUpdateMs = performance.now();
-            updateTimeForLocation();
-            syncManualDstCheckbox(getCurrentDstState());
-            updateDstModeIndicator();
-            updateInputsVal();
-            updateSunClock(cachedLat, cachedLon);
-
-            if (isStripOpen) {
-                populateYearAndMonthSelects(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
-                ensureYearStripBuilt(selectedDate.getUTCFullYear());
-                syncStripToSelectedDate(false);
-            }
+            applyNowOrTodayAction(false);
         }
 
         function updateTimeForLocation() {
