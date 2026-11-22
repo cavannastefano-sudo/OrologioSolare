@@ -56,8 +56,10 @@ if (urlParams.has('dst')) {
 }
 
 function formatOffsetLabel(offsetHours) {
-    const sign = offsetHours >= 0 ? '+' : '-';
-    const absVal = Math.abs(offsetHours);
+    const num = Number(offsetHours);
+    if (isNaN(num)) return 'UTC +1';
+    const sign = num >= 0 ? '+' : '-';
+    const absVal = Math.abs(num);
     const whole = Math.floor(absVal);
     const mins = Math.round((absVal - whole) * 60);
     if (mins === 0) {
@@ -68,7 +70,7 @@ function formatOffsetLabel(offsetHours) {
 
 function getSelectedBaseTimezone() {
     const tzPresetEl = document.getElementById('timezone-preset');
-    if (tzPresetEl && !isNaN(parseFloat(tzPresetEl.value))) {
+    if (tzPresetEl && tzPresetEl.value !== '' && !isNaN(parseFloat(tzPresetEl.value))) {
         return parseFloat(tzPresetEl.value);
     }
     return getPreciseStandardTimezone(cachedLat, cachedLon);
@@ -119,7 +121,7 @@ function updateSettingsDstNotice() {
         noticeEl.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
         noticeEl.style.border = '1px solid #38bdf8';
         noticeEl.style.color = '#bae6fd';
-        noticeEl.innerHTML = `🕒 Ora solare • Fuso: ${baseLabel} (Ora legale: ${dstLabel})`;
+        noticeEl.innerHTML = `🕒 Ora solare attiva • Fuso: ${baseLabel}`;
     }
 }
 
