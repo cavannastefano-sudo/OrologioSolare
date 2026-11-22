@@ -55,6 +55,74 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+function formatOffsetLabel(offsetHours) {
+    const sign = offsetHours >= 0 ? '+' : '-';
+    const absVal = Math.abs(offsetHours);
+    const whole = Math.floor(absVal);
+    const mins = Math.round((absVal - whole) * 60);
+    if (mins === 0) {
+        return `UTC ${sign}${whole}`;
+    }
+    return `UTC ${sign}${whole}:${String(mins).padStart(2, '0')}`;
+}
+
+function getSelectedBaseTimezone() {
+    const tzPresetEl = document.getElementById('timezone-preset');
+    if (tzPresetEl && !isNaN(parseFloat(tzPresetEl.value))) {
+        return parseFloat(tzPresetEl.value);
+    }
+    return getPreciseStandardTimezone(cachedLat, cachedLon);
+}
+
+function updateSettingsDstNotice() {
+    const modal = document.getElementById('modal-settings');
+    if (!modal) return;
+
+    const baseTz = getSelectedBaseTimezone();
+    const isDstNowActive = getCurrentDstState();
+    const dstOffset = baseTz + 1;
+
+    const baseLabel = formatOffsetLabel(baseTz);
+    const dstLabel = formatOffsetLabel(dstOffset);
+
+    let noticeEl = document.getElementById('settings-dst-notice');
+    if (!noticeEl) {
+        const tzBadgeEl = document.getElementById('settings-tz-badge');
+        const manualBox = document.getElementById('manual-dst-box');
+        const anchor = (tzBadgeEl && tzBadgeEl.parentElement) || manualBox || modal.querySelector('.modal-content, .settings-body') || modal;
+
+        noticeEl = document.createElement('div');
+        noticeEl.id = 'settings-dst-notice';
+        noticeEl.style.marginTop = '8px';
+        noticeEl.style.marginBottom = '8px';
+        noticeEl.style.padding = '7px 10px';
+        noticeEl.style.borderRadius = '8px';
+        noticeEl.style.fontSize = '0.88rem';
+        noticeEl.style.fontWeight = 'bold';
+        noticeEl.style.lineHeight = '1.35';
+        noticeEl.style.textShadow = 'none';
+        noticeEl.style.webkitTextStroke = '0px transparent';
+
+        if (manualBox && manualBox.parentElement) {
+            manualBox.insertAdjacentElement('afterend', noticeEl);
+        } else if (anchor) {
+            anchor.appendChild(noticeEl);
+        }
+    }
+
+    if (isDstNowActive) {
+        noticeEl.style.backgroundColor = 'rgba(234, 179, 8, 0.16)';
+        noticeEl.style.border = '1px solid #facc15';
+        noticeEl.style.color = '#fef08a';
+        noticeEl.innerHTML = `☀️ Ora legale attiva • Fuso solare: ${baseLabel} → Ora legale: ${dstLabel}`;
+    } else {
+        noticeEl.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
+        noticeEl.style.border = '1px solid #38bdf8';
+        noticeEl.style.color = '#bae6fd';
+        noticeEl.innerHTML = `🕒 Ora solare • Fuso: ${baseLabel} (Ora legale: ${dstLabel})`;
+    }
+}
+
 function formatCoordinatesShort(lat, lon) {
     const latNum = parseFloat(lat);
     const lonNum = parseFloat(lon);
@@ -86,10 +154,14 @@ function syncSettingsCoordsDisplay(lat = cachedLat, lon = cachedLon) {
     if (lonEl) lonEl.innerText = coords.lonText;
 
     if (tzBadgeEl) {
-        const offset = getBaseLocationOffset();
-        const sign = offset >= 0 ? '+' : '';
-        tzBadgeEl.innerText = `UTC ${sign}${offset}`;
+        const baseTz = getSelectedBaseTimezone();
+        const isDstNowActive = getCurrentDstState();
+        const baseLabel = formatOffsetLabel(baseTz);
+        const activeLabel = formatOffsetLabel(baseTz + (isDstNowActive ? 1 : 0));
+        tzBadgeEl.innerText = isDstNowActive ? `${baseLabel} / ${activeLabel}` : baseLabel;
     }
+
+    updateSettingsDstNotice();
 }
 
 function getLastSundayOfMonth(year, month) {
@@ -371,6 +443,7 @@ function syncManualDstCheckbox(isDst) {
     if (manualToggle && manualToggle.checked !== isDst) {
         manualToggle.checked = isDst;
     }
+    updateSettingsDstNotice();
 }
 
 function getPreciseStandardTimezone(lat, lon) {
@@ -1372,6 +1445,7 @@ function toggleAutoDST(checked) {
     } else {
         updateSunClock(cachedLat, cachedLon);
     }
+    updateSettingsDstNotice();
 }
 
 function toggleManualDST(checked) {
@@ -1385,6 +1459,7 @@ function toggleManualDST(checked) {
     } else {
         updateSunClock(cachedLat, cachedLon);
     }
+    updateSettingsDstNotice();
 }
 
 function updateDstUI(isAuto) {
@@ -1402,6 +1477,7 @@ function updateDstUI(isAuto) {
         manualInput.disabled = false;
         manualInput.checked = localStorage.getItem('sunclock_dst') === 'true';
     }
+    updateSettingsDstNotice();
 }
 
 function applyTimezonePreset() {
@@ -1413,15 +1489,8 @@ function applyTimezonePreset() {
     }
     updateInputsVal();
 
-    let isDstNowActive = getCurrentDstState();
-    const totalOffset = parseFloat(tzVal) + (isDstNowActive ? 1 : 0);
-    const tzSign = parseFloat(tzVal) >= 0 ? "+" : "";
-    const totalSign = totalOffset >= 0 ? "+" : "";
-
-    let fusoText = `Fuso UTC ${tzSign}${tzVal}`;
-    if (isDstNowActive) {
-        fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
-    }
+    const baseTz = parseFloat(tzVal);
+    const fusoText = `Fuso ${formatOffsetLabel(baseTz)}`;
 
     document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
     document.getElementById('txt-sunrise').innerText = "----";
@@ -1778,16 +1847,8 @@ function updateSunClock(lat, lon) {
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const standardTz = getPreciseStandardTimezone(lat, lon);
-    const isDstNowActive = getCurrentDstState();
     const coords = formatCoordinatesShort(lat, lon);
-
-    const stdSign = standardTz >= 0 ? "+" : "";
-    const totalSign = baseOffset >= 0 ? "+" : "";
-
-    let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
-    if (isDstNowActive) {
-        fusoText += ` (Ora legale: UTC ${totalSign}${baseOffset})`;
-    }
+    const fusoText = `Fuso solare: ${formatOffsetLabel(standardTz)}`;
 
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
