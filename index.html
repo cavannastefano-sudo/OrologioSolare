@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>SunClock24</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -595,6 +595,41 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
+
+        /* Mappa Fusi Orari grande e con zoom */
+        .tz-map-stage {
+            padding: 12px;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: #000000;
+            flex: 1;
+            min-height: 55vh;
+        }
+        .tz-map-viewport {
+            width: 100%;
+            min-height: 55vh;
+            max-height: 75vh;
+            overflow: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            touch-action: pan-x pan-y pinch-zoom;
+        }
+        #tz-map-img {
+            width: 100%;
+            max-width: none;
+            min-width: 100%;
+            height: auto;
+            object-fit: contain;
+            display: block;
+            border-radius: 6px;
+            transform-origin: center center;
+            transition: transform 0.14s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -851,41 +886,32 @@
     </div>
 
     <!-- Modale Mappa dei Fusi Orari -->
-    <div id="modal-tz-map" class="modal" style="z-index: 1100; padding: 12px; box-sizing: border-box;" onclick="if(event.target === this) toggleTimeZoneMapModal(false);">
-        <div style="background: #0f172a; border: 1px solid #38bdf8; border-radius: 12px; width: min(96vw, 1120px); max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,0.85); color: #f8fafc;">
+    <div id="modal-tz-map" class="modal" style="z-index: 1100; padding: 10px; box-sizing: border-box;" onclick="if(event.target === this) toggleTimeZoneMapModal(false);">
+        <div style="background: #0f172a; border: 1px solid #38bdf8; border-radius: 12px; width: 96vw; max-width: 1200px; height: 90vh; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,0.85); color: #f8fafc;">
             <div class="modal-header" style="padding: 10px 14px; margin-bottom: 0; background: #020617;">
                 <strong style="color: #facc15; font-size: 1rem;">🗺️ Mappa dei Fusi Orari</strong>
                 <button type="button" class="close-btn" onclick="toggleTimeZoneMapModal(false)">✕</button>
             </div>
-            <div style="padding: 12px; overflow: auto; display: flex; align-items: flex-start; justify-content: center; background: #000000; flex: 1;">
-                <img
-                    src="https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif"
-                    alt="Mappa dei fusi orari"
-                    style="width: 100%; max-width: 100%; height: auto; object-fit: contain; display: block; border-radius: 6px;"
-                >
+            <div class="tz-map-stage">
+                <div class="tz-map-viewport" id="tz-map-viewport">
+                    <img
+                        id="tz-map-img"
+                        src="https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif"
+                        alt="Mappa dei fusi orari"
+                    >
+                </div>
+                <div id="tz-map-zoom-controls" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                    <button type="button" onclick="zoomTzMapOut()" title="Riduci zoom" style="background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:5px 12px;font-weight:bold;cursor:pointer;">-</button>
+                    <span id="tz-map-zoom-label" style="min-width:52px;text-align:center;font-weight:bold;color:#facc15;">100%</span>
+                    <button type="button" onclick="zoomTzMapIn()" title="Aumenta zoom" style="background:#0f172a;color:#38bdf8;border:1px solid #38bdf8;border-radius:6px;padding:5px 12px;font-weight:bold;cursor:pointer;">+</button>
+                    <button type="button" onclick="resetTzMapZoom()" title="Ripristina zoom" style="background:#1e293b;color:#f8fafc;border:1px solid #64748b;border-radius:6px;padding:5px 12px;font-weight:bold;cursor:pointer;">1:1</button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Collegamento al file JavaScript esterno -->
     <script src="script.js"></script>
-
-    <!-- Gestione apertura/chiusura finestra Mappa dei Fusi Orari -->
-    <script>
-        function toggleTimeZoneMapModal(show) {
-            const modal = document.getElementById('modal-tz-map');
-            if (!modal) return;
-            if (show) {
-                const settingsModal = document.getElementById('modal-settings');
-                if (settingsModal) {
-                    settingsModal.style.display = 'none';
-                }
-                modal.style.display = 'flex';
-            } else {
-                modal.style.display = 'none';
-            }
-        }
-    </script>
 
     <!-- Scorrimento a pressione continua per i cursori laterali ◀ e ▶ della striscia -->
     <script>
