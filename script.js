@@ -173,15 +173,9 @@ function formatCoordinatesShort(lat, lon) {
         return { latText: '--', lonText: '--', latNumStr: '', lonNumStr: '' };
     }
 
-    const latDir = latNum >= 0 ? 'N' : 'S';
-    const lonDir = lonNum >= 0 ? 'E' : 'O';
-
-    const latFormatted = Math.abs(latNum).toFixed(2).replace('.', ',');
-    const lonFormatted = Math.abs(lonNum).toFixed(2).replace('.', ',');
-
     return {
-        latText: `${latFormatted}° ${latDir}`,
-        lonText: `${lonFormatted}° ${lonDir}`,
+        latText: latNum.toFixed(2),
+        lonText: lonNum.toFixed(2),
         latNumStr: latNum.toFixed(2),
         lonNumStr: lonNum.toFixed(2)
     };
@@ -1538,8 +1532,16 @@ function applyTimezonePreset() {
     }
     updateInputsVal();
 
-    const baseTz = parseFloat(tzVal);
-    const fusoText = `--- Fuso ${formatOffsetLabel(baseTz)} ---`;
+    const baseTzNum = parseFloat(tzVal);
+    const isDstNowActive = getCurrentDstState();
+    const totalOffset = baseTzNum + (isDstNowActive ? 1 : 0);
+    const tzSign = baseTzNum >= 0 ? "+" : "";
+    const totalSign = totalOffset >= 0 ? "+" : "";
+
+    let fusoText = `Fuso UTC ${tzSign}${tzVal}`;
+    if (isDstNowActive) {
+        fusoText += ` (Ora legale: UTC ${totalSign}${totalOffset})`;
+    }
 
     document.getElementById('location-text').innerHTML = `<div style="font-size: 1.15rem;">${fusoText}</div>`;
     document.getElementById('txt-sunrise').innerText = "----";
@@ -1880,12 +1882,21 @@ function updateSunClock(lat, lon) {
     populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
 
     const standardTz = getPreciseStandardTimezone(lat, lon);
-    const coords = formatCoordinatesShort(lat, lon);
-    const fusoText = `Fuso solare: ${formatOffsetLabel(standardTz)}`;
+    const isDstNowActive = getCurrentDstState();
+    const latFmt = parseFloat(lat).toFixed(2);
+    const lonFmt = parseFloat(lon).toFixed(2);
+
+    const stdSign = standardTz >= 0 ? "+" : "";
+    const totalSign = baseOffset >= 0 ? "+" : "";
+
+    let fusoText = `Fuso solare: UTC ${stdSign}${standardTz}`;
+    if (isDstNowActive) {
+        fusoText += ` (Ora legale: UTC ${totalSign}${baseOffset})`;
+    }
 
     document.getElementById('location-text').innerHTML = `
         <div style="font-size: 1.15rem; margin-bottom: 4px;">${currentPlaceDisplayName}</div>
-        <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${coords.latText} | Lon: ${coords.lonText}</div>
+        <div style="font-size: 0.95rem; opacity: 0.9;">Lat: ${latFmt} | Lon: ${lonFmt}</div>
         <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">${fusoText}</div>
     `;
 
