@@ -627,7 +627,7 @@ function updateCompactSunTimesRow() {
         row.style.gap = '10px';
         row.style.width = '100%';
         row.style.boxSizing = 'border-box';
-        row.style.marginTop = '10px';
+        row.style.marginTop = '8px';
         row.style.padding = '5px 10px';
         row.style.borderRadius = '6px';
         row.style.background = 'rgba(15, 23, 42, 0.85)';
@@ -681,8 +681,8 @@ function ensureStripClockBar() {
         clockBar.style.display = 'flex';
         clockBar.style.alignItems = 'center';
         clockBar.style.justifyContent = 'center';
-        clockBar.style.gap = '10px';
-        clockBar.style.marginTop = '14px';
+        clockBar.style.gap = '8px';
+        clockBar.style.marginTop = '6px';
         clockBar.style.paddingTop = '2px';
         clockBar.style.width = '100%';
         clockBar.style.boxSizing = 'border-box';
@@ -701,8 +701,8 @@ function ensureStripClockBar() {
             stripBody.appendChild(clockBar);
         }
     } else {
-        clockBar.style.marginTop = '14px';
-        clockBar.style.gap = '10px';
+        clockBar.style.marginTop = '6px';
+        clockBar.style.gap = '8px';
     }
 
     const srcClock = document.getElementById('digital-clock');
@@ -879,8 +879,8 @@ function ensureYearAndMonthSelectors(currentYear, currentMonth) {
     yearBar.style.flexWrap = 'wrap';
     yearBar.style.alignItems = 'center';
     yearBar.style.justifyContent = 'center';
-    yearBar.style.gap = '10px';
-    yearBar.style.marginBottom = '14px';
+    yearBar.style.gap = '6px';
+    yearBar.style.marginBottom = '6px';
 
     let yearPrevBtn = document.getElementById('btn-year-prev');
     let yearSel = document.getElementById('select-strip-year');
@@ -1074,20 +1074,20 @@ function ensureYearStripBuilt(year) {
         tick.dataset.day = dCopy.getUTCDate();
         tick.style.textShadow = 'none';
         tick.style.webkitTextStroke = '0px transparent';
-        tick.style.minWidth = '64px';
-        tick.style.padding = '8px 8px';
+        tick.style.minWidth = '60px';
+        tick.style.padding = '6px 6px';
         tick.style.display = 'flex';
         tick.style.flexDirection = 'column';
         tick.style.alignItems = 'center';
         tick.style.justifyContent = 'center';
-        tick.style.gap = '6px';
+        tick.style.gap = '3px';
 
         const dayNum = String(dCopy.getUTCDate()).padStart(2, '0');
         const monthShort = dCopy.toLocaleDateString('it-IT', { month: 'short', timeZone: 'UTC' }).replace('.', '');
 
         tick.innerHTML = `
-            <span style="font-size:0.88rem; font-weight:bold; line-height:1.25;">${dayNum} ${monthShort}</span>
-            <span style="font-size:0.82rem; font-weight:bold; color:#facc15; line-height:1.25;">${pct}%</span>
+            <span style="font-size:0.86rem; font-weight:bold; line-height:1.2;">${dayNum} ${monthShort}</span>
+            <span style="font-size:0.80rem; font-weight:bold; color:#facc15; line-height:1.2;">${pct}%</span>
         `;
 
         tick.onclick = () => {
@@ -1614,6 +1614,7 @@ function applyTimezonePreset() {
     document.getElementById('moon-phase-name').innerText = "----";
     document.getElementById('moon-rise').innerText = "----";
     document.getElementById('moon-set').innerText = "----";
+    updateMoonModalRiseSetStrip(null, true);
 
     const baseOffset = getBaseLocationOffset();
     let utcCalculationDate = new Date(selectedDate.getTime() - (getTotalOffsetHours() * 3600000) + (baseOffset * 3600000));
@@ -2373,12 +2374,72 @@ function drawRealisticMoon(canvasId, illumination, size = 32) {
     }
 }
 
+function updateMoonModalRiseSetStrip(moonTimes, forceDash = false) {
+    const modal = document.getElementById('modal-moon');
+    if (!modal) return;
+
+    let stripEl = document.getElementById('moon-modal-riseset-strip');
+    if (!stripEl) {
+        const bigMoonCanvas = document.getElementById('big-moon-canvas');
+        const bigDateEl = document.getElementById('big-moon-date-display');
+        const bigTitleEl = document.getElementById('big-moon-phase-title');
+        const anchor = (bigDateEl && bigDateEl.parentElement) ||
+                       (bigTitleEl && bigTitleEl.parentElement) ||
+                       (bigMoonCanvas && bigMoonCanvas.parentElement) ||
+                       modal.querySelector('.modal-content, .moon-modal-body') ||
+                       modal;
+
+        stripEl = document.createElement('div');
+        stripEl.id = 'moon-modal-riseset-strip';
+        stripEl.style.display = 'flex';
+        stripEl.style.alignItems = 'center';
+        stripEl.style.justifyContent = 'space-between';
+        stripEl.style.gap = '10px';
+        stripEl.style.width = '100%';
+        stripEl.style.boxSizing = 'border-box';
+        stripEl.style.marginTop = '10px';
+        stripEl.style.padding = '6px 10px';
+        stripEl.style.borderRadius = '8px';
+        stripEl.style.background = 'rgba(15, 23, 42, 0.9)';
+        stripEl.style.border = '1px solid #475569';
+        stripEl.style.fontSize = '0.86rem';
+        stripEl.style.fontWeight = 'bold';
+        stripEl.style.color = '#f8fafc';
+        stripEl.style.textShadow = 'none';
+        stripEl.style.webkitTextStroke = '0px transparent';
+
+        if (bigDateEl && bigDateEl.parentElement) {
+            bigDateEl.insertAdjacentElement('afterend', stripEl);
+        } else if (anchor) {
+            anchor.appendChild(stripEl);
+        }
+    }
+
+    const riseTxt = forceDash
+        ? '----'
+        : (moonTimes && isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : '--:--');
+    const setTxt = forceDash
+        ? '----'
+        : (moonTimes && isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : '--:--');
+
+    stripEl.innerHTML = `
+        <span style="white-space:nowrap;color:#38bdf8;">🌙 Sorge: <strong style="color:#f8fafc;">${riseTxt}</strong></span>
+        <span style="white-space:nowrap;color:#facc15;">🌘 Tramonta: <strong style="color:#f8fafc;">${setTxt}</strong></span>
+    `;
+}
+
 function toggleMoonModal(show) {
     const modal = document.getElementById('modal-moon');
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
-        if (show && cachedMoonIllumination && cachedMoonTimes) {
-            updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+        if (show) {
+            if (isTimezoneOnlyMode) {
+                updateMoonModalRiseSetStrip(null, true);
+            } else if (cachedMoonIllumination && cachedMoonTimes) {
+                updateMoonDigitalPanel(cachedMoonIllumination, cachedMoonTimes);
+            } else {
+                updateMoonModalRiseSetStrip(cachedMoonTimes, false);
+            }
         }
     }
 }
@@ -2427,6 +2488,8 @@ function updateMoonDigitalPanel(illumination, moonTimes) {
         bigDateEl.style.fontWeight = 'bold';
         bigDateEl.style.color = '#f8fafc';
     }
+
+    updateMoonModalRiseSetStrip(moonTimes, false);
 }
 
 function getNextEventIndex(times, refDate) {
@@ -2821,6 +2884,11 @@ function updateHands() {
             lastHighlightedEventIndex = currentHighlight;
             populateTable(cachedTimes, cachedMoonTimes, cachedMoonIllumination);
         }
+    }
+
+    const moonModalEl = document.getElementById('modal-moon');
+    if (moonModalEl && moonModalEl.style.display === 'flex') {
+        updateMoonModalRiseSetStrip(cachedMoonTimes, isTimezoneOnlyMode);
     }
 }
 
