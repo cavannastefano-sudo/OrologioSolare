@@ -149,8 +149,27 @@
             justify-content: space-between;
             align-items: center;
             width: min(90vw, 480px);
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             box-sizing: border-box;
+        }
+
+        .dst-notice-bar {
+            display: none;
+            width: min(90vw, 480px);
+            margin-bottom: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(127, 29, 29, 0.55);
+            border: 1px solid rgba(248, 113, 113, 0.75);
+            color: #fecaca;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-align: center;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.55);
+        }
+        .dst-notice-bar.visible {
+            display: block;
         }
 
         .home-btn {
@@ -718,6 +737,10 @@
         </label>
     </div>
 
+    <div id="dst-manual-notice" class="dst-notice-bar">
+        Modalità manuale su questa pagina: in Home l'ora legale automatica resta invariata.
+    </div>
+
     <header>
         <!-- Logo CavanWeb nell'angolo sinistro -->
         <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
@@ -889,8 +912,9 @@
         let isCustomTime = false;
         let customTimeOffsetMs = 0;
         let lastUpdateMs = performance.now();
-        let dstOverrideState = null; // null = automatico, true/false = manuale
-        let userTouchedDst = false; // false = verde (automatico attivo), true = rosso (manuale attivo da home o da clic)
+        let dstOverrideState = null; // null = automatico, true/false = manuale locale su questa pagina
+        let userTouchedDst = false; // false = verde (automatico attivo), true = rosso (manuale attivo)
+        let startedWithAutoDst = true; // true se all'ingresso l'automatico era attivo (non tocca la home se cambi flag qui)
 
         // Stato Striscia Annuale con Selettori Anno/Mese, Tasto Oggi, Cursori Laterali e Orologio con Frecce sotto
         let builtYear = null;
@@ -904,13 +928,20 @@
 
         function updateDstModeIndicator() {
             const dot = document.getElementById('dst-mode-dot');
-            if (!dot) return;
+            const notice = document.getElementById('dst-manual-notice');
 
-            dot.classList.toggle('is-auto', !userTouchedDst);
-            dot.classList.toggle('is-manual', userTouchedDst);
-            dot.title = userTouchedDst
-                ? 'Modalità manuale attiva (clicca Adesso o Oggi per tornare in automatico)'
-                : 'Modalità automatica attiva';
+            if (dot) {
+                dot.classList.toggle('is-auto', !userTouchedDst);
+                dot.classList.toggle('is-manual', userTouchedDst);
+                dot.title = userTouchedDst
+                    ? 'Modalità manuale attiva su questa pagina (clicca Adesso o Oggi per tornare in automatico)'
+                    : 'Modalità automatica attiva';
+            }
+
+            if (notice) {
+                const showLocalManualWarning = userTouchedDst && startedWithAutoDst;
+                notice.classList.toggle('visible', showLocalManualWarning);
+            }
         }
 
         function getLastSundayOfMonth(year, month) {
@@ -1104,7 +1135,10 @@
             customTimeOffsetMs = 0;
             dstOverrideState = null;
             userTouchedDst = false;
-            localStorage.setItem('sunclock_auto_dst', 'true');
+            if (!startedWithAutoDst) {
+                localStorage.setItem('sunclock_auto_dst', 'true');
+                startedWithAutoDst = true;
+            }
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
@@ -1548,27 +1582,27 @@
             const urlDst = urlParams.get('dst');
 
             if (urlAuto === 'false') {
-                localStorage.setItem('sunclock_auto_dst', 'false');
                 const manualDstFromHome = (urlDst !== null)
                     ? (urlDst === 'true')
                     : (localStorage.getItem('sunclock_dst') === 'true');
-                localStorage.setItem('sunclock_dst', manualDstFromHome ? 'true' : 'false');
                 dstOverrideState = manualDstFromHome;
                 userTouchedDst = true;
+                startedWithAutoDst = false;
             } else if (urlAuto === 'true') {
-                localStorage.setItem('sunclock_auto_dst', 'true');
                 dstOverrideState = null;
                 userTouchedDst = false;
+                startedWithAutoDst = true;
             } else if (localStorage.getItem('sunclock_auto_dst') === 'false') {
                 const manualDstSaved = (urlDst !== null)
                     ? (urlDst === 'true')
                     : (localStorage.getItem('sunclock_dst') === 'true');
-                localStorage.setItem('sunclock_dst', manualDstSaved ? 'true' : 'false');
                 dstOverrideState = manualDstSaved;
                 userTouchedDst = true;
+                startedWithAutoDst = false;
             } else {
                 dstOverrideState = null;
                 userTouchedDst = false;
+                startedWithAutoDst = true;
             }
 
             lastUpdateMs = performance.now();
@@ -1600,8 +1634,10 @@
 
             userTouchedDst = true;
             dstOverrideState = isChecked;
-            localStorage.setItem('sunclock_auto_dst', 'false');
-            localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
+            if (!startedWithAutoDst) {
+                localStorage.setItem('sunclock_auto_dst', 'false');
+                localStorage.setItem('sunclock_dst', isChecked ? 'true' : 'false');
+            }
             updateDstModeIndicator();
 
             if (prevDst !== isChecked) {
@@ -1712,7 +1748,10 @@
             customTimeOffsetMs = 0;
             dstOverrideState = null;
             userTouchedDst = false;
-            localStorage.setItem('sunclock_auto_dst', 'true');
+            if (!startedWithAutoDst) {
+                localStorage.setItem('sunclock_auto_dst', 'true');
+                startedWithAutoDst = true;
+            }
             lastUpdateMs = performance.now();
             updateTimeForLocation();
             syncManualDstCheckbox(getCurrentDstState());
