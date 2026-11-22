@@ -451,6 +451,52 @@
             display: flex;
         }
 
+        /* Barra in basso Sorgere / Tramontare del Sole dentro la striscia */
+        .strip-sun-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 2px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.88);
+            border: 1px solid #334155;
+            font-size: 0.84rem;
+            font-weight: bold;
+            color: #facc15;
+            line-height: 1.25;
+            text-shadow: none !important;
+            -webkit-text-stroke: 0px transparent !important;
+        }
+        .strip-sun-bar span {
+            color: #39ff14;
+            font-size: 0.92rem;
+            font-weight: bold;
+        }
+
+        /* Barra in basso Sorgere / Tramontare della Luna dentro la schermata della Luna */
+        .moon-modal-rise-set-bar {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #e2e8f0;
+            line-height: 1.25;
+        }
+        .moon-modal-rise-set-bar span {
+            color: #ffffff;
+            font-size: 0.96rem;
+            font-weight: bold;
+        }
+
         /* Barra compatta su una riga per Anno, Mese e Oggi */
         .strip-year-bar {
             display: flex;
@@ -799,7 +845,7 @@
                 </div>
             </div>
 
-            <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con selettori Anno/Mese, tasto Oggi, cursori laterali e orologio con frecce sotto -->
+            <!-- Vista alternativa: Striscia Annuale (1 Gen - 31 Dic) con selettori Anno/Mese, tasto Oggi, cursori laterali, orologio e barra Sole in basso -->
             <div id="panel-strip-body">
                 <div class="strip-year-bar">
                     <div class="strip-ctrl-group">
@@ -828,6 +874,12 @@
                     <button type="button" id="strip-time-prev" class="strip-year-step" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
                     <div id="strip-clock-readout" onclick="const t = document.getElementById('input-time'); if (t && typeof t.showPicker === 'function') t.showPicker();" title="Imposta ora">00:00:00</div>
                     <button type="button" id="strip-time-next" class="strip-year-step" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
+                </div>
+
+                <!-- Barra in basso Sorgere / Tramontare del Sole nella striscia -->
+                <div id="strip-sun-bar" class="strip-sun-bar">
+                    <div>☀️ Sorge (sole):<br><span id="strip-txt-sunrise">--:--</span></div>
+                    <div>🌅 Tramonta (sole):<br><span id="strip-txt-sunset">--:--</span></div>
                 </div>
             </div>
         </div>
@@ -876,6 +928,12 @@
                     <span style="font-size: 0.85rem; font-weight: bold; width: 55px;">Ore</span>
                     <button class="moon-step-btn" onclick="changeHour(1)">+1h ▶</button>
                 </div>
+            </div>
+
+            <!-- Barra in basso Sorgere / Tramontare della Luna nella schermata della Luna -->
+            <div id="moon-modal-rise-set-bar" class="moon-modal-rise-set-bar">
+                <div>🌙 Sorge (luna):<br><span id="modal-moon-rise">--:--</span></div>
+                <div>🌘 Tramonta (luna):<br><span id="modal-moon-set">--:--</span></div>
             </div>
 
             <button onclick="resetToNow();" style="width: 100%; margin-top: 15px; padding: 10px; background: #3b82f6; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Torna ad Adesso</button>
@@ -1999,8 +2057,16 @@
                 <div style="font-size: 0.90rem; opacity: 0.9; margin-top: 2px;">${fusoText}</div>
             `;
 
-            document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
-            document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+            const sunriseFormatted = formatTime(cachedTimes.sunrise);
+            const sunsetFormatted = formatTime(cachedTimes.sunset);
+
+            document.getElementById('txt-sunrise').innerText = sunriseFormatted;
+            document.getElementById('txt-sunset').innerText = sunsetFormatted;
+
+            const stripSunriseEl = document.getElementById('strip-txt-sunrise');
+            const stripSunsetEl = document.getElementById('strip-txt-sunset');
+            if (stripSunriseEl) stripSunriseEl.innerText = sunriseFormatted;
+            if (stripSunsetEl) stripSunsetEl.innerText = sunsetFormatted;
         }
 
         function timeToHours(date) {
@@ -2414,6 +2480,8 @@
             const phaseNameEl = document.getElementById('moon-phase-name');
             const riseEl = document.getElementById('moon-rise');
             const setEl = document.getElementById('moon-set');
+            const modalRiseEl = document.getElementById('modal-moon-rise');
+            const modalSetEl = document.getElementById('modal-moon-set');
             const phase = illumination.phase;
 
             let phaseName = "";
@@ -2427,9 +2495,14 @@
             else if (phase < 0.78) { phaseName = "Ultimo Quarto"; }
             else { phaseName = "Calante"; }
 
+            const riseFormatted = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
+            const setFormatted = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+
             if (phaseNameEl) phaseNameEl.innerText = `${phaseName} (${Math.round(illumination.fraction * 100)}%)`;
-            if (riseEl) riseEl.innerText = isValidDate(moonTimes.rise) ? formatTime(moonTimes.rise) : "--:--";
-            if (setEl) setEl.innerText = isValidDate(moonTimes.set) ? formatTime(moonTimes.set) : "--:--";
+            if (riseEl) riseEl.innerText = riseFormatted;
+            if (setEl) setEl.innerText = setFormatted;
+            if (modalRiseEl) modalRiseEl.innerText = riseFormatted;
+            if (modalSetEl) modalSetEl.innerText = setFormatted;
 
             drawRealisticMoon('moon-canvas', illumination, 24);
             drawRealisticMoon('moon-clock-canvas', illumination, 32);
