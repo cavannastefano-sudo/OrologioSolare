@@ -116,7 +116,6 @@
             flex-grow: 1;
             border: none;
             z-index: 1;
-            background: #0b1120;
         }
         #status-msg {
             width: 100%;
@@ -165,49 +164,20 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Mappa fusi orari come livello base e come sovrapposizione opzionale
-        const timeZoneImageUrl = 'https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif';
-        const timeZoneBounds = [[-85, -180], [85, 180]];
-
-        const fusiOrariBase = L.imageOverlay(timeZoneImageUrl, timeZoneBounds, {
-            opacity: 1.0,
-            interactive: false,
-            attribution: 'Mappa fusi orari: carte-monde.org'
-        });
-
-        const fusiOrariOverlay = L.imageOverlay(timeZoneImageUrl, timeZoneBounds, {
-            opacity: 0.72,
-            interactive: false,
-            attribution: 'Mappa fusi orari: carte-monde.org'
-        });
-
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        let initialLayer = topo;
-        if (savedLayerName === 'Mappa Chiara') {
-            initialLayer = chiara;
-        } else if (savedLayerName === 'Fusi Orari') {
-            initialLayer = fusiOrariBase;
-        }
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
-            maxBounds: [[-90, -180], [90, 180]],
-            maxBoundsViscosity: 0.6,
-            layers: [initialLayer]
+            layers: [initialLayer] 
         });
 
         const baseMaps = {
             "Topografica": topo,
-            "Mappa Chiara": chiara,
-            "Fusi Orari": fusiOrariBase
+            "Mappa Chiara": chiara
         };
-
-        const overlayMaps = {
-            "Sovrapponi Fusi Orari": fusiOrariOverlay
-        };
-
-        L.control.layers(baseMaps, overlayMaps).addTo(map);
+        L.control.layers(baseMaps).addTo(map);
 
         let geojsonLayer = null;
         let currentHoverLat = null;
@@ -461,13 +431,13 @@
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
 
-            if (e.name === "Mappa Chiara") {
-                if (geojsonLayer && !map.hasLayer(geojsonLayer)) {
-                    geojsonLayer.addTo(map);
-                }
-            } else {
+            if (e.name === "Topografica") {
                 if (geojsonLayer && map.hasLayer(geojsonLayer)) {
-                    map.removeLayer(geojsonLayer);
+                    map.removeLayer(geojsonLayer); 
+                }
+            } else if (e.name === "Mappa Chiara") {
+                if (geojsonLayer && !map.hasLayer(geojsonLayer)) {
+                    geojsonLayer.addTo(map); 
                 }
             }
         });
