@@ -289,7 +289,6 @@ function evaluateDstByRule(rule, year, month, day, hour = 12, minute = 0, second
     }
 
     if (rule === 'au') {
-        // Prima domenica di ottobre -> prima domenica di aprile (emisfero sud)
         const octFirst = getNthSundayOfMonth(year, 9, 1);
         const aprFirst = getNthSundayOfMonth(year, 3, 1);
         if (month > 9 || month < 3) return true;
@@ -307,7 +306,6 @@ function evaluateDstByRule(rule, year, month, day, hour = 12, minute = 0, second
     }
 
     if (rule === 'nz') {
-        // Ultima domenica di settembre -> prima domenica di aprile
         const sepLast = getLastSundayOfMonth(year, 8);
         const aprFirst = getNthSundayOfMonth(year, 3, 1);
         if (month > 8 || month < 3) return true;
@@ -360,7 +358,6 @@ function getDstTransitionHoursForRule(rule, year, month, day) {
     return null;
 }
 
-// Determina se l'ora locale rappresentata nei campi UTC di `refDate` è in ora legale
 function isDstForLocalClock(refDate) {
     if (urlParams.has('dst')) {
         return urlParams.get('dst') === 'true';
@@ -388,7 +385,6 @@ function isDstForLocalClock(refDate) {
     );
 }
 
-// Applica la transizione esatta quando l'orologio avanza in base alla regola del fuso
 function applyDstTransitionWhenAdvancing(prevDate, nextDate) {
     if (urlParams.has('dst')) return { date: nextDate, dstChanged: false };
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -2437,6 +2433,29 @@ function toggleSettingsModal(show) {
     }
     document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
 }
+
+function toggleTimeZoneMapModal(show) {
+    const modal = document.getElementById('modal-tz-map');
+    if (!modal) return;
+    if (show) {
+        const settingsModal = document.getElementById('modal-settings');
+        if (settingsModal) {
+            settingsModal.style.display = 'none';
+        }
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
+    }
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const tzMapModal = document.getElementById('modal-tz-map');
+        if (tzMapModal && tzMapModal.style.display === 'flex') {
+            toggleTimeZoneMapModal(false);
+        }
+    }
+});
 
 function getDstRuleSummaryList() {
     return [
