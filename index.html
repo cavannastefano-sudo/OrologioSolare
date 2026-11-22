@@ -595,12 +595,6 @@
             width: 100%; padding: 6px 8px; background: #0f172a;
             border: 1px solid #475569; color: #fff; border-radius: 6px; box-sizing: border-box;
         }
-        .form-group input[readonly] {
-            background: #1e293b;
-            color: #38bdf8;
-            border-color: #334155;
-            cursor: not-allowed;
-        }
     </style>
 </head>
 <body>
@@ -819,13 +813,21 @@
 
             <hr style="border: 0; border-top: 1px solid #334155; margin: 12px 0;">
 
-            <div class="form-group">
-                <label>Latitudine:</label>
-                <input type="number" step="any" id="input-lat" value="45.05" readonly>
-            </div>
-            <div class="form-group">
-                <label>Longitudine:</label>
-                <input type="number" step="any" id="input-lon" value="9.69" readonly>
+            <div class="form-group" style="background: #0f172a; padding: 12px; border-radius: 10px; border: 1px solid #334155;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <span style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.6px; color: #94a3b8; font-weight: bold;">📍 Coordinate attuali</span>
+                    <span id="settings-tz-badge" style="font-size: 0.76rem; color: #facc15; background: rgba(250, 204, 21, 0.12); border: 1px solid rgba(250, 204, 21, 0.35); padding: 2px 7px; border-radius: 999px; font-weight: bold;">UTC +1</span>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;">
+                    <div style="background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 8px 10px; text-align: center;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 2px;">Latitudine</div>
+                        <div id="settings-lat-display" style="font-size: 1.15rem; font-weight: bold; color: #38bdf8; letter-spacing: 0.3px;">45,05° N</div>
+                    </div>
+                    <div style="background: #1e293b; border: 1px solid #475569; border-radius: 8px; padding: 8px 10px; text-align: center;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; margin-bottom: 2px;">Longitudine</div>
+                        <div id="settings-lon-display" style="font-size: 1.15rem; font-weight: bold; color: #39ff14; letter-spacing: 0.3px;">9,69° E</div>
+                    </div>
+                </div>
             </div>
             
             <div style="margin-top: 15px;">
