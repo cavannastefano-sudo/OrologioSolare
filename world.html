@@ -116,14 +116,7 @@
             flex-grow: 1;
             border: none;
             z-index: 1;
-            background: #000000;
         }
-
-        /* Rende l'immagine dei fusi ben visibile e nitida su web e mobile */
-        .leaflet-image-layer.tz-image-layer {
-            image-rendering: auto;
-        }
-
         #status-msg {
             width: 100%;
             padding: 9px 12px;
@@ -171,96 +164,20 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Mappa fusi orari come livello singolo (mai sovrapposto) e proporzionato all'immagine reale
-        const timeZoneImageUrl = 'https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif';
-        let timeZoneBounds = L.latLngBounds([[-65, -180], [75, 180]]);
-
-        const fusiOrariBase = L.imageOverlay(timeZoneImageUrl, timeZoneBounds, {
-            opacity: 1.0,
-            interactive: false,
-            className: 'tz-image-layer',
-            attribution: 'Mappa fusi orari: carte-monde.org'
-        });
-
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        let initialLayer = topo;
-        if (savedLayerName === 'Mappa Chiara') {
-            initialLayer = chiara;
-        } else if (savedLayerName === 'Fusi Orari') {
-            initialLayer = fusiOrariBase;
-        }
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
         const map = L.map('map', {
-            center: [10, 0],
+            center: [20, 0],
             zoom: 2,
-            minZoom: 1,
-            maxZoom: 18,
-            layers: [initialLayer]
+            layers: [initialLayer] 
         });
 
         const baseMaps = {
             "Topografica": topo,
-            "Mappa Chiara": chiara,
-            "Fusi Orari": fusiOrariBase
+            "Mappa Chiara": chiara
         };
-
         L.control.layers(baseMaps).addTo(map);
-
-        // Calcola i bounds mantenendo il rapporto reale dell'immagine e la larghezza ampia su web e mobile
-        function fitTimeZoneImageToAspect(natW, natH) {
-            if (!natW || !natH) return;
-            const aspect = natW / natH;
-
-            const lonMin = -180;
-            const lonMax = 180;
-            const spanLon = lonMax - lonMin;
-
-            const spanLat = Math.min(165, Math.max(85, spanLon / aspect));
-            const latCenter = 8;
-            const latMin = Math.max(-85, latCenter - spanLat / 2);
-            const latMax = Math.min(85, latCenter + spanLat / 2);
-
-            timeZoneBounds = L.latLngBounds([[latMin, lonMin], [latMax, lonMax]]);
-            fusiOrariBase.setBounds(timeZoneBounds);
-
-            if (map.hasLayer(fusiOrariBase)) {
-                const isMobile = window.innerWidth <= 768;
-                map.setView([latCenter, 0], isMobile ? 1 : 2, { animate: false });
-                if (!isMobile) {
-                    map.fitBounds(timeZoneBounds, { padding: [8, 8], animate: false });
-                }
-            }
-        }
-
-        const tzProbeImg = new Image();
-        tzProbeImg.onload = function() {
-            fitTimeZoneImageToAspect(tzProbeImg.naturalWidth, tzProbeImg.naturalHeight);
-        };
-        tzProbeImg.src = timeZoneImageUrl;
-
-        // Converte un punto cliccato sopra l'immagine dei fusi orari nelle coordinate reali (lat, lon)
-        function resolveClickLatLng(latlng) {
-            if (!map.hasLayer(fusiOrariBase) || !timeZoneBounds.contains(latlng)) {
-                return { lat: latlng.lat, lon: latlng.lng };
-            }
-
-            const nw = map.latLngToLayerPoint(timeZoneBounds.getNorthWest());
-            const se = map.latLngToLayerPoint(timeZoneBounds.getSouthEast());
-            const pt = map.latLngToLayerPoint(latlng);
-
-            const w = se.x - nw.x;
-            const h = se.y - nw.y;
-            if (w <= 0 || h <= 0) {
-                return { lat: latlng.lat, lon: latlng.lng };
-            }
-
-            const u = Math.max(0, Math.min(1, (pt.x - nw.x) / w));
-            const v = Math.max(0, Math.min(1, (pt.y - nw.y) / h));
-
-            const lon = -180 + (u * 360);
-            const lat = 85 - (v * 170);
-            return { lat, lon };
-        }
 
         let geojsonLayer = null;
         let currentHoverLat = null;
@@ -419,9 +336,8 @@
         }
 
         map.on('mousemove', (e) => {
-            const resolved = resolveClickLatLng(e.latlng);
-            currentHoverLat = resolved.lat;
-            currentHoverLon = resolved.lon;
+            currentHoverLat = e.latlng.lat;
+            currentHoverLon = e.latlng.lng;
             updateHeaderTime();
         });
 
@@ -497,8 +413,7 @@
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
                             L.DomEvent.stopPropagation(e);
-                            const resolved = resolveClickLatLng(e.latlng);
-                            handleMapClick(resolved.lat, resolved.lon);
+                            handleMapClick(e.latlng.lat, e.latlng.lng);
                         });
                     }
                 });
@@ -516,24 +431,19 @@
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
 
-            if (e.name === "Mappa Chiara") {
-                if (geojsonLayer && !map.hasLayer(geojsonLayer)) {
-                    geojsonLayer.addTo(map);
-                }
-            } else {
+            if (e.name === "Topografica") {
                 if (geojsonLayer && map.hasLayer(geojsonLayer)) {
-                    map.removeLayer(geojsonLayer);
+                    map.removeLayer(geojsonLayer); 
                 }
-            }
-
-            if (e.name === "Fusi Orari" && tzProbeImg.naturalWidth && tzProbeImg.naturalHeight) {
-                fitTimeZoneImageToAspect(tzProbeImg.naturalWidth, tzProbeImg.naturalHeight);
+            } else if (e.name === "Mappa Chiara") {
+                if (geojsonLayer && !map.hasLayer(geojsonLayer)) {
+                    geojsonLayer.addTo(map); 
+                }
             }
         });
 
         map.on('click', (e) => {
-            const resolved = resolveClickLatLng(e.latlng);
-            handleMapClick(resolved.lat, resolved.lon);
+            handleMapClick(e.latlng.lat, e.latlng.lng);
         });
     </script>
 </body>
