@@ -76,6 +76,22 @@ function formatCoordinatesShort(lat, lon) {
     };
 }
 
+function syncSettingsCoordsDisplay(lat = cachedLat, lon = cachedLon) {
+    const coords = formatCoordinatesShort(lat, lon);
+    const latEl = document.getElementById('settings-lat-display');
+    const lonEl = document.getElementById('settings-lon-display');
+    const tzBadgeEl = document.getElementById('settings-tz-badge');
+
+    if (latEl) latEl.innerText = coords.latText;
+    if (lonEl) lonEl.innerText = coords.lonText;
+
+    if (tzBadgeEl) {
+        const offset = getBaseLocationOffset();
+        const sign = offset >= 0 ? '+' : '';
+        tzBadgeEl.innerText = `UTC ${sign}${offset}`;
+    }
+}
+
 function getLastSundayOfMonth(year, month) {
     const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
     const dayOfWeek = lastDay.getUTCDay(); // 0 = Domenica
@@ -1250,11 +1266,7 @@ async function initClock() {
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
 
-        const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
-        const latInput = document.getElementById('input-lat');
-        const lonInput = document.getElementById('input-lon');
-        if (latInput) latInput.value = shortCoords.latNumStr;
-        if (lonInput) lonInput.value = shortCoords.lonNumStr;
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
         lastUpdateMs = performance.now();
         updateTimeForLocation();
@@ -1273,11 +1285,7 @@ async function initClock() {
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
 
-        const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
-        const latInput = document.getElementById('input-lat');
-        const lonInput = document.getElementById('input-lon');
-        if (latInput) latInput.value = shortCoords.latNumStr;
-        if (lonInput) lonInput.value = shortCoords.lonNumStr;
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
         lastUpdateMs = performance.now();
         updateTimeForLocation();
@@ -1436,6 +1444,7 @@ function applyTimezonePreset() {
     drawMinuteRingSafe();
     drawClockNumbers();
     updatePageBackground(cachedTimes);
+    syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     adaptBottomPanelHeight(false);
     toggleSettingsModal(false);
@@ -1542,11 +1551,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     isTimezoneOnlyMode = false;
     dstOverrideState = null;
 
-    const shortCoords = formatCoordinatesShort(cachedLat, cachedLon);
-    const latInput = document.getElementById('input-lat');
-    const lonInput = document.getElementById('input-lon');
-    if (latInput) latInput.value = shortCoords.latNumStr;
-    if (lonInput) lonInput.value = shortCoords.lonNumStr;
+    syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     let placeName = fallbackName;
     try {
@@ -1792,6 +1797,7 @@ function updateSunClock(lat, lon) {
 
     document.getElementById('txt-sunrise').innerText = formatTime(cachedTimes.sunrise);
     document.getElementById('txt-sunset').innerText = formatTime(cachedTimes.sunset);
+    syncSettingsCoordsDisplay(lat, lon);
     adaptBottomPanelHeight(false);
 }
 
@@ -2363,6 +2369,9 @@ function toggleTimesModal(show) {
 }
 
 function toggleSettingsModal(show) {
+    if (show) {
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
+    }
     document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
 }
 
