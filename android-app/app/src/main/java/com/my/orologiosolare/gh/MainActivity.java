@@ -1,4 +1,4 @@
-package com.my.orologiosolare.pro;
+package com.my.orologiosolare.gh;
 
 import android.content.Intent;
 import android.graphics.Color;
@@ -21,7 +21,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
-import com.my.orologiosolare.pro.databinding.ActivityMainBinding;
+import com.my.orologiosolare.gh.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
 
