@@ -6,7 +6,6 @@ on:
     paths:
       - 'android-app/**'
       - '.github/workflows/build-apk.yml'
-      - 'IMG_20260808_102945.jpg'
 
 jobs:
   build:
@@ -24,11 +23,6 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-
-      - name: Copy app icon from root
-        run: |
-          mkdir -p android-app/app/src/main/res/drawable
-          cp IMG_20260808_102945.jpg android-app/app/src/main/res/drawable/app_icon.jpg
 
       - name: Generate Gradle Wrapper & Build Debug APK
         working-directory: android-app
