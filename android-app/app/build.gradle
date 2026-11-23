@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace 'com.my.orologiosolare.pro'
+    namespace 'com.my.orologiosolare.gh'
     compileSdk 36
 
     defaultConfig {
-        applicationId "com.my.orologiosolare.pro"
+        applicationId "com.my.orologiosolare.gh"
         minSdk 21
         targetSdk 36
         versionCode 1
