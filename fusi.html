@@ -181,7 +181,6 @@
             background: #1d4ed8;
         }
 
-        /* Rettangolo mappa ampio */
         .map-viewport {
             position: relative;
             flex: 1 1 auto;
@@ -373,7 +372,7 @@
 
         <div id="map-viewport" class="map-viewport">
             <div class="map-status-banner">
-                <span id="map-status-text">Trascina col dito o zooma • Doppio tocco per posizione</span>
+                <span id="map-status-text">Trascina col dito o zooma • Doppio tocco per luogo</span>
             </div>
             <canvas id="mapCanvas"></canvas>
             <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
@@ -416,6 +415,7 @@
         let selectedName = params.get('city') ? decodeURIComponent(params.get('city')) : 'Piacenza';
         let selectedTz = 'Europe/Rome';
         let selectedOffsetHours = 1;
+        let reverseLookupSeq = 0;
 
         const QUICK_CITIES = [
             { name: 'Piacenza', lat: 45.0526, lon: 9.6930 },
@@ -455,6 +455,71 @@
         let lastTapTime = 0;
         let activePointers = new Map();
         let lastPinchDist = null;
+
+        function formatCoordLabel(lat, lon) {
+            const latDir = lat >= 0 ? 'N' : 'S';
+            const lonDir = lon >= 0 ? 'E' : 'W';
+            return `${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}`;
+        }
+
+        function formatExactPlaceFromNominatim(data, lat, lon, tzName) {
+            if (!data || typeof data !== 'object') return null;
+            const addr = data.address || {};
+            const locality =
+                addr.city ||
+                addr.town ||
+                addr.village ||
+                addr.municipality ||
+                addr.suburb ||
+                addr.hamlet ||
+                addr.county ||
+                addr.state ||
+                addr.ocean ||
+                addr.sea ||
+                '';
+            const country = addr.country || '';
+
+            if (locality && country && locality.toLowerCase() !== country.toLowerCase()) {
+                return `${locality}, ${country}`;
+            }
+            if (locality) return locality;
+            if (country) return country;
+            if (data.display_name) {
+                const parts = data.display_name.split(',').map(s => s.trim()).filter(Boolean);
+                if (parts.length >= 2) return `${parts[0]}, ${parts[parts.length - 1]}`;
+                if (parts.length === 1) return parts[0];
+            }
+            if (tzName && tzName.includes('/')) {
+                const region = tzName.split('/').pop().replace(/_/g, ' ');
+                if (region && region !== 'UTC') return region;
+            }
+            return formatCoordLabel(lat, lon);
+        }
+
+        async function resolveExactPlaceName(lat, lon, tzName) {
+            const seq = ++reverseLookupSeq;
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&addressdetails=1&accept-language=it&lat=${encodeURIComponent(lat.toFixed(5))}&lon=${encodeURIComponent(lon.toFixed(5))}`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (seq !== reverseLookupSeq) return;
+                const exactName = formatExactPlaceFromNominatim(data, lat, lon, tzName);
+                if (exactName) {
+                    selectedName = exactName;
+                    document.getElementById('selected-place-name').innerText = selectedName;
+                }
+            } catch (e) {
+                if (seq !== reverseLookupSeq) return;
+                if (tzName && tzName.includes('/')) {
+                    const region = tzName.split('/').pop().replace(/_/g, ' ');
+                    if (region && region !== 'UTC' && selectedName === formatCoordLabel(lat, lon)) {
+                        selectedName = region;
+                        document.getElementById('selected-place-name').innerText = selectedName;
+                    }
+                }
+            }
+        }
 
         function getBaseMapRect() {
             const cw = canvas.width;
@@ -635,19 +700,20 @@
             return m > 0 ? `UTC ${sign}${h}:${String(m).padStart(2, '0')}` : `UTC ${sign}${h}`;
         }
 
-        function updateInfoCard() {
+        function updateInfoCard(lookupExactPlace = false) {
             const info = resolveTimezoneInfo(selectedLat, selectedLon);
             selectedTz = info.tzName;
             selectedOffsetHours = info.offsetHours;
 
-            const latDir = selectedLat >= 0 ? 'N' : 'S';
-            const lonDir = selectedLon >= 0 ? 'E' : 'W';
-
             document.getElementById('selected-place-name').innerText = selectedName;
             document.getElementById('selected-tz-badge').innerText = `${formatOffset(selectedOffsetHours).replace(' ', '')} • ${selectedTz}`;
-            document.getElementById('selected-coords').innerText = `${Math.abs(selectedLat).toFixed(2)}°${latDir}, ${Math.abs(selectedLon).toFixed(2)}°${lonDir}`;
+            document.getElementById('selected-coords').innerText = formatCoordLabel(selectedLat, selectedLon);
             document.getElementById('selected-offset').innerText = formatOffset(selectedOffsetHours);
             updateLocalClockReadout();
+
+            if (lookupExactPlace) {
+                resolveExactPlaceName(selectedLat, selectedLon, selectedTz);
+            }
         }
 
         function updateLocalClockReadout() {
@@ -659,10 +725,10 @@
             document.getElementById('selected-local-time').innerText = `${hh}:${mm}:${ss}`;
         }
 
-        function selectCoordinates(lat, lon, name, centerView = false) {
+        function selectCoordinates(lat, lon, name, centerView = false, lookupExactPlace = false) {
             selectedLat = Math.max(-85, Math.min(85, lat));
             selectedLon = Math.max(-180, Math.min(180, lon));
-            selectedName = name || `Punto (${selectedLat.toFixed(2)}, ${selectedLon.toFixed(2)})`;
+            selectedName = name || formatCoordLabel(selectedLat, selectedLon);
 
             if (centerView) {
                 const base = getBaseMapRect();
@@ -675,7 +741,7 @@
                 clampPan();
             }
 
-            updateInfoCard();
+            updateInfoCard(lookupExactPlace);
             drawMap();
         }
 
@@ -754,9 +820,9 @@
             }
 
             if (matchedCity) {
-                selectCoordinates(matchedCity.lat, matchedCity.lon, matchedCity.name, false);
+                selectCoordinates(matchedCity.lat, matchedCity.lon, matchedCity.name, false, true);
             } else {
-                selectCoordinates(ll.lat, ll.lon, null, false);
+                selectCoordinates(ll.lat, ll.lon, formatCoordLabel(ll.lat, ll.lon), false, true);
             }
         }
 
@@ -855,18 +921,19 @@
 
             const localMatch = QUICK_CITIES.find(c => c.name.toLowerCase().includes(q.toLowerCase()));
             if (localMatch) {
-                selectCoordinates(localMatch.lat, localMatch.lon, localMatch.name, true);
+                selectCoordinates(localMatch.lat, localMatch.lon, localMatch.name, true, false);
                 return;
             }
 
             try {
-                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`;
                 const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     const item = data[0];
-                    const shortName = item.display_name.split(',')[0].trim();
-                    selectCoordinates(parseFloat(item.lat), parseFloat(item.lon), shortName, true);
+                    const parts = item.display_name.split(',').map(s => s.trim()).filter(Boolean);
+                    const exactLabel = parts.length >= 2 ? `${parts[0]}, ${parts[parts.length - 1]}` : parts[0];
+                    selectCoordinates(parseFloat(item.lat), parseFloat(item.lon), exactLabel, true, false);
                 }
             } catch (e) {
                 console.warn('Ricerca località non disponibile offline', e);
@@ -877,7 +944,7 @@
             if (!navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    selectCoordinates(pos.coords.latitude, pos.coords.longitude, 'Posizione attuale', true);
+                    selectCoordinates(pos.coords.latitude, pos.coords.longitude, formatCoordLabel(pos.coords.latitude, pos.coords.longitude), true, true);
                 },
                 () => {},
                 { enableHighAccuracy: true, timeout: 8000 }
@@ -891,7 +958,7 @@
 
         mapImg.onload = () => {
             mapLoaded = true;
-            statusText.innerText = 'Trascina col dito o zooma • Doppio tocco per posizione';
+            statusText.innerText = 'Trascina col dito o zooma • Doppio tocco per luogo';
             clampPan();
             drawMap();
         };
@@ -904,7 +971,7 @@
 
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
-        updateInfoCard();
+        updateInfoCard(!params.get('city'));
         setInterval(updateLocalClockReadout, 1000);
     </script>
 </body>
