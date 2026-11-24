@@ -239,28 +239,63 @@
         const gridGroup = L.layerGroup().addTo(map);
         const bandsGroup = L.layerGroup().addTo(map);
 
+        // Palette ad alto contrasto ordinata in modo che colori simili non siano mai vicini
+        const DISTINCT_BAND_COLORS = [
+            '#e11d48', // rosso cremisi
+            '#0284c7', // azzurro intenso
+            '#16a34a', // verde prato
+            '#eab308', // giallo vivo
+            '#9333ea', // viola
+            '#ea580c', // arancione bruciato
+            '#06b6d4', // ciano
+            '#d946ef', // magenta
+            '#84cc16', // lime
+            '#f43f5e', // rosa corallo
+            '#2563eb', // blu reale
+            '#10b981', // verde smeraldo
+            '#f59e0b', // ambra
+            '#7c3aed', // indaco-viola
+            '#ef4444', // rosso vivo
+            '#14b8a6', // verde acqua
+            '#a855f7', // lilla acceso
+            '#eab308', // giallo oro
+            '#0ea5e9', // blu cielo
+            '#22c55e', // verde brillante
+            '#f97316', // arancione chiaro
+            '#6366f1', // blu indaco
+            '#ec4899', // rosa acceso
+            '#3b82f6', // blu cobalto
+            '#65a30d'  // verde oliva vivo
+        ];
+
+        function getDistinctBandColor(index) {
+            // Salta di 7 posizioni nell'array per garantire che fasce adiacenti abbiano colori nettamente diversi
+            const pick = (index * 7) % DISTINCT_BAND_COLORS.length;
+            return DISTINCT_BAND_COLORS[pick];
+        }
+
         // Griglia di meridiani e paralleli ogni 15° sopra la mappa
         for (let lon = -180; lon <= 180; lon += 15) {
             L.polyline([[-80, lon], [80, lon]], {
-                color: lon === 0 ? '#facc15' : '#38bdf8',
+                color: lon === 0 ? '#facc15' : '#f8fafc',
                 weight: lon === 0 ? 2 : 1,
-                opacity: 0.45,
+                opacity: 0.55,
                 dashArray: lon === 0 ? null : '4 4'
             }).addTo(gridGroup);
         }
         for (let lat = -75; lat <= 75; lat += 15) {
             L.polyline([[lat, -180], [lat, 180]], {
-                color: lat === 0 ? '#facc15' : '#64748b',
-                weight: lat === 0 ? 1.5 : 0.8,
-                opacity: 0.35
+                color: lat === 0 ? '#facc15' : '#cbd5e1',
+                weight: lat === 0 ? 1.5 : 0.9,
+                opacity: 0.45
             }).addTo(gridGroup);
         }
 
-        // Fasce orarie teoriche ogni 15° (da -12 a +12)
+        // Fasce orarie teoriche ogni 15° (da -12 a +12) con colori ben distinti
         for (let offset = -12; offset <= 12; offset++) {
             const west = offset * 15 - 7.5;
             const east = offset * 15 + 7.5;
-            const hue = ((offset + 12) * 14) % 360;
+            const bandColor = getDistinctBandColor(offset + 12);
 
             const poly = L.polygon([
                 [-75, Math.max(-180, west)],
@@ -269,9 +304,9 @@
                 [-75, Math.min(180, east)]
             ], {
                 color: '#0f172a',
-                weight: 1,
-                fillColor: `hsl(${hue}, 70%, 50%)`,
-                fillOpacity: 0.14
+                weight: 1.5,
+                fillColor: bandColor,
+                fillOpacity: 0.28
             }).addTo(bandsGroup);
 
             poly.on('click', (e) => {
@@ -419,7 +454,6 @@
             } catch (e) {}
         }
 
-        // Griglia rapida di scostamenti UTC sulla destra
         const quickOffsets = [
             { label: 'UTC-8', lat: 34.05, lon: -118.24, city: 'Los Angeles, USA' },
             { label: 'UTC-5', lat: 40.71, lon: -74.01, city: 'New York, USA' },
