@@ -200,14 +200,18 @@
             position: absolute;
             top: 8px;
             left: 8px;
+            right: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
             background: rgba(2, 6, 23, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.35);
-            color: #cbd5e1;
+            color: #e2e8f0;
             font-size: 0.73rem;
             font-weight: 600;
             padding: 4px 8px;
             border-radius: 6px;
-            pointer-events: none;
             z-index: 5;
         }
 
@@ -348,7 +352,9 @@
         </div>
 
         <div id="map-viewport" class="map-viewport">
-            <div id="map-status" class="map-status-banner">Caricamento mappa time-zones3000.gif...</div>
+            <div class="map-status-banner">
+                <span id="map-status-text">Caricamento time-zones3000.gif...</span>
+            </div>
             <canvas id="mapCanvas"></canvas>
             <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
         </div>
@@ -382,7 +388,7 @@
     </div>
 
     <script>
-        const MAP_IMAGE_URL = 'https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif';
+        const MAP_IMAGE_FILE = 'time-zones3000.gif';
 
         const params = new URLSearchParams(window.location.search);
         let selectedLat = params.get('lat') ? parseFloat(params.get('lat')) : 45.05;
@@ -409,10 +415,9 @@
         const viewport = document.getElementById('map-viewport');
         const canvas = document.getElementById('mapCanvas');
         const ctx = canvas.getContext('2d');
-        const statusBanner = document.getElementById('map-status');
+        const statusText = document.getElementById('map-status-text');
 
         const mapImg = new Image();
-        mapImg.crossOrigin = 'anonymous';
         let mapLoaded = false;
 
         let scale = 1.0;
@@ -430,7 +435,6 @@
         let activePointers = new Map();
         let lastPinchDist = null;
 
-        // Calcola il rettangolo base in cui l'immagine è adattata dentro il canvas (letterbox/cover bilanciato)
         function getBaseMapRect() {
             const cw = canvas.width;
             const ch = canvas.height;
@@ -537,7 +541,6 @@
             drawMap();
         }
 
-        // Converte coordinate geografiche (lat/lon) in coordinate schermo (px/py) sulla mappa
         function latLonToScreen(lat, lon) {
             const base = getBaseMapRect();
             const mapW = base.w * scale;
@@ -550,7 +553,6 @@
             };
         }
 
-        // Converte coordinate schermo (px/py) in coordinate geografiche (lat/lon)
         function screenToLatLon(px, py) {
             const base = getBaseMapRect();
             const mapW = base.w * scale;
@@ -565,8 +567,7 @@
             const lat = 90 - clampedY * 180;
             return {
                 lat: Math.max(-85, Math.min(85, lat)),
-                lon: Math.max(-180, Math.min(180, lon)),
-                insideMap: relX >= 0 && relX <= 1 && relY >= 0 && relY <= 1
+                lon: Math.max(-180, Math.min(180, lon))
             };
         }
 
@@ -677,7 +678,6 @@
                 ctx.fillRect(drawX, drawY, drawW, drawH);
             }
 
-            // Segnaposto città principali
             QUICK_CITIES.forEach(c => {
                 const pt = latLonToScreen(c.lat, c.lon);
                 ctx.beginPath();
@@ -699,7 +699,6 @@
                 }
             });
 
-            // Marker punto selezionato
             const selPt = latLonToScreen(selectedLat, selectedLon);
             ctx.beginPath();
             ctx.arc(selPt.x, selPt.y, 12, 0, Math.PI * 2);
@@ -863,16 +862,16 @@
 
         mapImg.onload = () => {
             mapLoaded = true;
-            statusBanner.innerText = 'Mappa time-zones3000.gif caricata • Rotella/Pinch per zoom • Trascina';
+            statusText.innerText = 'time-zones3000.gif caricata • Rotella/Pinch per zoom • Trascina';
             clampPan();
             drawMap();
         };
 
         mapImg.onerror = () => {
-            statusBanner.innerText = 'Impossibile caricare time-zones3000.gif (controlla connessione o CORS)';
+            statusText.innerText = 'Errore nel caricamento di time-zones3000.gif nella repository.';
         };
 
-        mapImg.src = MAP_IMAGE_URL;
+        mapImg.src = MAP_IMAGE_FILE;
 
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
