@@ -337,7 +337,6 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Mappa Chiara predefinita all'avvio, salvo diversa scelta salvata dall'utente
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
         const initialLayer = (savedLayerName === 'Topografica') ? topo : chiara;
 
@@ -359,7 +358,6 @@
         const bandsGroup = L.layerGroup();
         let geojsonLayer = null;
 
-        // Nessun livello overlay predefinito all'avvio: solo ciò che selezioni tu viene salvato e mantenuto
         let showGrid = localStorage.getItem('sunclock_layer_grid') === 'true';
         let showBands = localStorage.getItem('sunclock_layer_bands') === 'true';
         let showCountries = localStorage.getItem('sunclock_layer_countries') === 'true';
@@ -367,12 +365,13 @@
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        const DISTINCT_BAND_COLORS = [
-            '#e11d48', '#0284c7', '#16a34a', '#eab308', '#9333ea',
-            '#ea580c', '#06b6d4', '#d946ef', '#84cc16', '#f43f5e',
-            '#2563eb', '#10b981', '#f59e0b', '#7c3aed', '#ef4444',
-            '#14b8a6', '#a855f7', '#0ea5e9', '#22c55e', '#f97316',
-            '#6366f1', '#ec4899', '#3b82f6', '#65a30d', '#f472b6'
+        // Palette simile allo screenshot (blu/indaco -> verde -> ocra/arancio) senza tinte simili tra zone vicine
+        const SCREENSHOT_PALETTE = [
+            '#3b5bdb', '#1c7ed6', '#15aabf', '#12b886', '#40c057',
+            '#82c91e', '#fab005', '#fd7e14', '#5c7cfa', '#22b8cf',
+            '#20c997', '#51cf66', '#94d82d', '#fcc419', '#ff922b',
+            '#4c6ef5', '#1098ad', '#0ca678', '#37b24d', '#74b816',
+            '#f59f00', '#e8590c', '#339af0', '#2b8a3e', '#d9480f'
         ];
 
         function getColor(name) {
@@ -381,11 +380,11 @@
             for (let i = 0; i < str.length; i++) {
                 hash = ((hash * 31) + str.charCodeAt(i)) >>> 0;
             }
-            const idx = (hash * 7) % DISTINCT_BAND_COLORS.length;
-            return DISTINCT_BAND_COLORS[idx];
+            const idx = (hash * 7) % SCREENSHOT_PALETTE.length;
+            return SCREENSHOT_PALETTE[idx];
         }
 
-        // Preparazione Griglia 15° (aggiunta alla mappa solo se selezionata)
+        // Griglia 15° (aggiunta solo se selezionata)
         for (let lon = -180; lon <= 180; lon += 15) {
             L.polyline([[-85, lon], [85, lon]], {
                 color: lon === 0 ? '#facc15' : '#64748b',
@@ -407,7 +406,13 @@
             document.getElementById('btn-grid').classList.add('active');
         }
 
-        // Preparazione Confini reali dei fusi orari (aggiunti alla mappa solo se selezionati)
+        // Livello fusi stile immagine: overlay immagine locale se presente + confini GeoJSON non dritti (zero rettangoli dritti)
+        const imageBounds = [[-85, -180], [85, 180]];
+        const screenshotOverlay = L.imageOverlay('fusi-orari.png', imageBounds, {
+            opacity: 0.55,
+            interactive: false
+        });
+
         fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('Errore caricamento confini fusi');
@@ -419,11 +424,11 @@
                     style: (feature) => {
                         const zoneName = (feature.properties && (feature.properties.tzid || feature.properties.name || feature.properties.zone)) || 'tz';
                         return {
-                            color: '#1e293b',
-                            weight: 1.2,
+                            color: '#334155',
+                            weight: 1.1,
                             opacity: 0.85,
                             fillColor: getColor(zoneName),
-                            fillOpacity: 0.34
+                            fillOpacity: 0.36
                         };
                     },
                     onEachFeature: (feature, layer) => {
@@ -434,32 +439,16 @@
                     }
                 }).addTo(bandsGroup);
 
+                screenshotOverlay.addTo(bandsGroup);
+
                 if (showBands) {
                     bandsGroup.addTo(map);
                 }
             })
             .catch(() => {
+                // Nessun rettangolo dritto: usa solo l'overlay immagine se disponibile
                 bandsGroup.clearLayers();
-                for (let offset = -12; offset <= 12; offset++) {
-                    const west = offset * 15 - 7.5;
-                    const east = offset * 15 + 7.5;
-                    const poly = L.polygon([
-                        [-85, Math.max(-180, west)],
-                        [85, Math.max(-180, west)],
-                        [85, Math.min(180, east)],
-                        [-85, Math.min(180, east)]
-                    ], {
-                        color: '#0f172a',
-                        weight: 1.5,
-                        fillColor: getColor('band_' + offset),
-                        fillOpacity: 0.28
-                    }).addTo(bandsGroup);
-
-                    poly.on('click', (e) => {
-                        handleMapClick(e.latlng.lat, e.latlng.lng);
-                    });
-                }
-
+                screenshotOverlay.addTo(bandsGroup);
                 if (showBands) {
                     bandsGroup.addTo(map);
                 }
