@@ -48,15 +48,15 @@
             align-items: center;
             width: 100%;
             min-height: 100dvh;
-            padding: 6px;
-            gap: 6px;
+            padding: 4px;
+            gap: 4px;
         }
 
         .top-bar,
         .search-row,
         .info-card {
             width: 100%;
-            max-width: 1100px;
+            max-width: 1400px;
         }
 
         .top-bar {
@@ -79,8 +79,8 @@
             color: var(--accent-cyan);
             border: 1px solid var(--accent-cyan);
             border-radius: 6px;
-            padding: 5px 9px;
-            font-size: 0.82rem;
+            padding: 4px 8px;
+            font-size: 0.8rem;
             font-weight: 700;
             text-decoration: none;
             cursor: pointer;
@@ -97,7 +97,7 @@
         }
 
         .page-title {
-            font-size: 0.96rem;
+            font-size: 0.92rem;
             font-weight: 800;
             color: var(--accent-yellow);
             letter-spacing: 0.3px;
@@ -119,15 +119,15 @@
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 5px;
-            min-width: 28px;
-            height: 26px;
-            font-size: 0.88rem;
+            min-width: 26px;
+            height: 24px;
+            font-size: 0.85rem;
             font-weight: 800;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            padding: 0 6px;
+            padding: 0 5px;
         }
 
         .btn-zoom:hover {
@@ -136,16 +136,16 @@
         }
 
         .zoom-readout {
-            min-width: 46px;
+            min-width: 44px;
             text-align: center;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             font-weight: 800;
             color: var(--accent-green);
         }
 
         .search-row {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             z-index: 20;
         }
 
@@ -156,8 +156,8 @@
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 7px;
-            padding: 6px 9px;
-            font-size: 0.85rem;
+            padding: 5px 8px;
+            font-size: 0.82rem;
             outline: none;
         }
 
@@ -170,8 +170,8 @@
             color: #ffffff;
             border: 1px solid #93c5fd;
             border-radius: 7px;
-            padding: 0 11px;
-            font-size: 0.82rem;
+            padding: 0 10px;
+            font-size: 0.8rem;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
@@ -181,13 +181,13 @@
             background: #1d4ed8;
         }
 
-        /* Rettangolo mappa ampio e reattivo */
+        /* Rettangolo mappa ampio */
         .map-viewport {
             position: relative;
             flex: 1 1 auto;
             width: 100%;
-            max-width: 1100px;
-            min-height: 54dvh;
+            max-width: 1400px;
+            min-height: 66dvh;
             border-radius: 10px;
             border: 2px solid var(--border-color);
             background: #030712;
@@ -201,7 +201,7 @@
             .map-viewport {
                 flex: 0 1 auto;
                 aspect-ratio: 2 / 1;
-                min-height: 420px;
+                min-height: 500px;
             }
         }
 
@@ -227,7 +227,7 @@
             background: rgba(2, 6, 23, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.35);
             color: #e2e8f0;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 600;
             padding: 3px 7px;
             border-radius: 6px;
@@ -242,7 +242,7 @@
             background: rgba(2, 6, 23, 0.86);
             border: 1px solid rgba(56, 189, 248, 0.45);
             color: #e2e8f0;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 700;
             padding: 3px 7px;
             border-radius: 6px;
@@ -254,10 +254,10 @@
             background: var(--panel-bg);
             border: 2px solid var(--border-color);
             border-radius: 10px;
-            padding: 7px 9px;
+            padding: 6px 8px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
             z-index: 20;
             box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.65);
         }
@@ -266,12 +266,12 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .place-title {
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             font-weight: 800;
             color: var(--accent-yellow);
         }
@@ -280,41 +280,41 @@
             background: rgba(56, 189, 248, 0.14);
             border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
-            font-size: 0.75rem;
+            font-size: 0.72rem;
             font-weight: 800;
-            padding: 2px 8px;
+            padding: 2px 7px;
             border-radius: 999px;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 5px;
-            font-size: 0.76rem;
+            gap: 4px;
+            font-size: 0.74rem;
         }
 
         .info-box {
             background: rgba(30, 41, 59, 0.75);
             border: 1px solid #334155;
-            border-radius: 7px;
-            padding: 4px 7px;
+            border-radius: 6px;
+            padding: 3px 6px;
         }
 
         .info-box small {
             display: block;
             color: #94a3b8;
-            font-size: 0.67rem;
+            font-size: 0.65rem;
             font-weight: 700;
         }
 
         .info-box strong {
             color: var(--accent-green);
-            font-size: 0.82rem;
+            font-size: 0.8rem;
         }
 
         .actions-row {
             display: flex;
-            gap: 6px;
+            gap: 5px;
         }
 
         .btn-primary-open {
@@ -323,8 +323,8 @@
             color: #ffffff;
             border: 1px solid #86efac;
             border-radius: 7px;
-            padding: 7px 10px;
-            font-size: 0.84rem;
+            padding: 6px 9px;
+            font-size: 0.82rem;
             font-weight: 800;
             cursor: pointer;
         }
@@ -338,8 +338,8 @@
             color: var(--accent-yellow);
             border: 1px solid var(--accent-yellow);
             border-radius: 7px;
-            padding: 7px 10px;
-            font-size: 0.8rem;
+            padding: 6px 9px;
+            font-size: 0.78rem;
             font-weight: 800;
             cursor: pointer;
             white-space: nowrap;
