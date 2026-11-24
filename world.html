@@ -15,8 +15,8 @@
 
     <style>
         :root {
-            --android-top-inset: 0px;
-            --android-bottom-inset: 0px;
+            --android-top-inset: 28px;
+            --android-bottom-inset: 16px;
             --safe-top: max(env(safe-area-inset-top, 0px), var(--android-top-inset));
             --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-bottom-inset));
             --system-bar-bg: #0b1120;
@@ -32,15 +32,13 @@
             padding: 0;
             width: 100%;
             max-width: 100vw;
-            height: 100dvh;
+            min-height: 100dvh;
             background: var(--system-bar-bg);
             color: #f8fafc;
             font-family: system-ui, -apple-system, sans-serif;
             overflow-x: hidden;
-            overflow-y: hidden;
         }
 
-        /* Barre solide non trasparenti per status bar (alto) e navigation bar (basso) */
         .sys-bar-top {
             position: fixed;
             top: 0;
@@ -67,7 +65,7 @@
             display: flex;
             width: 100%;
             max-width: 100%;
-            height: 100%;
+            min-height: 100dvh;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
             background: var(--system-bar-bg);
@@ -76,7 +74,7 @@
         .map-area {
             position: relative;
             flex: 1 1 auto;
-            height: 100%;
+            min-height: 320px;
             min-width: 0;
             background: var(--panel-bg);
         }
@@ -84,6 +82,7 @@
         #map {
             width: 100%;
             height: 100%;
+            min-height: 320px;
             background: var(--panel-bg);
         }
 
@@ -130,14 +129,12 @@
         .sidebar {
             width: 340px;
             max-width: 100%;
-            height: 100%;
             background: var(--panel-bg);
             border-left: 1px solid #334155;
             padding: 12px;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            overflow-y: auto;
             flex-shrink: 0;
         }
 
@@ -150,32 +147,13 @@
         }
 
         @media (max-width: 780px) {
-            html, body {
-                overflow-x: hidden;
-                overflow-y: auto;
-                height: auto;
-                min-height: 100dvh;
-            }
-
             .layout {
-                display: grid;
-                grid-template-rows: auto minmax(320px, 52dvh) auto;
-                grid-template-areas:
-                    "top"
-                    "map"
-                    "bottom";
+                display: flex;
+                flex-direction: column;
                 height: auto;
                 min-height: 100dvh;
                 width: 100%;
                 max-width: 100vw;
-            }
-
-            .map-area {
-                grid-area: map;
-                width: 100%;
-                max-width: 100vw;
-                height: 100%;
-                min-height: 320px;
             }
 
             .sidebar {
@@ -183,19 +161,28 @@
             }
 
             .sidebar-top {
-                grid-area: top;
+                order: 1;
                 background: var(--panel-bg);
-                padding: 8px;
+                padding: 6px 8px;
                 gap: 0;
                 border-bottom: 1px solid #334155;
                 width: 100%;
                 max-width: 100vw;
             }
 
+            .map-area {
+                order: 2;
+                width: 100%;
+                max-width: 100vw;
+                height: 46dvh;
+                min-height: 290px;
+                flex: 0 0 auto;
+            }
+
             .sidebar-bottom {
-                grid-area: bottom;
+                order: 3;
                 background: var(--panel-bg);
-                padding: 8px 8px 14px;
+                padding: 8px 8px 12px;
                 gap: 8px;
                 border-top: 1px solid #334155;
                 width: 100%;
@@ -332,14 +319,18 @@
 
         .search-form {
             display: flex;
+            align-items: center;
             gap: 6px;
             width: 100%;
             max-width: 100%;
+            min-height: 38px;
+            flex-shrink: 0;
         }
 
         .search-form input {
             flex: 1 1 auto;
             min-width: 0;
+            height: 36px;
             background: #0f172a;
             color: #ffffff;
             border: 1px solid #475569;
@@ -350,11 +341,12 @@
 
         .search-form button {
             flex: 0 0 auto;
+            height: 36px;
             background: #2563eb;
             color: #ffffff;
             border: none;
             border-radius: 6px;
-            padding: 6px 10px;
+            padding: 6px 12px;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
@@ -468,18 +460,18 @@
         function syncAndroidSystemBars() {
             const root = document.documentElement;
             const dpr = window.devicePixelRatio || 1;
-            let topPx = 0;
-            let bottomPx = 0;
+            let topPx = 28;
+            let bottomPx = 16;
 
             try {
                 if (window.AndroidInterface) {
                     if (typeof window.AndroidInterface.getTopInsetPx === 'function') {
                         const rawTop = Number(window.AndroidInterface.getTopInsetPx()) || 0;
-                        topPx = rawTop > 0 ? rawTop / dpr : 0;
+                        if (rawTop > 0) topPx = rawTop / dpr;
                     }
                     if (typeof window.AndroidInterface.getBottomInsetPx === 'function') {
                         const rawBottom = Number(window.AndroidInterface.getBottomInsetPx()) || 0;
-                        bottomPx = rawBottom > 0 ? rawBottom / dpr : 0;
+                        if (rawBottom > 0) bottomPx = rawBottom / dpr;
                     }
                     if (typeof window.AndroidInterface.updateColors === 'function') {
                         window.AndroidInterface.updateColors('#0b1120');
