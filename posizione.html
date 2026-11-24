@@ -758,8 +758,8 @@
             background: rgba(0,0,0,0.6); z-index: 100; justify-content: center; align-items: center;
         }
         .modal-content {
-            background: #1e293b; padding: 20px; border-radius: 12px;
-            width: 90%; max-width: 380px; max-height: 85vh; overflow-y: auto;
+            background: #1e293b; padding: 16px; border-radius: 12px;
+            width: 92%; max-width: 380px; max-height: 88vh; overflow-y: auto;
             border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; color: #f8fafc;
         }
         .moon-modal-content {
@@ -771,7 +771,7 @@
         }
         .modal-header {
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px;
+            border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 10px;
         }
         .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
         .close-btn-red {
@@ -783,8 +783,8 @@
             background: #2b3544; color: #ffffff; border: none;
             padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; font-weight: bold; cursor: pointer;
         }
-        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        table.times-table th, table.times-table td { padding: 6px 8px; border-bottom: 1px solid #334155; text-align: left; }
+        table.times-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        table.times-table th, table.times-table td { padding: 4px 8px; border-bottom: 1px solid #334155; text-align: left; }
         table.times-table th { color: #38bdf8; }
     </style>
 </head>
@@ -903,13 +903,12 @@
 
     <!-- Tendina 1: Tutti i tempi solari e lunari -->
     <div id="modal-times" class="modal" onclick="if(event.target === this) toggleTimesModal(false);">
-        <div class="modal-content">
-            <div class="modal-header">
+        <div class="modal-content" style="padding: 14px;">
+            <div class="modal-header" style="margin-bottom: 8px; padding-bottom: 6px;">
                 <strong>Tutti i tempi solari e lunari</strong>
                 <button class="close-btn" onclick="toggleTimesModal(false)">✕</button>
             </div>
             <table class="times-table">
-                <thead><tr><th>Evento</th><th>Tempo</th></tr></thead>
                 <tbody id="times-table-body"></tbody>
             </table>
         </div>
