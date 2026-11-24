@@ -19,7 +19,6 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.my.orologiosolare.gh.databinding.ActivityMainBinding;
 
@@ -62,15 +61,12 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 3. Riferimenti ai contenitori (ricarica col trascinamento disattivata)
-        final SwipeRefreshLayout layoutPadre = binding.swiperefreshlayout1;
-        layoutPadre.setEnabled(false);
-        layoutPadre.setOnRefreshListener(null);
-
+        // 3. Riferimenti ai contenitori
+        final View layoutPadre = binding.getRoot();
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] navBarPx = new int[]{0};
 
-        // 4. Insets su layoutPadre
+        // 4. Insets sul contenitore principale
         ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
