@@ -279,7 +279,7 @@
             <div class="map-overlay-bar">
                 <button type="button" id="btn-grid" class="active" onclick="toggleGrid()">Griglia 15°</button>
                 <button type="button" id="btn-bands" class="active" onclick="toggleBands()">Fasce UTC</button>
-                <button type="button" id="btn-countries" class="active" onclick="toggleCountries()">Paesi GeoJSON</button>
+                <button type="button" id="btn-countries" onclick="toggleCountries()">Paesi Geo</button>
                 <button type="button" onclick="map.setView([20, 0], 2)">Vista Globale</button>
             </div>
         </div>
@@ -357,35 +357,33 @@
         const gridGroup = L.layerGroup().addTo(map);
         const bandsGroup = L.layerGroup().addTo(map);
         let geojsonLayer = null;
-        let showCountries = true;
+
+        // All'apertura Paesi Geo non è selezionato di default
+        let showCountries = false;
         let currentHoverLat = null;
         let currentHoverLon = null;
-
-        function getColor(name) {
-            let hash = 0;
-            for (let i = 0; i < name.length; i++) {
-                hash = (hash * 31) + name.charCodeAt(i);
-            }
-            const hue = Math.abs(hash * 137.5) % 360;
-            return `hsl(${hue}, 85%, 55%)`;
-        }
 
         const DISTINCT_BAND_COLORS = [
             '#e11d48', '#0284c7', '#16a34a', '#eab308', '#9333ea',
             '#ea580c', '#06b6d4', '#d946ef', '#84cc16', '#f43f5e',
             '#2563eb', '#10b981', '#f59e0b', '#7c3aed', '#ef4444',
-            '#14b8a6', '#a855f7', '#eab308', '#0ea5e9', '#22c55e',
-            '#f97316', '#6366f1', '#ec4899', '#3b82f6', '#65a30d'
+            '#14b8a6', '#a855f7', '#0ea5e9', '#22c55e', '#f97316',
+            '#6366f1', '#ec4899', '#3b82f6', '#65a30d', '#f472b6'
         ];
 
-        function getDistinctBandColor(index) {
-            const pick = (index * 7) % DISTINCT_BAND_COLORS.length;
-            return DISTINCT_BAND_COLORS[pick];
+        function getColor(name) {
+            let hash = 0;
+            const str = String(name || 'Sconosciuto');
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash * 31) + str.charCodeAt(i)) >>> 0;
+            }
+            const idx = (hash * 7) % DISTINCT_BAND_COLORS.length;
+            return DISTINCT_BAND_COLORS[idx];
         }
 
         // Griglia di meridiani e paralleli ogni 15° sopra la mappa
         for (let lon = -180; lon <= 180; lon += 15) {
-            L.polyline([[-80, lon], [80, lon]], {
+            L.polyline([[-85, lon], [85, lon]], {
                 color: lon === 0 ? '#facc15' : '#f8fafc',
                 weight: lon === 0 ? 2 : 1,
                 opacity: 0.55,
@@ -400,28 +398,56 @@
             }).addTo(gridGroup);
         }
 
-        // Fasce orarie teoriche ogni 15° (da -12 a +12) con colori ben distinti
-        for (let offset = -12; offset <= 12; offset++) {
-            const west = offset * 15 - 7.5;
-            const east = offset * 15 + 7.5;
-            const bandColor = getDistinctBandColor(offset + 12);
+        // Confini reali dei fusi orari (non linee dritte)
+        fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error('Errore caricamento confini fusi');
+                return res.json();
+            })
+            .then(data => {
+                bandsGroup.clearLayers();
+                L.geoJSON(data, {
+                    style: (feature) => {
+                        const zoneName = (feature.properties && (feature.properties.tzid || feature.properties.name || feature.properties.zone)) || 'tz';
+                        return {
+                            color: '#1e293b',
+                            weight: 1.2,
+                            opacity: 0.85,
+                            fillColor: getColor(zoneName),
+                            fillOpacity: 0.34
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            handleMapClick(e.latlng.lat, e.latlng.lng);
+                        });
+                    }
+                }).addTo(bandsGroup);
+            })
+            .catch(() => {
+                // Fallback su fasce regolari solo se il file GeoJSON non è raggiungibile
+                bandsGroup.clearLayers();
+                for (let offset = -12; offset <= 12; offset++) {
+                    const west = offset * 15 - 7.5;
+                    const east = offset * 15 + 7.5;
+                    const poly = L.polygon([
+                        [-85, Math.max(-180, west)],
+                        [85, Math.max(-180, west)],
+                        [85, Math.min(180, east)],
+                        [-85, Math.min(180, east)]
+                    ], {
+                        color: '#0f172a',
+                        weight: 1.5,
+                        fillColor: getColor('band_' + offset),
+                        fillOpacity: 0.28
+                    }).addTo(bandsGroup);
 
-            const poly = L.polygon([
-                [-75, Math.max(-180, west)],
-                [75, Math.max(-180, west)],
-                [75, Math.min(180, east)],
-                [-75, Math.min(180, east)]
-            ], {
-                color: '#0f172a',
-                weight: 1.5,
-                fillColor: bandColor,
-                fillOpacity: 0.28
-            }).addTo(bandsGroup);
-
-            poly.on('click', (e) => {
-                handleMapClick(e.latlng.lat, e.latlng.lng);
+                    poly.on('click', (e) => {
+                        handleMapClick(e.latlng.lat, e.latlng.lng);
+                    });
+                }
             });
-        }
 
         let showGrid = true;
         let showBands = true;
