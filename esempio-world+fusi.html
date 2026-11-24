@@ -45,7 +45,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background: #000;
+            background: #ffffff;
         }
 
         .map-overlay-bar {
@@ -331,7 +331,7 @@
     </div>
 
     <script>
-        // Mappe della pagina precedente: Topografica e Mappa Chiara
+        // Tre mappe nel selettore: Mappa Chiara, Topografica e Mappa Bianca
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -342,8 +342,21 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
+        const bianca = L.gridLayer({
+            attribution: 'Mappa Bianca',
+            createTile: function() {
+                const tile = document.createElement('div');
+                tile.style.background = '#ffffff';
+                tile.style.border = '1px solid #e2e8f0';
+                tile.style.boxSizing = 'border-box';
+                return tile;
+            }
+        });
+
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+        let initialLayer = topo;
+        if (savedLayerName === 'Mappa Chiara') initialLayer = chiara;
+        else if (savedLayerName === 'Mappa Bianca') initialLayer = bianca;
 
         const map = L.map('map', {
             center: [20, 0],
@@ -354,8 +367,9 @@
         });
 
         const baseMaps = {
+            "Mappa Chiara": chiara,
             "Topografica": topo,
-            "Mappa Chiara": chiara
+            "Mappa Bianca": bianca
         };
         L.control.layers(baseMaps).addTo(map);
 
@@ -690,7 +704,6 @@
             } catch (e) {}
         }
 
-        // Confini reali dei fusi orari (non linee dritte ogni 15°)
         fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('Fallback tz');
@@ -724,7 +737,6 @@
                 document.getElementById('status-msg').textContent = 'Confini fusi non caricati da rete; clicca comunque sulla mappa.';
             });
 
-        // Confini dei Paesi come nella pagina precedente
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
@@ -753,13 +765,13 @@
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
 
-            if (e.name === "Topografica") {
-                if (countriesGeojsonLayer && map.hasLayer(countriesGeojsonLayer)) {
-                    map.removeLayer(countriesGeojsonLayer);
-                }
-            } else if (e.name === "Mappa Chiara") {
+            if (e.name === "Mappa Chiara") {
                 if (countriesGeojsonLayer && !map.hasLayer(countriesGeojsonLayer) && showCountries) {
                     countriesGeojsonLayer.addTo(map);
+                }
+            } else {
+                if (countriesGeojsonLayer && map.hasLayer(countriesGeojsonLayer)) {
+                    map.removeLayer(countriesGeojsonLayer);
                 }
             }
         });
