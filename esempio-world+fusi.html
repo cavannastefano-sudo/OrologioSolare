@@ -45,7 +45,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background: #0f172a;
+            background: #ffffff;
         }
 
         .map-overlay-bar {
@@ -277,8 +277,8 @@
         <div class="map-area">
             <div id="map"></div>
             <div class="map-overlay-bar">
-                <button type="button" id="btn-grid" class="active" onclick="toggleGrid()">Griglia 15°</button>
-                <button type="button" id="btn-bands" class="active" onclick="toggleBands()">Fasce UTC</button>
+                <button type="button" id="btn-grid" onclick="toggleGrid()">Griglia 15°</button>
+                <button type="button" id="btn-bands" onclick="toggleBands()">Fasce UTC</button>
                 <button type="button" id="btn-countries" onclick="toggleCountries()">Paesi Geo</button>
                 <button type="button" onclick="map.setView([20, 0], 2)">Vista Globale</button>
             </div>
@@ -303,7 +303,7 @@
                 <div class="label-muted">Ora di riferimento UTC</div>
                 <div id="utc-now" class="utc-clock">--:--:-- UTC</div>
                 <div id="header-time-display" class="hover-clock">Passa il mouse sulla mappa...</div>
-                <div id="status-msg" class="label-muted">Clicca su una località per selezionarla o esplora i fusi orari.</div>
+                <div id="status-msg" class="label-muted">Clicca su una località per selezionarla o attiva i livelli desiderati.</div>
             </div>
 
             <div class="box">
@@ -337,15 +337,18 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
+        // Nessuna mappa base attiva finché non la selezioni tu
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+        const initialLayers = [];
+        if (savedLayerName === 'Mappa Chiara') initialLayers.push(chiara);
+        else if (savedLayerName === 'Topografica') initialLayers.push(topo);
 
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
             minZoom: 2,
             maxZoom: 12,
-            layers: [initialLayer]
+            layers: initialLayers
         });
 
         const baseMaps = {
@@ -354,12 +357,15 @@
         };
         L.control.layers(baseMaps).addTo(map);
 
-        const gridGroup = L.layerGroup().addTo(map);
-        const bandsGroup = L.layerGroup().addTo(map);
+        const gridGroup = L.layerGroup();
+        const bandsGroup = L.layerGroup();
         let geojsonLayer = null;
 
-        // All'apertura Paesi Geo non è selezionato di default
-        let showCountries = false;
+        // Nessun livello predefinito all'avvio: solo ciò che selezioni tu viene salvato e mantenuto
+        let showGrid = localStorage.getItem('sunclock_layer_grid') === 'true';
+        let showBands = localStorage.getItem('sunclock_layer_bands') === 'true';
+        let showCountries = localStorage.getItem('sunclock_layer_countries') === 'true';
+
         let currentHoverLat = null;
         let currentHoverLon = null;
 
@@ -381,10 +387,10 @@
             return DISTINCT_BAND_COLORS[idx];
         }
 
-        // Griglia di meridiani e paralleli ogni 15° sopra la mappa
+        // Preparazione Griglia 15° (aggiunta alla mappa solo se selezionata)
         for (let lon = -180; lon <= 180; lon += 15) {
             L.polyline([[-85, lon], [85, lon]], {
-                color: lon === 0 ? '#facc15' : '#f8fafc',
+                color: lon === 0 ? '#facc15' : '#64748b',
                 weight: lon === 0 ? 2 : 1,
                 opacity: 0.55,
                 dashArray: lon === 0 ? null : '4 4'
@@ -392,13 +398,18 @@
         }
         for (let lat = -75; lat <= 75; lat += 15) {
             L.polyline([[lat, -180], [lat, 180]], {
-                color: lat === 0 ? '#facc15' : '#cbd5e1',
+                color: lat === 0 ? '#facc15' : '#94a3b8',
                 weight: lat === 0 ? 1.5 : 0.9,
                 opacity: 0.45
             }).addTo(gridGroup);
         }
 
-        // Confini reali dei fusi orari (non linee dritte)
+        if (showGrid) {
+            gridGroup.addTo(map);
+            document.getElementById('btn-grid').classList.add('active');
+        }
+
+        // Preparazione Confini reali dei fusi orari (aggiunti alla mappa solo se selezionati)
         fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('Errore caricamento confini fusi');
@@ -424,9 +435,12 @@
                         });
                     }
                 }).addTo(bandsGroup);
+
+                if (showBands) {
+                    bandsGroup.addTo(map);
+                }
             })
             .catch(() => {
-                // Fallback su fasce regolari solo se il file GeoJSON non è raggiungibile
                 bandsGroup.clearLayers();
                 for (let offset = -12; offset <= 12; offset++) {
                     const west = offset * 15 - 7.5;
@@ -447,13 +461,19 @@
                         handleMapClick(e.latlng.lat, e.latlng.lng);
                     });
                 }
+
+                if (showBands) {
+                    bandsGroup.addTo(map);
+                }
             });
 
-        let showGrid = true;
-        let showBands = true;
+        if (showBands) {
+            document.getElementById('btn-bands').classList.add('active');
+        }
 
         function toggleGrid() {
             showGrid = !showGrid;
+            localStorage.setItem('sunclock_layer_grid', showGrid);
             document.getElementById('btn-grid').classList.toggle('active', showGrid);
             if (showGrid) gridGroup.addTo(map);
             else map.removeLayer(gridGroup);
@@ -461,6 +481,7 @@
 
         function toggleBands() {
             showBands = !showBands;
+            localStorage.setItem('sunclock_layer_bands', showBands);
             document.getElementById('btn-bands').classList.toggle('active', showBands);
             if (showBands) bandsGroup.addTo(map);
             else map.removeLayer(bandsGroup);
@@ -468,19 +489,19 @@
 
         function toggleCountries() {
             showCountries = !showCountries;
+            localStorage.setItem('sunclock_layer_countries', showCountries);
             document.getElementById('btn-countries').classList.toggle('active', showCountries);
             if (!geojsonLayer) return;
             if (showCountries) geojsonLayer.addTo(map);
             else map.removeLayer(geojsonLayer);
         }
 
-        // Gestione fusi specifici (Stretto di Bering - Isole Diomede per prime)
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 if (lon < -168.9) {
-                    return 12; // Grande Diomede (Russia) -> UTC+12
+                    return 12;
                 } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
+                    return -9;
                 }
             }
 
@@ -510,9 +531,7 @@
                         }
                     }
                 }
-            } catch (e) {
-                console.warn("Fallback su calcolo fuso geometrico", e);
-            }
+            } catch (e) {}
 
             return Math.round(lon / 15);
         }
@@ -540,9 +559,7 @@
                             }
                         }
                     }
-                } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
-                }
+                } catch (e) {}
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
@@ -598,9 +615,7 @@
                         dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
                     };
                 }
-            } catch (e) {
-                console.warn("Fallback fuso orario geometrico", e);
-            }
+            } catch (e) {}
 
             let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
             const hoursOffset = Math.round(normalizedLon / 15);
@@ -770,8 +785,9 @@
                     }
                 });
 
-                if (map.hasLayer(chiara) && showCountries) {
+                if (showCountries) {
                     geojsonLayer.addTo(map);
+                    document.getElementById('btn-countries').classList.add('active');
                 }
 
                 document.getElementById('status-msg').textContent = "Clicca su una località per selezionarla.";
@@ -782,16 +798,6 @@
 
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
-
-            if (e.name === "Topografica") {
-                if (geojsonLayer && map.hasLayer(geojsonLayer)) {
-                    map.removeLayer(geojsonLayer);
-                }
-            } else if (e.name === "Mappa Chiara") {
-                if (geojsonLayer && !map.hasLayer(geojsonLayer) && showCountries) {
-                    geojsonLayer.addTo(map);
-                }
-            }
         });
 
         map.on('click', (e) => {
