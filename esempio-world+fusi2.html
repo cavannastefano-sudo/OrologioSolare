@@ -552,7 +552,8 @@
                         iconAnchor: [15, 9]
                     });
 
-                    L.marker([76, lon], { icon: icon, interactive: false }).addTo(bandsGroup);
+                    // Etichetta vicino al bordo superiore e vicino al bordo inferiore
+                    L.marker([84, lon], { icon: icon, interactive: false }).addTo(bandsGroup);
                     L.marker([-62, lon], { icon: icon, interactive: false }).addTo(bandsGroup);
                 }
 
