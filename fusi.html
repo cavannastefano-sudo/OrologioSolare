@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SunClock24 - Mappa Fusi Orari</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+
+    <!-- Libreria fuso orario da coordinate -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+    <script src="timezone-manager.js"></script>
+
+    <style>
+        :root {
+            --bg-main: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.92);
+            --border-color: #334155;
+            --accent-cyan: #38bdf8;
+            --accent-green: #39ff14;
+            --accent-yellow: #facc15;
+            --accent-pink: #ff007f;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-main);
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100dvh;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        /* Barra superiore */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            z-index: 20;
+        }
+
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav {
+            background: #0f172a;
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 0.84rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-nav:hover {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #e0f2fe;
+        }
+
+        .page-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            letter-spacing: 0.3px;
+            text-shadow: 0 0 8px rgba(250, 204, 21, 0.25);
+        }
+
+        .zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 3px 6px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-zoom {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            min-width: 30px;
+            height: 28px;
+            font-size: 0.9rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+        }
+
+        .btn-zoom:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .zoom-readout {
+            min-width: 48px;
+            text-align: center;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
+
+        /* Ricerca rapida città */
+        .search-row {
+            display: flex;
+            gap: 6px;
+            z-index: 20;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 0;
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 7px;
+            padding: 7px 10px;
+            font-size: 0.88rem;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-search {
+            background: #2563eb;
+            color: #ffffff;
+            border: 1px solid #93c5fd;
+            border-radius: 7px;
+            padding: 0 12px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-search:hover {
+            background: #1d4ed8;
+        }
+
+        /* Contenitore mappa con zoom */
+        .map-viewport {
+            position: relative;
+            flex: 1;
+            min-height: 220px;
+            width: 100%;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: #030712;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+        }
+
+        .map-viewport.dragging {
+            cursor: grabbing;
+        }
+
+        #mapCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-hint {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            background: rgba(2, 6, 23, 0.78);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #cbd5e1;
+            font-size: 0.73rem;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .crosshair-badge {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            background: rgba(2, 6, 23, 0.84);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            color: #e2e8f0;
+            font-size: 0.74rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        /* Pannello info in basso */
+        .info-card {
+            background: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 9px 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            z-index: 20;
+            box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.65);
+        }
+
+        .info-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .place-title {
+            font-size: 0.98rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+        }
+
+        .tz-pill {
+            background: rgba(56, 189, 248, 0.14);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-size: 0.8rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 999px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            font-size: 0.8rem;
+        }
+
+        .info-box {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid #334155;
+            border-radius: 7px;
+            padding: 5px 7px;
+        }
+
+        .info-box small {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .info-box strong {
+            color: var(--accent-green);
+            font-size: 0.86rem;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-primary-open {
+            flex: 1;
+            background: #16a34a;
+            color: #ffffff;
+            border: 1px solid #86efac;
+            border-radius: 7px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary-open:hover {
+            background: #15803d;
+        }
+
+        .btn-gps {
+            background: #0f172a;
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 7px;
+            padding: 8px 11px;
+            font-size: 0.84rem;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-gps:hover {
+            background: rgba(250, 204, 21, 0.14);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <div class="top-bar">
+            <div class="nav-group">
+                <a href="index.html" class="btn-nav">🏠 Home</a>
+                <span class="page-title">🌍 Fusi Orari</span>
+            </div>
+
+            <div class="zoom-controls">
+                <button type="button" class="btn-zoom" onclick="zoomBy(1 / 1.35)" title="Zoom indietro">−</button>
+                <span id="zoom-readout" class="zoom-readout">100%</span>
+                <button type="button" class="btn-zoom" onclick="zoomBy(1.35)" title="Zoom avanti">+</button>
+                <button type="button" class="btn-zoom" onclick="resetZoom()" title="Ripristina vista">1:1</button>
+            </div>
+        </div>
+
+        <div class="search-row">
+            <input type="text" id="city-search" class="search-input" placeholder="Cerca località (es. Piacenza, Tokyo, New York, Londra)..." onkeydown="if (event.key === 'Enter') searchPlace();">
+            <button type="button" class="btn-search" onclick="searchPlace()">Cerca</button>
+        </div>
+
+        <div id="map-viewport" class="map-viewport">
+            <div class="map-hint">Tocca o clicca sulla mappa • Rotella / Pinch per zoom • Trascina per spostarti</div>
+            <canvas id="mapCanvas"></canvas>
+            <div id="hover-coords" class="crosshair-badge">Lat: --.-- | Lon: --.--</div>
+        </div>
+
+        <div class="info-card">
+            <div class="info-top">
+                <div id="selected-place-name" class="place-title">Piacenza</div>
+                <div id="selected-tz-badge" class="tz-pill">UTC+1 • Europe/Rome</div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <small>Coordinate</small>
+                    <strong id="selected-coords">45.05°N, 9.69°E</strong>
+                </div>
+                <div class="info-box">
+                    <small>Ora locale stimata</small>
+                    <strong id="selected-local-time">--:--:--</strong>
+                </div>
+                <div class="info-box">
+                    <small>Offset attuale</small>
+                    <strong id="selected-offset">UTC +1</strong>
+                </div>
+            </div>
+
+            <div class="actions-row">
+                <button type="button" class="btn-gps" onclick="useCurrentGps()">📍 Mia posizione</button>
+                <button type="button" class="btn-primary-open" onclick="openInPositionClock()">☀️ Apri in Orologio Posizione</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        let selectedLat = params.get('lat') ? parseFloat(params.get('lat')) : 45.05;
+        let selectedLon = params.get('lon') ? parseFloat(params.get('lon')) : 9.69;
+        let selectedName = params.get('city') ? decodeURIComponent(params.get('city')) : 'Piacenza';
+        let selectedTz = 'Europe/Rome';
+        let selectedOffsetHours = 1;
+
+        // Mappa semplificata a poligoni (continenti principali) + griglia fusi orari ogni 15°
+        const CONTINENTS = [
+            // Nord America
+            [
+                [-168, 66], [-140, 70], [-95, 72], [-78, 62], [-60, 47], [-70, 42],
+                [-81, 25], [-97, 18], [-105, 20], [-117, 32], [-124, 48], [-150, 61]
+            ],
+            // Groenlandia
+            [
+                [-52, 60], [-20, 71], [-18, 82], [-45, 83], [-70, 76], [-56, 68]
+            ],
+            // Sud America
+            [
+                [-80, 9], [-61, 10], [-50, 1], [-35, -6], [-39, -18], [-48, -28],
+                [-58, -38], [-66, -46], [-72, -54], [-75, -45], [-71, -30], [-70, -18], [-81, -4]
+            ],
+            // Europa
+            [
+                [-9, 37], [-9, 43], [-2, 48], [5, 51], [8, 55], [5, 60], [15, 68],
+                [28, 71], [41, 66], [38, 55], [30, 46], [24, 38], [16, 38], [12, 44], [3, 42], [-5, 36]
+            ],
+            // Africa
+            [
+                [-17, 15], [-13, 28], [-6, 36], [10, 37], [12, 32], [25, 31], [33, 28],
+                [43, 12], [51, 11], [41, -2], [40, -12], [35, -24], [27, -33], [18, -34],
+                [14, -22], [12, -6], [9, 4], [1, 6], [-8, 5], [-16, 11]
+            ],
+            // Asia
+            [
+                [38, 41], [48, 30], [56, 26], [68, 24], [77, 8], [88, 22], [98, 16],
+                [104, 2], [109, 15], [121, 25], [122, 40], [131, 43], [141, 53], [162, 60],
+                [172, 66], [140, 72], [95, 76], [65, 70], [42, 65], [38, 55]
+            ],
+            // Australia
+            [
+                [114, -22], [122, -17], [131, -12], [136, -15], [142, -11], [146, -19],
+                [153, -28], [150, -37], [140, -38], [131, -32], [115, -34]
+            ],
+            // Nuova Zelanda
+            [
+                [167, -46], [174, -41], [178, -37], [173, -35], [171, -43]
+            ],
+            // Giappone
+            [
+                [130, 31], [136, 34], [140, 36], [141, 41], [145, 44], [139, 39], [132, 34]
+            ],
+            // Regno Unito / Irlanda
+            [
+                [-10, 52], [-6, 55], [-5, 50], [1, 51], [1, 53], [-3, 58], [-6, 57]
+            ],
+            // Madagascar
+            [
+                [44, -25], [49, -25], [50, -13], [44, -16]
+            ]
+        ];
+
+        const QUICK_CITIES = [
+            { name: 'Piacenza', lat: 45.0526, lon: 9.6930 },
+            { name: 'Roma', lat: 41.9028, lon: 12.4964 },
+            { name: 'Milano', lat: 45.4642, lon: 9.1900 },
+            { name: 'Londra', lat: 51.5072, lon: -0.1276 },
+            { name: 'New York', lat: 40.7128, lon: -74.0060 },
+            { name: 'Los Angeles', lat: 34.0522, lon: -118.2437 },
+            { name: 'Tokyo', lat: 35.6762, lon: 139.6503 },
+            { name: 'Sydney', lat: -33.8688, lon: 151.2093 },
+            { name: 'Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
+            { name: 'Il Cairo', lat: 30.0444, lon: 31.2357 },
+            { name: 'Reykjavik', lat: 64.1466, lon: -21.9426 },
+            { name: 'Auckland', lat: -36.8485, lon: 174.7633 }
+        ];
+
+        const viewport = document.getElementById('map-viewport');
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let scale = 1.0;
+        const minScale = 1.0;
+        const maxScale = 12.0;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let pointerDownX = 0;
+        let pointerDownY = 0;
+        let movedDuringDrag = false;
+        let activePointers = new Map();
+        let lastPinchDist = null;
+
+        function clampPan() {
+            const w = canvas.width;
+            const h = canvas.height;
+            const worldW = w * scale;
+            const worldH = h * scale;
+
+            if (worldW <= w) {
+                offsetX = (w - worldW) / 2;
+            } else {
+                const minX = w - worldW;
+                if (offsetX > 0) offsetX = 0;
+                if (offsetX < minX) offsetX = minX;
+            }
+
+            if (worldH <= h) {
+                offsetY = (h - worldH) / 2;
+            } else {
+                const minY = h - worldH;
+                if (offsetY > 0) offsetY = 0;
+                if (offsetY < minY) offsetY = minY;
+            }
+        }
+
+        function setZoomAtPoint(newScale, clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const px = (clientX - rect.left) * (canvas.width / rect.width);
+            const py = (clientY - rect.top) * (canvas.height / rect.height);
+
+            const clamped = Math.max(minScale, Math.min(maxScale, newScale));
+            const ratio = clamped / scale;
+
+            offsetX = px - (px - offsetX) * ratio;
+            offsetY = py - (py - offsetY) * ratio;
+            scale = clamped;
+
+            clampPan();
+            updateZoomReadout();
+            drawMap();
+        }
+
+        function zoomBy(factor) {
+            const rect = canvas.getBoundingClientRect();
+            setZoomAtPoint(scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+
+        function resetZoom() {
+            scale = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            clampPan();
+            updateZoomReadout();
+            drawMap();
+        }
+
+        function updateZoomReadout() {
+            document.getElementById('zoom-readout').innerText = `${Math.round(scale * 100)}%`;
+        }
+
+        function resizeCanvas() {
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const rect = viewport.getBoundingClientRect();
+            const prevW = canvas.width || rect.width * dpr;
+            const prevH = canvas.height || rect.height * dpr;
+
+            canvas.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas.height = Math.max(1, Math.round(rect.height * dpr));
+
+            if (prevW > 0 && prevH > 0) {
+                offsetX = offsetX * (canvas.width / prevW);
+                offsetY = offsetY * (canvas.height / prevH);
+            }
+            clampPan();
+            drawMap();
+        }
+
+        function latLonToWorld(lat, lon) {
+            const w = canvas.width * scale;
+            const h = canvas.height * scale;
+            const x = ((lon + 180) / 360) * w;
+            const y = ((90 - lat) / 180) * h;
+            return { x, y };
+        }
+
+        function canvasToLatLon(px, py) {
+            const w = canvas.width * scale;
+            const h = canvas.height * scale;
+            const worldX = px - offsetX;
+            const worldY = py - offsetY;
+
+            const lon = (worldX / w) * 360 - 180;
+            const lat = 90 - (worldY / h) * 180;
+            return {
+                lat: Math.max(-85, Math.min(85, lat)),
+                lon: Math.max(-180, Math.min(180, lon))
+            };
+        }
+
+        function resolveTimezoneInfo(lat, lon) {
+            let tzName = 'UTC';
+            try {
+                if (typeof tzlookup === 'function') {
+                    tzName = tzlookup(lat, lon) || 'UTC';
+                }
+            } catch (e) {
+                tzName = 'UTC';
+            }
+
+            let offsetHours = Math.round(lon / 15);
+            try {
+                const now = new Date();
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzName,
+                    timeZoneName: 'shortOffset'
+                }).formatToParts(now);
+                const tzPart = parts.find(p => p.type === 'timeZoneName');
+                if (tzPart) {
+                    const m = tzPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (m) {
+                        const h = parseInt(m[1], 10);
+                        const min = m[2] ? parseInt(m[2], 10) / 60 : 0;
+                        offsetHours = h + (h < 0 ? -min : min);
+                    }
+                }
+            } catch (e) {
+                offsetHours = Math.round(lon / 15);
+            }
+
+            return { tzName, offsetHours };
+        }
+
+        function formatOffset(offsetHours) {
+            const sign = offsetHours >= 0 ? '+' : '-';
+            const abs = Math.abs(offsetHours);
+            const h = Math.floor(abs);
+            const m = Math.round((abs - h) * 60);
+            return m > 0 ? `UTC ${sign}${h}:${String(m).padStart(2, '0')}` : `UTC ${sign}${h}`;
+        }
+
+        function updateInfoCard() {
+            const info = resolveTimezoneInfo(selectedLat, selectedLon);
+            selectedTz = info.tzName;
+            selectedOffsetHours = info.offsetHours;
+
+            const latDir = selectedLat >= 0 ? 'N' : 'S';
+            const lonDir = selectedLon >= 0 ? 'E' : 'W';
+
+            document.getElementById('selected-place-name').innerText = selectedName;
+            document.getElementById('selected-tz-badge').innerText = `${formatOffset(selectedOffsetHours).replace(' ', '')} • ${selectedTz}`;
+            document.getElementById('selected-coords').innerText = `${Math.abs(selectedLat).toFixed(2)}°${latDir}, ${Math.abs(selectedLon).toFixed(2)}°${lonDir}`;
+            document.getElementById('selected-offset').innerText = formatOffset(selectedOffsetHours);
+            updateLocalClockReadout();
+        }
+
+        function updateLocalClockReadout() {
+            const now = new Date();
+            const target = new Date(now.getTime() + selectedOffsetHours * 3600000);
+            const hh = String(target.getUTCHours()).padStart(2, '0');
+            const mm = String(target.getUTCMinutes()).padStart(2, '0');
+            const ss = String(target.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('selected-local-time').innerText = `${hh}:${mm}:${ss}`;
+        }
+
+        function selectCoordinates(lat, lon, name, centerView = false) {
+            selectedLat = Math.max(-85, Math.min(85, lat));
+            selectedLon = Math.max(-180, Math.min(180, lon));
+            selectedName = name || `Punto (${selectedLat.toFixed(2)}, ${selectedLon.toFixed(2)})`;
+
+            if (centerView) {
+                const pt = latLonToWorld(selectedLat, selectedLon);
+                offsetX = canvas.width / 2 - pt.x;
+                offsetY = canvas.height / 2 - pt.y;
+                clampPan();
+            }
+
+            updateInfoCard();
+            drawMap();
+        }
+
+        function drawMap() {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Oceano
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, '#071326');
+            grad.addColorStop(0.5, '#0b1d38');
+            grad.addColorStop(1, '#071326');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.save();
+            ctx.translate(offsetX, offsetY);
+
+            // Fasce orarie ogni 15 gradi di longitudine
+            for (let zone = -12; zone <= 12; zone++) {
+                const lonStart = zone * 15 - 7.5;
+                const lonEnd = zone * 15 + 7.5;
+                const p1 = latLonToWorld(90, lonStart);
+                const p2 = latLonToWorld(-90, lonEnd);
+
+                if (Math.abs(zone) % 2 === 1) {
+                    ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
+                    ctx.fillRect(p1.x, 0, p2.x - p1.x, canvas.height * scale);
+                }
+
+                // Linea meridiano fuso
+                ctx.beginPath();
+                ctx.moveTo(p1.x, 0);
+                ctx.lineTo(p1.x, canvas.height * scale);
+                ctx.strokeStyle = zone === 0 ? 'rgba(250, 204, 21, 0.45)' : 'rgba(148, 163, 184, 0.16)';
+                ctx.lineWidth = zone === 0 ? 1.8 : 1;
+                ctx.stroke();
+
+                // Etichetta UTC in alto
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.72)';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                const labelLon = zone * 15;
+                const lp = latLonToWorld(82, labelLon);
+                if (lp.x > 16 && lp.x < canvas.width * scale - 16) {
+                    const sign = zone >= 0 ? `+${zone}` : `${zone}`;
+                    ctx.fillText(sign, lp.x, 16);
+                }
+            }
+
+            // Paralleli ogni 30 gradi
+            for (let lat = -60; lat <= 60; lat += 30) {
+                const p = latLonToWorld(lat, -180);
+                ctx.beginPath();
+                ctx.moveTo(0, p.y);
+                ctx.lineTo(canvas.width * scale, p.y);
+                ctx.strokeStyle = lat === 0 ? 'rgba(250, 204, 21, 0.35)' : 'rgba(148, 163, 184, 0.12)';
+                ctx.lineWidth = lat === 0 ? 1.5 : 1;
+                ctx.stroke();
+            }
+
+            // Continenti
+            CONTINENTS.forEach(poly => {
+                ctx.beginPath();
+                poly.forEach(([lon, lat], idx) => {
+                    const pt = latLonToWorld(lat, lon);
+                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                });
+                ctx.closePath();
+                ctx.fillStyle = 'rgba(34, 197, 94, 0.22)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(74, 222, 128, 0.72)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
+
+            // Città di riferimento
+            QUICK_CITIES.forEach(c => {
+                const pt = latLonToWorld(c.lat, c.lon);
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+
+                if (scale >= 1.4 || c.name === 'Piacenza' || c.name === 'Roma' || c.name === 'New York' || c.name === 'Tokyo') {
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillText(c.name, pt.x + 6, pt.y + 3);
+                }
+            });
+
+            // Marker punto selezionato
+            const selPt = latLonToWorld(selectedLat, selectedLon);
+            ctx.beginPath();
+            ctx.arc(selPt.x, selPt.y, 11, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.45)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(selPt.x, selPt.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff007f';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function handleMapTap(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const px = (clientX - rect.left) * (canvas.width / rect.width);
+            const py = (clientY - rect.top) * (canvas.height / rect.height);
+            const ll = canvasToLatLon(px, py);
+
+            // Controlla se il tocco è vicino a una città nota
+            let matchedCity = null;
+            for (const c of QUICK_CITIES) {
+                const pt = latLonToWorld(c.lat, c.lon);
+                const dx = (pt.x + offsetX) - px;
+                const dy = (pt.y + offsetY) - py;
+                if (Math.hypot(dx, dy) < 18) {
+                    matchedCity = c;
+                    break;
+                }
+            }
+
+            if (matchedCity) {
+                selectCoordinates(matchedCity.lat, matchedCity.lon, matchedCity.name, false);
+            } else {
+                selectCoordinates(ll.lat, ll.lon, null, false);
+            }
+        }
+
+        // Rotella mouse per zoom
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
+            setZoomAtPoint(scale * factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        // Pointer + Pinch to zoom + Pan
+        viewport.addEventListener('pointerdown', (e) => {
+            viewport.setPointerCapture(e.pointerId);
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size === 1) {
+                isDragging = true;
+                movedDuringDrag = false;
+                pointerDownX = e.clientX;
+                pointerDownY = e.clientY;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                viewport.classList.add('dragging');
+            } else if (activePointers.size === 2) {
+                isDragging = false;
+                const pts = Array.from(activePointers.values());
+                lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            }
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const hoverLL = canvasToLatLon(px, py);
+            document.getElementById('hover-coords').innerText = `Puntatore: ${hoverLL.lat.toFixed(2)}°, ${hoverLL.lon.toFixed(2)}°`;
+
+            if (!activePointers.has(e.pointerId)) return;
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size === 2) {
+                const pts = Array.from(activePointers.values());
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                const midX = (pts[0].x + pts[1].x) / 2;
+                const midY = (pts[0].y + pts[1].y) / 2;
+                if (lastPinchDist && dist > 0) {
+                    setZoomAtPoint(scale * (dist / lastPinchDist), midX, midY);
+                }
+                lastPinchDist = dist;
+                return;
+            }
+
+            if (isDragging) {
+                const dx = (e.clientX - dragStartX) * (canvas.width / rect.width);
+                const dy = (e.clientY - dragStartY) * (canvas.height / rect.height);
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+
+                if (Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY) > 6) {
+                    movedDuringDrag = true;
+                }
+
+                offsetX += dx;
+                offsetY += dy;
+                clampPan();
+                drawMap();
+            }
+        });
+
+        function finishPointer(e) {
+            if (activePointers.has(e.pointerId)) {
+                activePointers.delete(e.pointerId);
+            }
+            if (activePointers.size < 2) {
+                lastPinchDist = null;
+            }
+            if (activePointers.size === 0) {
+                if (isDragging && !movedDuringDrag) {
+                    handleMapTap(e.clientX, e.clientY);
+                }
+                isDragging = false;
+                viewport.classList.remove('dragging');
+            }
+        }
+
+        viewport.addEventListener('pointerup', finishPointer);
+        viewport.addEventListener('pointercancel', finishPointer);
+
+        async function searchPlace() {
+            const q = document.getElementById('city-search').value.trim();
+            if (!q) return;
+
+            const localMatch = QUICK_CITIES.find(c => c.name.toLowerCase().includes(q.toLowerCase()));
+            if (localMatch) {
+                selectCoordinates(localMatch.lat, localMatch.lon, localMatch.name, true);
+                return;
+            }
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const item = data[0];
+                    const shortName = item.display_name.split(',')[0].trim();
+                    selectCoordinates(parseFloat(item.lat), parseFloat(item.lon), shortName, true);
+                }
+            } catch (e) {
+                console.warn('Ricerca località non disponibile offline', e);
+            }
+        }
+
+        function useCurrentGps() {
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    selectCoordinates(pos.coords.latitude, pos.coords.longitude, 'Posizione attuale', true);
+                },
+                () => {},
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
+        }
+
+        function openInPositionClock() {
+            const url = `posizione.html?lat=${selectedLat.toFixed(4)}&lon=${selectedLon.toFixed(4)}&city=${encodeURIComponent(selectedName)}`;
+            window.location.href = url;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        updateInfoCard();
+        setInterval(updateLocalClockReadout, 1000);
+    </script>
+</body>
+</html>
