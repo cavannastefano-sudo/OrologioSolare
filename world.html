@@ -16,7 +16,7 @@
     <style>
         :root {
             --android-top-inset: 28px;
-            --android-bottom-inset: 16px;
+            --android-bottom-inset: 24px;
             --safe-top: max(env(safe-area-inset-top, 0px), var(--android-top-inset));
             --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-bottom-inset));
             --system-bar-bg: #0b1120;
@@ -39,6 +39,7 @@
             overflow-x: hidden;
         }
 
+        /* Barre solide non trasparenti per status bar (alto) e navigation bar (basso) */
         .sys-bar-top {
             position: fixed;
             top: 0;
@@ -67,7 +68,7 @@
             max-width: 100%;
             min-height: 100dvh;
             padding-top: var(--safe-top);
-            padding-bottom: var(--safe-bottom);
+            padding-bottom: calc(var(--safe-bottom) + 8px);
             background: var(--system-bar-bg);
         }
 
@@ -89,15 +90,15 @@
         .map-overlay-bar {
             position: absolute;
             top: 10px;
-            left: 52px;
-            right: 52px;
+            left: 50px;
+            right: 54px;
             z-index: 500;
             display: flex;
-            gap: 6px;
+            gap: 5px;
             flex-wrap: wrap;
             background: rgba(15, 23, 42, 0.96);
             border: 1px solid #334155;
-            padding: 6px 8px;
+            padding: 5px 6px;
             border-radius: 8px;
             width: fit-content;
             max-width: calc(100% - 104px);
@@ -109,14 +110,14 @@
             color: #e2e8f0;
             border: 1px solid #475569;
             border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 0.78rem;
+            padding: 4px 7px;
+            font-size: 0.74rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;
             white-space: nowrap;
         }
 
@@ -148,7 +149,6 @@
 
         @media (max-width: 780px) {
             .layout {
-                display: flex;
                 flex-direction: column;
                 height: auto;
                 min-height: 100dvh;
@@ -157,36 +157,43 @@
             }
 
             .sidebar {
-                display: contents;
+                width: 100%;
+                max-width: 100vw;
+                border-left: none;
+                padding: 6px 8px 16px;
+                gap: 8px;
+                flex: 1 0 auto;
             }
 
             .sidebar-top {
                 order: 1;
                 background: var(--panel-bg);
-                padding: 6px 8px;
                 gap: 0;
-                border-bottom: 1px solid #334155;
                 width: 100%;
                 max-width: 100vw;
+                position: relative;
+                z-index: 2;
             }
 
             .map-area {
                 order: 2;
                 width: 100%;
                 max-width: 100vw;
-                height: 46dvh;
-                min-height: 290px;
+                height: 45dvh;
+                min-height: 280px;
                 flex: 0 0 auto;
+                position: relative;
+                z-index: 1;
             }
 
             .sidebar-bottom {
                 order: 3;
                 background: var(--panel-bg);
-                padding: 8px 8px 12px;
                 gap: 8px;
-                border-top: 1px solid #334155;
                 width: 100%;
                 max-width: 100vw;
+                position: relative;
+                z-index: 2;
             }
 
             .brand-header {
@@ -218,20 +225,22 @@
                 font-size: 1rem;
             }
 
+            /* Bottoncini più compatti così non vengono coperti dal pulsante dei layer a destra */
             .map-overlay-bar {
                 top: 8px;
-                left: 48px;
-                right: 8px;
-                width: auto;
-                max-width: calc(100% - 56px);
-                gap: 4px;
-                padding: 5px 6px;
+                left: 46px;
+                right: 52px;
+                width: fit-content;
+                max-width: calc(100% - 98px);
+                gap: 3px;
+                padding: 4px 5px;
             }
 
             .map-overlay-bar button,
             .map-overlay-bar a {
-                padding: 3px 6px;
-                font-size: 0.7rem;
+                padding: 3px 5px;
+                font-size: 0.65rem;
+                border-radius: 5px;
             }
         }
 
@@ -294,6 +303,8 @@
             border-radius: 8px;
             padding: 10px;
             max-width: 100%;
+            position: relative;
+            z-index: 2;
         }
 
         .local-clock {
@@ -323,8 +334,11 @@
             gap: 6px;
             width: 100%;
             max-width: 100%;
-            min-height: 38px;
+            min-height: 40px;
+            padding: 2px 0;
             flex-shrink: 0;
+            position: relative;
+            z-index: 3;
         }
 
         .search-form input {
@@ -404,6 +418,22 @@
     <div class="sys-bar-bottom" aria-hidden="true"></div>
 
     <div class="layout">
+        <div class="sidebar-top">
+            <div class="brand-header">
+                <div class="brand-left">
+                    <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                        <img src="SfondoN-512.png" alt="CavanWeb Logo">
+                    </a>
+                    <span class="place-name">SunClock24</span>
+                </div>
+                <div class="quick-links">
+                    <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
+                    <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
+                    <a href="index.html">🏠 Indietro</a>
+                </div>
+            </div>
+        </div>
+
         <div class="map-area">
             <div id="map"></div>
             <div class="map-overlay-bar">
@@ -414,46 +444,28 @@
             </div>
         </div>
 
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="brand-header">
-                    <div class="brand-left">
-                        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
-                            <img src="SfondoN-512.png" alt="CavanWeb Logo">
-                        </a>
-                        <span class="place-name">SunClock24</span>
-                    </div>
-                    <div class="quick-links">
-                        <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
-                        <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
-                        <a href="index.html">🏠 Indietro</a>
-                    </div>
-                </div>
+        <div class="sidebar-bottom">
+            <div class="box">
+                <div id="selected-place" class="place-name">Italia - Piacenza</div>
+                <div id="selected-coords" class="label-muted">45.05°N, 9.69°E • Europe/Rome</div>
+                <div id="selected-local-time" class="local-clock">📅 --/--/---- ⏰ --:--:--</div>
+                <div id="selected-offset" class="label-muted">Scostamento: UTC+1</div>
+                <div id="status-msg" class="label-muted">Tocca o clicca sulla mappa per visualizzare luogo e ora.</div>
+                <button type="button" class="btn-open-pos" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
             </div>
 
-            <div class="sidebar-bottom">
-                <div class="box">
-                    <div id="selected-place" class="place-name">Italia - Piacenza</div>
-                    <div id="selected-coords" class="label-muted">45.05°N, 9.69°E • Europe/Rome</div>
-                    <div id="selected-local-time" class="local-clock">📅 --/--/---- ⏰ --:--:--</div>
-                    <div id="selected-offset" class="label-muted">Scostamento: UTC+1</div>
-                    <div id="status-msg" class="label-muted">Tocca o clicca sulla mappa per visualizzare luogo e ora.</div>
-                    <button type="button" class="btn-open-pos" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
-                </div>
+            <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
+                <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                <button type="submit">Cerca</button>
+            </form>
 
-                <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
-                    <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
-                    <button type="submit">Cerca</button>
-                </form>
-
-                <div class="box">
-                    <label for="utc-select" class="label-muted">Fuso / Scostamento rapido</label>
-                    <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
-                        <option value="">Seleziona un fuso UTC...</option>
-                    </select>
-                </div>
+            <div class="box">
+                <label for="utc-select" class="label-muted">Fuso / Scostamento rapido</label>
+                <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
+                    <option value="">Seleziona un fuso UTC...</option>
+                </select>
             </div>
-        </aside>
+        </div>
     </div>
 
     <script>
@@ -461,7 +473,7 @@
             const root = document.documentElement;
             const dpr = window.devicePixelRatio || 1;
             let topPx = 28;
-            let bottomPx = 16;
+            let bottomPx = 24;
 
             try {
                 if (window.AndroidInterface) {
