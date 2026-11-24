@@ -19,8 +19,10 @@
             --android-bottom-inset: 24px;
             --safe-top: max(env(safe-area-inset-top, 0px), var(--android-top-inset));
             --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-bottom-inset));
-            --system-bar-bg: #0b1120;
-            --panel-bg: #0f172a;
+            --bar-bg: #0b1120;
+            --surface-bg: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
         }
 
         * {
@@ -32,236 +34,120 @@
             padding: 0;
             width: 100%;
             max-width: 100vw;
-            height: 100dvh;
-            background: var(--system-bar-bg);
+            height: 100%;
+            background: var(--bar-bg);
             color: #f8fafc;
             font-family: system-ui, -apple-system, sans-serif;
             overflow-x: hidden;
-            overflow-y: hidden;
         }
 
-        /* Barre solide non trasparenti per status bar (alto) e navigation bar (basso) */
-        .sys-bar-top {
+        /* Spazi pieni e non trasparenti per barra in alto e barra in basso */
+        .top-guard {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: var(--safe-top);
-            background: var(--system-bar-bg);
-            z-index: 1200;
+            background: var(--bar-bg);
+            z-index: 1500;
             pointer-events: none;
         }
 
-        .sys-bar-bottom {
+        .bottom-guard {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
             height: var(--safe-bottom);
-            background: var(--system-bar-bg);
-            z-index: 1200;
+            background: var(--bar-bg);
+            z-index: 1500;
             pointer-events: none;
         }
 
-        .layout {
+        .page-shell {
             display: flex;
-            flex-direction: row;
             width: 100%;
-            max-width: 100%;
-            height: 100%;
+            min-height: 100%;
             padding-top: var(--safe-top);
             padding-bottom: var(--safe-bottom);
-            background: var(--system-bar-bg);
+            background: var(--surface-bg);
         }
 
-        .map-area {
+        .map-section {
             position: relative;
             flex: 1 1 auto;
-            height: 100%;
             min-width: 0;
-            background: var(--panel-bg);
+            min-height: 100%;
+            background: var(--surface-bg);
         }
 
         #map {
             width: 100%;
             height: 100%;
-            background: var(--panel-bg);
+            background: var(--surface-bg);
         }
 
-        .map-overlay-bar {
+        .map-tools {
             position: absolute;
             top: 10px;
-            left: 50px;
-            right: 54px;
-            z-index: 500;
+            left: 52px;
+            right: 56px;
+            z-index: 600;
             display: flex;
-            gap: 5px;
             flex-wrap: wrap;
-            background: rgba(15, 23, 42, 0.96);
-            border: 1px solid #334155;
-            padding: 5px 6px;
-            border-radius: 8px;
+            gap: 4px;
             width: fit-content;
-            max-width: calc(100% - 104px);
+            max-width: calc(100% - 108px);
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px 6px;
         }
 
-        .map-overlay-bar button,
-        .map-overlay-bar a {
-            background: #1e293b;
+        .map-tools button,
+        .map-tools a {
+            background: var(--card-bg);
             color: #e2e8f0;
             border: 1px solid #475569;
             border-radius: 6px;
             padding: 4px 7px;
-            font-size: 0.74rem;
+            font-size: 0.72rem;
             font-weight: 600;
             cursor: pointer;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 3px;
+            gap: 4px;
             white-space: nowrap;
         }
 
-        .map-overlay-bar button.active {
+        .map-tools button.active {
             background: #0284c7;
             border-color: #38bdf8;
             color: #ffffff;
         }
 
-        .sidebar {
+        .side-panel {
             width: 340px;
             max-width: 100%;
-            height: 100%;
-            background: var(--panel-bg);
-            border-left: 1px solid #334155;
+            background: var(--surface-bg);
+            border-left: 1px solid var(--border-color);
             padding: 12px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
             gap: 10px;
-            overflow-y: auto;
             flex-shrink: 0;
         }
 
-        .sidebar-top,
-        .sidebar-bottom {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            min-width: 0;
-        }
-
-        @media (max-width: 780px) {
-            html, body {
-                overflow-x: hidden;
-                overflow-y: auto;
-                height: auto;
-                min-height: 100dvh;
-            }
-
-            .layout {
-                flex-direction: column;
-                height: auto;
-                min-height: 100dvh;
-                width: 100%;
-                max-width: 100vw;
-                padding-bottom: calc(var(--safe-bottom) + 8px);
-            }
-
-            .sidebar {
-                display: contents;
-            }
-
-            .sidebar-top {
-                order: 1;
-                background: var(--panel-bg);
-                padding: 6px 8px;
-                gap: 0;
-                border-bottom: 1px solid #334155;
-                width: 100%;
-                max-width: 100vw;
-            }
-
-            .map-area {
-                order: 2;
-                width: 100%;
-                max-width: 100vw;
-                height: 46dvh;
-                min-height: 280px;
-                flex: 0 0 auto;
-            }
-
-            #map {
-                min-height: 280px;
-            }
-
-            .sidebar-bottom {
-                order: 3;
-                background: var(--panel-bg);
-                padding: 8px 8px 12px;
-                gap: 8px;
-                border-top: 1px solid #334155;
-                width: 100%;
-                max-width: 100vw;
-            }
-
-            .brand-header {
-                padding: 6px 8px;
-                flex-wrap: wrap;
-                gap: 6px;
-            }
-
-            .logo-link {
-                width: 28px;
-                height: 28px;
-            }
-
-            .quick-links {
-                flex-wrap: wrap;
-                gap: 4px;
-            }
-
-            .quick-links a {
-                padding: 4px 6px;
-                font-size: 0.7rem;
-            }
-
-            .box {
-                padding: 8px;
-            }
-
-            .local-clock {
-                font-size: 1rem;
-            }
-
-            .map-overlay-bar {
-                top: 8px;
-                left: 46px;
-                right: 52px;
-                width: fit-content;
-                max-width: calc(100% - 98px);
-                gap: 3px;
-                padding: 4px 5px;
-            }
-
-            .map-overlay-bar button,
-            .map-overlay-bar a {
-                padding: 3px 5px;
-                font-size: 0.65rem;
-                border-radius: 5px;
-            }
-        }
-
-        .brand-header {
+        .brand-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 8px;
-            background: #1e293b;
-            border: 1px solid #334155;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 8px 10px;
-            max-width: 100%;
         }
 
         .brand-left {
@@ -271,74 +157,127 @@
             min-width: 0;
         }
 
-        .logo-link {
-            display: inline-block;
-            width: 34px;
-            height: 34px;
-            flex-shrink: 0;
+        .brand-logo {
+            width: 32px;
+            height: 32px;
             border-radius: 6px;
             overflow: hidden;
+            flex-shrink: 0;
+            display: inline-block;
         }
 
-        .logo-link img {
+        .brand-logo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
         }
 
-        .quick-links {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
+        .brand-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #facc15;
+            white-space: nowrap;
         }
 
-        .quick-links a {
-            background: #0f172a;
+        .nav-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .nav-pills a {
+            background: var(--surface-bg);
             color: #facc15;
             border: 1px solid #475569;
             border-radius: 6px;
             padding: 4px 7px;
-            font-size: 0.74rem;
+            font-size: 0.72rem;
             font-weight: 700;
             text-decoration: none;
             white-space: nowrap;
         }
 
-        .box {
-            background: #1e293b;
-            border: 1px solid #334155;
+        .info-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 10px;
-            max-width: 100%;
         }
 
-        .local-clock {
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: #4ade80;
-            margin-top: 4px;
-        }
-
-        .label-muted {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-top: 2px;
-            word-break: break-word;
-        }
-
-        .place-name {
+        .place-title {
             font-size: 0.95rem;
             font-weight: 700;
             color: #facc15;
             word-break: break-word;
         }
 
-        .utc-select {
+        .muted-text {
+            font-size: 0.74rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            word-break: break-word;
+        }
+
+        .clock-text {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+
+        .btn-primary-green {
             width: 100%;
-            max-width: 100%;
+            margin-top: 8px;
+            background: #16a34a;
+            color: #ffffff;
+            border: 1px solid #86efac;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary-green:hover {
+            background: #15803d;
+        }
+
+        .search-row {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .search-row input {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 36px;
+            background: var(--surface-bg);
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.84rem;
+        }
+
+        .search-row button {
+            flex: 0 0 auto;
+            height: 36px;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .utc-dropdown {
+            width: 100%;
             margin-top: 6px;
-            background: #0f172a;
+            background: var(--surface-bg);
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 6px;
@@ -346,24 +285,6 @@
             font-size: 0.82rem;
             font-weight: 600;
             cursor: pointer;
-        }
-
-        .btn-open-pos {
-            width: 100%;
-            max-width: 100%;
-            margin-top: 8px;
-            background: #16a34a;
-            color: #ffffff;
-            border: 1px solid #86efac;
-            border-radius: 6px;
-            padding: 7px 10px;
-            font-size: 0.82rem;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .btn-open-pos:hover {
-            background: #15803d;
         }
 
         .tz-band-label {
@@ -379,16 +300,104 @@
             pointer-events: none;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
         }
+
+        /* Layout smartphone: tutto in colonna ordinata senza tagli */
+        @media (max-width: 780px) {
+            .page-shell {
+                flex-direction: column;
+                padding: calc(var(--safe-top) + 6px) 8px calc(var(--safe-bottom) + 12px) 8px;
+                gap: 8px;
+            }
+
+            .brand-bar {
+                order: 1;
+                padding: 6px 8px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .brand-logo {
+                width: 28px;
+                height: 28px;
+            }
+
+            .nav-pills a {
+                padding: 3px 6px;
+                font-size: 0.68rem;
+            }
+
+            .map-section {
+                order: 2;
+                width: 100%;
+                min-height: 0;
+                height: 36vh;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid var(--border-color);
+            }
+
+            #map {
+                width: 100%;
+                height: 100%;
+            }
+
+            .map-tools {
+                top: 8px;
+                left: 46px;
+                right: 52px;
+                width: fit-content;
+                max-width: calc(100% - 98px);
+                gap: 3px;
+                padding: 3px 5px;
+            }
+
+            .map-tools button,
+            .map-tools a {
+                padding: 3px 5px;
+                font-size: 0.64rem;
+                border-radius: 5px;
+            }
+
+            .side-panel {
+                order: 3;
+                width: 100%;
+                border-left: none;
+                padding: 0;
+                gap: 8px;
+            }
+
+            .info-card {
+                padding: 8px;
+            }
+
+            .clock-text {
+                font-size: 0.96rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="sys-bar-top" aria-hidden="true"></div>
-    <div class="sys-bar-bottom" aria-hidden="true"></div>
+    <div class="top-guard" aria-hidden="true"></div>
+    <div class="bottom-guard" aria-hidden="true"></div>
 
-    <div class="layout">
-        <div class="map-area">
+    <div class="page-shell">
+        <div class="brand-bar">
+            <div class="brand-left">
+                <a href="https://www.cavanweb.com/" target="_blank" class="brand-logo" title="Visita CavanWeb">
+                    <img src="SfondoN-512.png" alt="CavanWeb Logo">
+                </a>
+                <span class="brand-title">SunClock24</span>
+            </div>
+            <div class="nav-pills">
+                <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
+                <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
+                <a href="index.html">🏠 Indietro</a>
+            </div>
+        </div>
+
+        <div class="map-section">
             <div id="map"></div>
-            <div class="map-overlay-bar">
+            <div class="map-tools">
                 <button type="button" id="btn-grid" onclick="toggleGrid()">Griglia 15°</button>
                 <button type="button" id="btn-bands" onclick="toggleBands()">Fasce UTC</button>
                 <button type="button" id="btn-countries" onclick="toggleCountries()">Paesi Geo</button>
@@ -396,39 +405,26 @@
             </div>
         </div>
 
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="brand-header">
-                    <div class="brand-left">
-                        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
-                            <img src="SfondoN-512.png" alt="CavanWeb Logo">
-                        </a>
-                        <span class="place-name">SunClock24</span>
-                    </div>
-                    <div class="quick-links">
-                        <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
-                        <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
-                        <a href="index.html">🏠 Indietro</a>
-                    </div>
-                </div>
+        <aside class="side-panel">
+            <div class="info-card">
+                <div id="selected-place" class="place-title">Italia - Piacenza</div>
+                <div id="selected-coords" class="muted-text">45.05°N, 9.69°E • Europe/Rome</div>
+                <div id="selected-local-time" class="clock-text">📅 --/--/---- ⏰ --:--:--</div>
+                <div id="selected-offset" class="muted-text">Scostamento: UTC+1</div>
+                <div id="status-msg" class="muted-text">Tocca o clicca sulla mappa per visualizzare luogo e ora.</div>
+                <button type="button" class="btn-primary-green" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
             </div>
 
-            <div class="sidebar-bottom">
-                <div class="box">
-                    <div id="selected-place" class="place-name">Italia - Piacenza</div>
-                    <div id="selected-coords" class="label-muted">45.05°N, 9.69°E • Europe/Rome</div>
-                    <div id="selected-local-time" class="local-clock">📅 --/--/---- ⏰ --:--:--</div>
-                    <div id="selected-offset" class="label-muted">Scostamento: UTC+1</div>
-                    <div id="status-msg" class="label-muted">Tocca o clicca sulla mappa per visualizzare luogo e ora.</div>
-                    <button type="button" class="btn-open-pos" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
-                </div>
+            <form class="search-row" onsubmit="event.preventDefault(); searchCity();">
+                <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                <button type="submit">Cerca</button>
+            </form>
 
-                <div class="box">
-                    <label for="utc-select" class="label-muted">Fuso / Scostamento rapido</label>
-                    <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
-                        <option value="">Seleziona un fuso UTC...</option>
-                    </select>
-                </div>
+            <div class="info-card">
+                <label for="utc-select" class="muted-text">Fuso / Scostamento rapido</label>
+                <select id="utc-select" class="utc-dropdown" onchange="selectQuickOffset(this.value)">
+                    <option value="">Seleziona un fuso UTC...</option>
+                </select>
             </div>
         </aside>
     </div>
@@ -855,6 +851,21 @@
             const activeDst = isDstActiveForCoords(currentLat, currentLon);
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             window.location.href = `posizione.html?lat=${currentLat}&lon=${currentLon}&city=${encodeURIComponent(currentName)}&auto=${isAuto}&dst=${activeDst}`;
+        }
+
+        async function searchCity() {
+            const q = document.getElementById('city-input').value.trim();
+            if (!q) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`);
+                const list = await res.json();
+                if (Array.isArray(list) && list.length > 0) {
+                    const lat = parseFloat(list[0].lat);
+                    const lon = parseFloat(list[0].lon);
+                    map.setView([lat, lon], 6);
+                    handleMapClick(lat, lon, false);
+                }
+            } catch (e) {}
         }
 
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
