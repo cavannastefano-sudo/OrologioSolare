@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SunClock24 - Mappa Fusi Orari</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
@@ -21,6 +21,7 @@
             --accent-green: #39ff14;
             --accent-yellow: #facc15;
             --accent-pink: #ff007f;
+            --android-bottom-inset: 0px;
         }
 
         * {
@@ -48,7 +49,10 @@
             align-items: center;
             width: 100%;
             min-height: 100dvh;
-            padding: 4px;
+            padding-top: calc(4px + env(safe-area-inset-top, 0px));
+            padding-right: calc(4px + env(safe-area-inset-right, 0px));
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px) + var(--android-bottom-inset));
+            padding-left: calc(4px + env(safe-area-inset-left, 0px));
             gap: 4px;
         }
 
@@ -221,7 +225,7 @@
             flex: 1 1 auto;
             width: 100%;
             max-width: 1400px;
-            min-height: 66dvh;
+            min-height: 60dvh;
             border-radius: 10px;
             border: 2px solid var(--border-color);
             background: #030712;
@@ -235,7 +239,7 @@
             .map-viewport {
                 flex: 0 1 auto;
                 aspect-ratio: 2 / 1;
-                min-height: 500px;
+                min-height: 460px;
             }
         }
 
@@ -385,7 +389,7 @@
     </style>
 </head>
 <body>
-    <div class="app-shell">
+    <div id="app-shell" class="app-shell">
         <div class="top-bar">
             <div class="nav-group">
                 <a href="index.html" class="btn-nav">🏠 Home</a>
@@ -420,7 +424,7 @@
             <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
         </div>
 
-        <div class="info-card">
+        <div id="info-card" class="info-card">
             <div class="info-top">
                 <div id="selected-place-name" class="place-title">Piacenza</div>
                 <div id="selected-tz-badge" class="tz-pill">UTC+1 • Europe/Rome</div>
@@ -449,6 +453,37 @@
     </div>
 
     <script>
+        function syncNavigationBarSafeArea() {
+            const shell = document.getElementById('app-shell');
+            const infoCard = document.getElementById('info-card');
+            let bottomPx = 0;
+
+            try {
+                if (window.AndroidInterface && typeof window.AndroidInterface.getBottomInsetPx === 'function') {
+                    const val = parseInt(window.AndroidInterface.getBottomInsetPx(), 10);
+                    if (!Number.isNaN(val) && val > 0) {
+                        bottomPx = val;
+                    }
+                }
+            } catch (e) {
+                bottomPx = 0;
+            }
+
+            const cssBottom = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--android-bottom-inset')) || 0;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const effectiveBottom = Math.max(bottomPx, cssBottom);
+
+            if (shell) {
+                const extraPad = effectiveBottom > 0 ? Math.ceil(effectiveBottom / (window.visualViewport ? 1 : 1)) + 8 : 8;
+                shell.style.paddingBottom = `calc(${extraPad}px + env(safe-area-inset-bottom, 0px))`;
+            }
+
+            if (infoCard && effectiveBottom > 0) {
+                const safeMargin = Math.min(80, Math.max(12, Math.round(effectiveBottom * 0.25)));
+                infoCard.style.marginBottom = `${safeMargin}px`;
+            }
+        }
+
         const MAP_FILES = {
             tz: 'time-zones3000.gif',
             world: 'carte-du-monde.jpg'
@@ -675,6 +710,7 @@
         }
 
         function resizeCanvas() {
+            syncNavigationBarSafeArea();
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
             const rect = viewport.getBoundingClientRect();
             const prevW = canvas.width || rect.width * dpr;
@@ -1032,9 +1068,13 @@
         mapImg.src = currentMapFile;
 
         window.addEventListener('resize', resizeCanvas);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', resizeCanvas);
+        }
         resizeCanvas();
         updateInfoCard(!params.get('city'));
         setInterval(updateLocalClockReadout, 1000);
+        setInterval(syncNavigationBarSafeArea, 1500);
     </script>
 </body>
 </html>
