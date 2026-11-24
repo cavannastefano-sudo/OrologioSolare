@@ -45,7 +45,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background: #ffffff;
+            background: #0f172a;
         }
 
         .map-overlay-bar {
@@ -62,7 +62,8 @@
             border-radius: 8px;
         }
 
-        .map-overlay-bar button {
+        .map-overlay-bar button,
+        .map-overlay-bar a {
             background: #1e293b;
             color: #e2e8f0;
             border: 1px solid #475569;
@@ -71,6 +72,10 @@
             font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .map-overlay-bar button.active {
@@ -80,7 +85,7 @@
         }
 
         .sidebar {
-            width: 350px;
+            width: 340px;
             max-width: 100%;
             height: 100%;
             background: #0f172a;
@@ -199,13 +204,12 @@
             color: #facc15;
         }
 
-        .search-form, .manual-form {
+        .search-form {
             display: flex;
             gap: 6px;
-            margin-top: 6px;
         }
 
-        .search-form input, .manual-form input {
+        .search-form input {
             flex: 1;
             min-width: 0;
             background: #0f172a;
@@ -213,10 +217,10 @@
             border: 1px solid #475569;
             border-radius: 6px;
             padding: 6px 8px;
-            font-size: 0.82rem;
+            font-size: 0.85rem;
         }
 
-        .search-form button, .manual-form button {
+        .search-form button {
             background: #2563eb;
             color: #ffffff;
             border: none;
@@ -224,8 +228,6 @@
             padding: 6px 10px;
             font-weight: 700;
             cursor: pointer;
-            font-size: 0.8rem;
-            white-space: nowrap;
         }
 
         .utc-grid {
@@ -275,8 +277,9 @@
         <div class="map-area">
             <div id="map"></div>
             <div class="map-overlay-bar">
-                <button type="button" id="btn-tz-boundaries" class="active" onclick="toggleTzBoundaries()">Confini Fusi</button>
-                <button type="button" id="btn-countries" class="active" onclick="toggleCountries()">Paesi</button>
+                <button type="button" id="btn-grid" class="active" onclick="toggleGrid()">Griglia 15°</button>
+                <button type="button" id="btn-bands" class="active" onclick="toggleBands()">Fasce UTC</button>
+                <button type="button" id="btn-countries" class="active" onclick="toggleCountries()">Paesi GeoJSON</button>
                 <button type="button" onclick="map.setView([20, 0], 2)">Vista Globale</button>
             </div>
         </div>
@@ -300,7 +303,7 @@
                 <div class="label-muted">Ora di riferimento UTC</div>
                 <div id="utc-now" class="utc-clock">--:--:-- UTC</div>
                 <div id="header-time-display" class="hover-clock">Passa il mouse sulla mappa...</div>
-                <div id="status-msg" class="label-muted">Caricamento confini dei fusi orari...</div>
+                <div id="status-msg" class="label-muted">Clicca su una località per selezionarla o esplora i fusi orari.</div>
             </div>
 
             <div class="box">
@@ -311,17 +314,10 @@
                 <button type="button" class="btn-open-pos" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
             </div>
 
-            <div class="box">
-                <div class="label-muted">Ricerca città o inserimento manuale coordinate (lat, lon)</div>
-                <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
-                    <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, Piacenza)..." />
-                    <button type="submit">Cerca</button>
-                </form>
-                <form class="manual-form" onsubmit="event.preventDefault(); applyManualCoords();">
-                    <input id="manual-coords-input" type="text" placeholder="Coordinate manuali: es. 45.0526, 9.6930" />
-                    <button type="submit">Imposta</button>
-                </form>
-            </div>
+            <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
+                <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                <button type="submit">Cerca</button>
+            </form>
 
             <div class="box">
                 <div class="label-muted">Fusi / Scostamenti rapidi</div>
@@ -331,7 +327,6 @@
     </div>
 
     <script>
-        // Tre mappe nel selettore: Mappa Chiara, Topografica e Mappa Bianca
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -342,21 +337,8 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        const bianca = L.gridLayer({
-            attribution: 'Mappa Bianca',
-            createTile: function() {
-                const tile = document.createElement('div');
-                tile.style.background = '#ffffff';
-                tile.style.border = '1px solid #e2e8f0';
-                tile.style.boxSizing = 'border-box';
-                return tile;
-            }
-        });
-
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        let initialLayer = topo;
-        if (savedLayerName === 'Mappa Chiara') initialLayer = chiara;
-        else if (savedLayerName === 'Mappa Bianca') initialLayer = bianca;
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
         const map = L.map('map', {
             center: [20, 0],
@@ -367,65 +349,112 @@
         });
 
         const baseMaps = {
-            "Mappa Chiara": chiara,
             "Topografica": topo,
-            "Mappa Bianca": bianca
+            "Mappa Chiara": chiara
         };
         L.control.layers(baseMaps).addTo(map);
 
-        let tzGeojsonLayer = null;
-        let countriesGeojsonLayer = null;
-        let showTzBoundaries = true;
+        const gridGroup = L.layerGroup().addTo(map);
+        const bandsGroup = L.layerGroup().addTo(map);
+        let geojsonLayer = null;
         let showCountries = true;
-
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        // Colori ben distinti così fusi o paesi vicini non hanno tonalità simili
-        const DISTINCT_COLORS = [
+        function getColor(name) {
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = (hash * 31) + name.charCodeAt(i);
+            }
+            const hue = Math.abs(hash * 137.5) % 360;
+            return `hsl(${hue}, 85%, 55%)`;
+        }
+
+        const DISTINCT_BAND_COLORS = [
             '#e11d48', '#0284c7', '#16a34a', '#eab308', '#9333ea',
             '#ea580c', '#06b6d4', '#d946ef', '#84cc16', '#f43f5e',
             '#2563eb', '#10b981', '#f59e0b', '#7c3aed', '#ef4444',
-            '#14b8a6', '#a855f7', '#0ea5e9', '#22c55e', '#f97316',
-            '#6366f1', '#ec4899', '#3b82f6', '#65a30d', '#f472b6'
+            '#14b8a6', '#a855f7', '#eab308', '#0ea5e9', '#22c55e',
+            '#f97316', '#6366f1', '#ec4899', '#3b82f6', '#65a30d'
         ];
 
-        function getDistinctColorForZone(keyStr) {
-            let hash = 0;
-            const str = String(keyStr || 'zone');
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash * 37) + str.charCodeAt(i)) >>> 0;
-            }
-            const idx = (hash * 7) % DISTINCT_COLORS.length;
-            return DISTINCT_COLORS[idx];
+        function getDistinctBandColor(index) {
+            const pick = (index * 7) % DISTINCT_BAND_COLORS.length;
+            return DISTINCT_BAND_COLORS[pick];
         }
 
-        function getColor(name) {
-            return getDistinctColorForZone(name);
+        // Griglia di meridiani e paralleli ogni 15° sopra la mappa
+        for (let lon = -180; lon <= 180; lon += 15) {
+            L.polyline([[-80, lon], [80, lon]], {
+                color: lon === 0 ? '#facc15' : '#f8fafc',
+                weight: lon === 0 ? 2 : 1,
+                opacity: 0.55,
+                dashArray: lon === 0 ? null : '4 4'
+            }).addTo(gridGroup);
+        }
+        for (let lat = -75; lat <= 75; lat += 15) {
+            L.polyline([[lat, -180], [lat, 180]], {
+                color: lat === 0 ? '#facc15' : '#cbd5e1',
+                weight: lat === 0 ? 1.5 : 0.9,
+                opacity: 0.45
+            }).addTo(gridGroup);
         }
 
-        function toggleTzBoundaries() {
-            showTzBoundaries = !showTzBoundaries;
-            document.getElementById('btn-tz-boundaries').classList.toggle('active', showTzBoundaries);
-            if (!tzGeojsonLayer) return;
-            if (showTzBoundaries) tzGeojsonLayer.addTo(map);
-            else map.removeLayer(tzGeojsonLayer);
+        // Fasce orarie teoriche ogni 15° (da -12 a +12) con colori ben distinti
+        for (let offset = -12; offset <= 12; offset++) {
+            const west = offset * 15 - 7.5;
+            const east = offset * 15 + 7.5;
+            const bandColor = getDistinctBandColor(offset + 12);
+
+            const poly = L.polygon([
+                [-75, Math.max(-180, west)],
+                [75, Math.max(-180, west)],
+                [75, Math.min(180, east)],
+                [-75, Math.min(180, east)]
+            ], {
+                color: '#0f172a',
+                weight: 1.5,
+                fillColor: bandColor,
+                fillOpacity: 0.28
+            }).addTo(bandsGroup);
+
+            poly.on('click', (e) => {
+                handleMapClick(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        let showGrid = true;
+        let showBands = true;
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            document.getElementById('btn-grid').classList.toggle('active', showGrid);
+            if (showGrid) gridGroup.addTo(map);
+            else map.removeLayer(gridGroup);
+        }
+
+        function toggleBands() {
+            showBands = !showBands;
+            document.getElementById('btn-bands').classList.toggle('active', showBands);
+            if (showBands) bandsGroup.addTo(map);
+            else map.removeLayer(bandsGroup);
         }
 
         function toggleCountries() {
             showCountries = !showCountries;
             document.getElementById('btn-countries').classList.toggle('active', showCountries);
-            if (!countriesGeojsonLayer) return;
-            if (showCountries) countriesGeojsonLayer.addTo(map);
-            else map.removeLayer(countriesGeojsonLayer);
+            if (!geojsonLayer) return;
+            if (showCountries) geojsonLayer.addTo(map);
+            else map.removeLayer(geojsonLayer);
         }
 
+        // Gestione fusi specifici (Stretto di Bering - Isole Diomede per prime)
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 if (lon < -168.9) {
-                    return 12;
+                    return 12; // Grande Diomede (Russia) -> UTC+12
                 } else {
-                    return -9;
+                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
                 }
             }
 
@@ -455,7 +484,9 @@
                         }
                     }
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
 
             return Math.round(lon / 15);
         }
@@ -483,7 +514,9 @@
                             }
                         }
                     }
-                } catch (e) {}
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
@@ -539,7 +572,9 @@
                         dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
                     };
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.warn("Fallback fuso orario geometrico", e);
+            }
 
             let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
             const hoursOffset = Math.round(normalizedLon / 15);
@@ -661,26 +696,12 @@
                 .catch(() => {
                     currentName = 'Posizione';
                     document.getElementById('selected-place').textContent = 'Posizione';
-                    document.getElementById('status-msg').textContent = 'Posizione rilevata (senza connessione geocoding).';
+                    document.getElementById('status-msg').textContent = 'Posizione rilevata (offline).';
                     if (autoNavigate) {
                         const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
                         window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${dstActive}`;
                     }
                 });
-        }
-
-        function applyManualCoords() {
-            const raw = document.getElementById('manual-coords-input').value.trim();
-            if (!raw) return;
-            const parts = raw.split(/[,;\s]+/).filter(Boolean);
-            if (parts.length >= 2) {
-                const lat = parseFloat(parts[0]);
-                const lon = parseFloat(parts[1]);
-                if (!Number.isNaN(lat) && !Number.isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                    map.panTo([lat, lon]);
-                    handleMapClick(lat, lon, false);
-                }
-            }
         }
 
         function openSelectedInPosition() {
@@ -698,55 +719,22 @@
                 if (Array.isArray(list) && list.length > 0) {
                     const lat = parseFloat(list[0].lat);
                     const lon = parseFloat(list[0].lon);
-                    map.panTo([lat, lon]);
+                    map.setView([lat, lon], 6);
                     handleMapClick(lat, lon, false);
                 }
             } catch (e) {}
         }
 
-        fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
-            .then(res => {
-                if (!res.ok) throw new Error('Fallback tz');
-                return res.json();
-            })
-            .then(data => {
-                tzGeojsonLayer = L.geoJSON(data, {
-                    style: (feature) => {
-                        const zoneKey = (feature.properties && (feature.properties.tzid || feature.properties.name || feature.properties.zone)) || 'tz';
-                        return {
-                            fillColor: getDistinctColorForZone(zoneKey),
-                            weight: 1.1,
-                            opacity: 0.85,
-                            color: '#1e293b',
-                            fillOpacity: 0.34
-                        };
-                    },
-                    onEachFeature: (feature, layer) => {
-                        layer.on('click', (e) => {
-                            L.DomEvent.stopPropagation(e);
-                            handleMapClick(e.latlng.lat, e.latlng.lng, true);
-                        });
-                    }
-                });
-                if (showTzBoundaries) {
-                    tzGeojsonLayer.addTo(map);
-                }
-                document.getElementById('status-msg').textContent = 'Confini reali dei fusi caricati. Clicca su una località.';
-            })
-            .catch(() => {
-                document.getElementById('status-msg').textContent = 'Confini fusi non caricati da rete; clicca comunque sulla mappa.';
-            });
-
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
-                countriesGeojsonLayer = L.geoJSON(data, {
+                geojsonLayer = L.geoJSON(data, {
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
                         weight: 1,
                         opacity: 0.8,
                         color: '#333',
-                        fillOpacity: 0.35
+                        fillOpacity: 0.55
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
@@ -757,21 +745,25 @@
                 });
 
                 if (map.hasLayer(chiara) && showCountries) {
-                    countriesGeojsonLayer.addTo(map);
+                    geojsonLayer.addTo(map);
                 }
+
+                document.getElementById('status-msg').textContent = "Clicca su una località per selezionarla.";
             })
-            .catch(() => {});
+            .catch(() => {
+                document.getElementById('status-msg').textContent = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
+            });
 
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
 
-            if (e.name === "Mappa Chiara") {
-                if (countriesGeojsonLayer && !map.hasLayer(countriesGeojsonLayer) && showCountries) {
-                    countriesGeojsonLayer.addTo(map);
+            if (e.name === "Topografica") {
+                if (geojsonLayer && map.hasLayer(geojsonLayer)) {
+                    map.removeLayer(geojsonLayer);
                 }
-            } else {
-                if (countriesGeojsonLayer && map.hasLayer(countriesGeojsonLayer)) {
-                    map.removeLayer(countriesGeojsonLayer);
+            } else if (e.name === "Mappa Chiara") {
+                if (geojsonLayer && !map.hasLayer(geojsonLayer) && showCountries) {
+                    geojsonLayer.addTo(map);
                 }
             }
         });
@@ -802,6 +794,7 @@
             btn.className = 'utc-btn';
             btn.textContent = item.label;
             btn.onclick = () => {
+                map.setView([item.lat, item.lon], 4);
                 handleMapClick(item.lat, item.lon, false);
             };
             gridContainer.appendChild(btn);
