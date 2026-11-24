@@ -365,22 +365,23 @@
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        const DISTINCT_BAND_COLORS = [
-            '#e11d48', '#0284c7', '#16a34a', '#eab308', '#9333ea',
-            '#ea580c', '#06b6d4', '#d946ef', '#84cc16', '#f43f5e',
-            '#2563eb', '#10b981', '#f59e0b', '#7c3aed', '#ef4444',
-            '#14b8a6', '#a855f7', '#0ea5e9', '#22c55e', '#f97316',
-            '#6366f1', '#ec4899', '#3b82f6', '#65a30d', '#f472b6'
+        // Colori molto diversi tra loro (rosso, blu, verde, giallo, viola, arancio, ciano, magenta, lime, ecc.)
+        const HIGH_CONTRAST_COLORS = [
+            '#ef4444', '#2563eb', '#16a34a', '#eab308', '#9333ea',
+            '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#4f46e5',
+            '#14b8a6', '#dc2626', '#0ea5e9', '#22c55e', '#d946ef',
+            '#f59e0b', '#7c3aed', '#10b981', '#e11d48', '#3b82f6',
+            '#65a30d', '#a855f7', '#0284c7', '#ea580c', '#c026d3'
         ];
 
         function getColor(name) {
             let hash = 0;
-            const str = String(name || 'Sconosciuto');
+            const str = String(name || 'zona');
             for (let i = 0; i < str.length; i++) {
-                hash = ((hash * 31) + str.charCodeAt(i)) >>> 0;
+                hash = ((hash * 37) + str.charCodeAt(i)) >>> 0;
             }
-            const idx = (hash * 7) % DISTINCT_BAND_COLORS.length;
-            return DISTINCT_BAND_COLORS[idx];
+            const idx = (hash * 11) % HIGH_CONTRAST_COLORS.length;
+            return HIGH_CONTRAST_COLORS[idx];
         }
 
         // Griglia 15° (aggiunta solo se selezionata)
@@ -405,50 +406,44 @@
             document.getElementById('btn-grid').classList.add('active');
         }
 
-        // Livello fusi orari con contorni non dritti (sempre disponibile e cliccabile)
-        function buildNonStraightTimezoneLayer() {
-            bandsGroup.clearLayers();
+        // Confini reali dei fusi orari (non dritti), con colori ben distinti tra fusi diversi
+        fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error('Errore caricamento confini fusi');
+                return res.json();
+            })
+            .then(data => {
+                bandsGroup.clearLayers();
+                L.geoJSON(data, {
+                    style: (feature) => {
+                        const props = feature.properties || {};
+                        const zoneName = props.tzid || props.TZID || props.name || props.zone || 'tz';
+                        return {
+                            color: '#1e293b',
+                            weight: 1.2,
+                            opacity: 0.85,
+                            fillColor: getColor(zoneName),
+                            fillOpacity: 0.36
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            handleMapClick(e.latlng.lat, e.latlng.lng, true);
+                        });
+                    }
+                }).addTo(bandsGroup);
 
-            for (let offset = -12; offset <= 12; offset++) {
-                const centerLon = offset * 15;
-                const halfWidth = 7.5;
-                const leftPts = [];
-                const rightPts = [];
-
-                for (let lat = -85; lat <= 85; lat += 10) {
-                    const wave =
-                        Math.sin((lat * Math.PI) / 45) * 1.9 +
-                        Math.cos((lat * Math.PI) / 25 + offset) * 1.1;
-
-                    const lonW = Math.max(-180, Math.min(180, centerLon - halfWidth + wave));
-                    const lonE = Math.max(-180, Math.min(180, centerLon + halfWidth - wave * 0.8));
-
-                    leftPts.push([lat, lonW]);
-                    rightPts.push([lat, lonE]);
+                if (showBands) {
+                    bandsGroup.addTo(map);
                 }
+            })
+            .catch(() => {
+                // In caso di errore di rete sui confini reali, non disegna strisce dritte
+                document.getElementById('status-msg').textContent = 'Confini reali dei fusi non disponibili al momento; il clic sulla mappa funziona comunque.';
+            });
 
-                const coords = leftPts.concat(rightPts.reverse());
-                const poly = L.polygon(coords, {
-                    color: '#1e293b',
-                    weight: 1.4,
-                    opacity: 0.9,
-                    fillColor: getColor('tz_zone_' + offset),
-                    fillOpacity: 0.34,
-                    interactive: true
-                });
-
-                poly.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e);
-                    handleMapClick(e.latlng.lat, e.latlng.lng, true);
-                });
-
-                poly.addTo(bandsGroup);
-            }
-        }
-
-        buildNonStraightTimezoneLayer();
         if (showBands) {
-            bandsGroup.addTo(map);
             document.getElementById('btn-bands').classList.add('active');
         }
 
@@ -464,14 +459,8 @@
             showBands = !showBands;
             localStorage.setItem('sunclock_layer_bands', showBands);
             document.getElementById('btn-bands').classList.toggle('active', showBands);
-            if (showBands) {
-                if (bandsGroup.getLayers().length === 0) {
-                    buildNonStraightTimezoneLayer();
-                }
-                bandsGroup.addTo(map);
-            } else {
-                map.removeLayer(bandsGroup);
-            }
+            if (showBands) bandsGroup.addTo(map);
+            else map.removeLayer(bandsGroup);
         }
 
         function toggleCountries() {
