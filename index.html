@@ -899,8 +899,8 @@
                     <button type="button" onclick="toggleDstRulesModal(true)" class="compact-dst-btn" style="color: #38bdf8; border: 1px solid #38bdf8;">
                         🌍 Regole fuso
                     </button>
-                    <button type="button" id="btn-open-tz-map" onclick="openFusiMapPage()" class="compact-dst-btn" style="color: #facc15; border: 1px solid #facc15;">
-                        🗺️ Mappa fusi
+                    <button type="button" id="btn-open-tz-map" onclick="openWorldMapPage()" class="compact-dst-btn" style="color: #facc15; border: 1px solid #facc15;">
+                        🗺️ Mappa
                     </button>
                 </div>
             </div>
@@ -978,9 +978,9 @@
     <!-- Collegamento al file JavaScript esterno -->
     <script src="script.js"></script>
 
-    <!-- Apertura pagina fusi.html dal bottone nelle Impostazioni -->
+    <!-- Apertura pagina world.html dal bottone nelle Impostazioni -->
     <script>
-        function openFusiMapPage() {
+        function openWorldMapPage() {
             const qs = new URLSearchParams();
             if (typeof currentLat === 'number' && !Number.isNaN(currentLat)) {
                 qs.set('lat', currentLat.toFixed(4));
@@ -992,8 +992,9 @@
                 qs.set('city', currentLocationName.trim());
             }
             const query = qs.toString();
-            window.location.href = query ? `fusi.html?${query}` : 'fusi.html';
+            window.location.href = query ? `world.html?${query}` : 'world.html';
         }
+        const openFusiMapPage = openWorldMapPage;
     </script>
 
     <!-- Scorrimento a pressione continua per i cursori laterali ◀ e ▶ della striscia -->
