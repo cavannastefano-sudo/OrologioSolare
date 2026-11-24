@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Esempio Mappa Fusi Orari e Griglia</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100dvh;
+            background: #0b1120;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        .layout {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-area {
+            position: relative;
+            flex: 1 1 auto;
+            height: 100%;
+            min-width: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+        }
+
+        .map-overlay-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 500;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid #334155;
+            padding: 6px 8px;
+            border-radius: 8px;
+        }
+
+        .map-overlay-bar button {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .map-overlay-bar button.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+
+        .sidebar {
+            width: 320px;
+            max-width: 100%;
+            height: 100%;
+            background: #0f172a;
+            border-left: 1px solid #334155;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 780px) {
+            .layout {
+                flex-direction: column;
+            }
+            .map-area {
+                height: 55%;
+            }
+            .sidebar {
+                width: 100%;
+                height: 45%;
+                border-left: none;
+                border-top: 1px solid #334155;
+            }
+        }
+
+        .box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .utc-clock {
+            font-size: 1.2rem;
+            font-weight: 800;
+            color: #38bdf8;
+            margin-top: 4px;
+        }
+
+        .local-clock {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+
+        .label-muted {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .place-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #facc15;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 6px;
+        }
+
+        .search-form input {
+            flex: 1;
+            min-width: 0;
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.85rem;
+        }
+
+        .search-form button {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .utc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            margin-top: 6px;
+        }
+
+        .utc-btn {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 5px;
+            padding: 5px 4px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .utc-btn:hover, .utc-btn.selected {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="map-area">
+            <div id="map"></div>
+            <div class="map-overlay-bar">
+                <button type="button" id="btn-grid" class="active" onclick="toggleGrid()">Griglia 15°</button>
+                <button type="button" id="btn-bands" class="active" onclick="toggleBands()">Fasce UTC</button>
+                <button type="button" onclick="map.setView([25, 10], 2)">Vista Globale</button>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="box">
+                <div class="label-muted">Ora di riferimento UTC</div>
+                <div id="utc-now" class="utc-clock">--:--:-- UTC</div>
+            </div>
+
+            <div class="box">
+                <div id="selected-place" class="place-name">Piacenza, Italia</div>
+                <div id="selected-coords" class="label-muted">45.05°N, 9.69°E • Europe/Rome</div>
+                <div id="selected-local-time" class="local-clock">--:--:--</div>
+                <div id="selected-offset" class="label-muted">Scostamento: UTC+1</div>
+            </div>
+
+            <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
+                <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                <button type="submit">Cerca</button>
+            </form>
+
+            <div class="box">
+                <div class="label-muted">Fusi / Scostamenti rapidi</div>
+                <div id="utc-grid" class="utc-grid"></div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const map = L.map('map', {
+            center: [45.0526, 9.6930],
+            zoom: 3,
+            minZoom: 2,
+            maxZoom: 12
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        const gridGroup = L.layerGroup().addTo(map);
+        const bandsGroup = L.layerGroup().addTo(map);
+
+        // Griglia di meridiani e paralleli ogni 15° sopra la mappa
+        for (let lon = -180; lon <= 180; lon += 15) {
+            L.polyline([[-80, lon], [80, lon]], {
+                color: lon === 0 ? '#facc15' : '#38bdf8',
+                weight: lon === 0 ? 2 : 1,
+                opacity: 0.45,
+                dashArray: lon === 0 ? null : '4 4'
+            }).addTo(gridGroup);
+        }
+        for (let lat = -75; lat <= 75; lat += 15) {
+            L.polyline([[lat, -180], [lat, 180]], {
+                color: lat === 0 ? '#facc15' : '#64748b',
+                weight: lat === 0 ? 1.5 : 0.8,
+                opacity: 0.35
+            }).addTo(gridGroup);
+        }
+
+        // Fasce orarie teoriche ogni 15° (da -12 a +12)
+        for (let offset = -12; offset <= 12; offset++) {
+            const west = offset * 15 - 7.5;
+            const east = offset * 15 + 7.5;
+            const hue = ((offset + 12) * 14) % 360;
+
+            const poly = L.polygon([
+                [-75, Math.max(-180, west)],
+                [75, Math.max(-180, west)],
+                [75, Math.min(180, east)],
+                [-75, Math.min(180, east)]
+            ], {
+                color: '#0f172a',
+                weight: 1,
+                fillColor: `hsl(${hue}, 70%, 50%)`,
+                fillOpacity: 0.14
+            }).addTo(bandsGroup);
+
+            poly.on('click', (e) => {
+                selectPoint(e.latlng.lat, e.latlng.lng);
+            });
+        }
+
+        let showGrid = true;
+        let showBands = true;
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            document.getElementById('btn-grid').classList.toggle('active', showGrid);
+            if (showGrid) gridGroup.addTo(map);
+            else map.removeLayer(gridGroup);
+        }
+
+        function toggleBands() {
+            showBands = !showBands;
+            document.getElementById('btn-bands').classList.toggle('active', showBands);
+            if (showBands) bandsGroup.addTo(map);
+            else map.removeLayer(bandsGroup);
+        }
+
+        let currentLat = 45.0526;
+        let currentLon = 9.6930;
+        let currentName = 'Piacenza, Italia';
+        let currentTz = 'Europe/Rome';
+        let currentOffsetLabel = 'UTC+1';
+
+        const marker = L.circleMarker([currentLat, currentLon], {
+            radius: 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: '#ff007f',
+            fillOpacity: 1
+        }).addTo(map);
+
+        function getOffsetMinutesForTz(tzName, date = new Date()) {
+            try {
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzName,
+                    timeZoneName: 'shortOffset'
+                }).formatToParts(date);
+                const tzPart = parts.find(p => p.type === 'timeZoneName');
+                if (tzPart) {
+                    const m = tzPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (m) {
+                        const h = parseInt(m[1], 10);
+                        const min = m[2] ? parseInt(m[2], 10) : 0;
+                        return h * 60 + (h < 0 ? -min : min);
+                    }
+                }
+            } catch (e) {}
+            return 0;
+        }
+
+        function formatMinutesOffset(totalMin) {
+            const sign = totalMin >= 0 ? '+' : '-';
+            const abs = Math.abs(totalMin);
+            const h = Math.floor(abs / 60);
+            const m = abs % 60;
+            return m > 0 ? `UTC${sign}${h}:${String(m).padStart(2, '0')}` : `UTC${sign}${h}`;
+        }
+
+        function updateClocks() {
+            const now = new Date();
+            document.getElementById('utc-now').textContent =
+                now.toISOString().slice(11, 19) + ' UTC';
+
+            try {
+                const localStr = new Intl.DateTimeFormat('it-IT', {
+                    timeZone: currentTz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).format(now);
+                document.getElementById('selected-local-time').textContent = localStr;
+            } catch (e) {
+                document.getElementById('selected-local-time').textContent = '--:--:--';
+            }
+        }
+
+        async function selectPoint(lat, lon, labelOverride = null) {
+            currentLat = lat;
+            currentLon = lon;
+            marker.setLatLng([lat, lon]);
+
+            try {
+                currentTz = typeof tzlookup === 'function' ? (tzlookup(lat, lon) || 'UTC') : 'UTC';
+            } catch (e) {
+                currentTz = 'UTC';
+            }
+
+            const offsetMin = getOffsetMinutesForTz(currentTz);
+            currentOffsetLabel = formatMinutesOffset(offsetMin);
+
+            if (labelOverride) {
+                currentName = labelOverride;
+            } else {
+                currentName = `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+                try {
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=it&lat=${lat}&lon=${lon}`
+                    );
+                    if (res.ok) {
+                        const data = await res.json();
+                        const a = data.address || {};
+                        const city = a.city || a.town || a.village || a.municipality || a.state || '';
+                        const country = a.country || '';
+                        if (city && country) currentName = `${city}, ${country}`;
+                        else if (city || country) currentName = city || country;
+                    }
+                } catch (e) {}
+            }
+
+            document.getElementById('selected-place').textContent = currentName;
+            document.getElementById('selected-coords').textContent =
+                `${lat.toFixed(2)}°, ${lon.toFixed(2)}° • ${currentTz}`;
+            document.getElementById('selected-offset').textContent =
+                `Scostamento: ${currentOffsetLabel}`;
+            updateClocks();
+        }
+
+        map.on('click', (e) => {
+            selectPoint(e.latlng.lat, e.latlng.lng);
+        });
+
+        async function searchCity() {
+            const q = document.getElementById('city-input').value.trim();
+            if (!q) return;
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`
+                );
+                const list = await res.json();
+                if (Array.isArray(list) && list.length > 0) {
+                    const lat = parseFloat(list[0].lat);
+                    const lon = parseFloat(list[0].lon);
+                    const title = list[0].display_name.split(',').slice(0, 2).join(',').trim();
+                    map.setView([lat, lon], 6);
+                    selectPoint(lat, lon, title);
+                }
+            } catch (e) {}
+        }
+
+        // Griglia rapida di scostamenti UTC sulla destra
+        const quickOffsets = [
+            { label: 'UTC-8', lat: 34.05, lon: -118.24, city: 'Los Angeles, USA' },
+            { label: 'UTC-5', lat: 40.71, lon: -74.01, city: 'New York, USA' },
+            { label: 'UTC-3', lat: -23.55, lon: -46.63, city: 'San Paolo, Brasile' },
+            { label: 'UTC+0', lat: 51.51, lon: -0.13, city: 'Londra, Regno Unito' },
+            { label: 'UTC+1', lat: 45.05, lon: 9.69, city: 'Piacenza, Italia' },
+            { label: 'UTC+2', lat: 30.04, lon: 31.24, city: 'Il Cairo, Egitto' },
+            { label: 'UTC+3', lat: 55.75, lon: 37.62, city: 'Mosca, Russia' },
+            { label: 'UTC+5:30', lat: 28.61, lon: 77.21, city: 'Nuova Delhi, India' },
+            { label: 'UTC+8', lat: 39.90, lon: 116.41, city: 'Pechino, Cina' },
+            { label: 'UTC+9', lat: 35.68, lon: 139.65, city: 'Tokyo, Giappone' },
+            { label: 'UTC+10', lat: -33.87, lon: 151.21, city: 'Sydney, Australia' },
+            { label: 'UTC+12', lat: -36.85, lon: 174.76, city: 'Auckland, Nuova Zelanda' }
+        ];
+
+        const gridContainer = document.getElementById('utc-grid');
+        quickOffsets.forEach(item => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'utc-btn';
+            btn.textContent = item.label;
+            btn.onclick = () => {
+                map.setView([item.lat, item.lon], 4);
+                selectPoint(item.lat, item.lon, item.city);
+            };
+            gridContainer.appendChild(btn);
+        });
+
+        selectPoint(currentLat, currentLon, currentName);
+        setInterval(updateClocks, 1000);
+    </script>
+</body>
+</html>
