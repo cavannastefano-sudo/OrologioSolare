@@ -32,11 +32,12 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
+            min-height: 100%;
             background: var(--bg-main);
             color: #f8fafc;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -44,10 +45,17 @@
         .app-shell {
             display: flex;
             flex-direction: column;
+            align-items: center;
             width: 100%;
-            height: 100dvh;
-            padding: 6px;
-            gap: 6px;
+            min-height: 100dvh;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .top-bar,
+        .search-row,
+        .info-card {
+            width: min(100%, 720px);
         }
 
         .top-bar {
@@ -172,12 +180,12 @@
             background: #1d4ed8;
         }
 
-        /* Area mappa espansa */
+        /* Mappa 2:1 con spostamento e zoom libero col dito */
         .map-viewport {
             position: relative;
-            flex: 1;
-            min-height: 260px;
-            width: 100%;
+            width: min(100%, 720px);
+            aspect-ratio: 2 / 1;
+            max-height: 58dvh;
             border-radius: 10px;
             border: 2px solid var(--border-color);
             background: #030712;
@@ -199,9 +207,9 @@
 
         .map-status-banner {
             position: absolute;
-            top: 8px;
-            left: 8px;
-            right: 8px;
+            top: 6px;
+            left: 6px;
+            right: 6px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -209,9 +217,9 @@
             background: rgba(2, 6, 23, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.35);
             color: #e2e8f0;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 600;
-            padding: 4px 8px;
+            padding: 3px 7px;
             border-radius: 6px;
             pointer-events: none;
             z-index: 5;
@@ -219,14 +227,14 @@
 
         .crosshair-badge {
             position: absolute;
-            bottom: 8px;
-            left: 8px;
+            bottom: 6px;
+            left: 6px;
             background: rgba(2, 6, 23, 0.86);
             border: 1px solid rgba(56, 189, 248, 0.45);
             color: #e2e8f0;
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 700;
-            padding: 4px 8px;
+            padding: 3px 7px;
             border-radius: 6px;
             pointer-events: none;
             z-index: 5;
@@ -236,7 +244,7 @@
             background: var(--panel-bg);
             border: 2px solid var(--border-color);
             border-radius: 10px;
-            padding: 7px 9px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -253,7 +261,7 @@
         }
 
         .place-title {
-            font-size: 0.92rem;
+            font-size: 0.94rem;
             font-weight: 800;
             color: var(--accent-yellow);
         }
@@ -291,7 +299,7 @@
 
         .info-box strong {
             color: var(--accent-green);
-            font-size: 0.82rem;
+            font-size: 0.84rem;
         }
 
         .actions-row {
@@ -337,7 +345,7 @@
         <div class="top-bar">
             <div class="nav-group">
                 <a href="index.html" class="btn-nav">🏠 Home</a>
-                <span class="page-title">🌍 Fusi Orari</span>
+                <span class="page-title">🌍 Fusi Orari (2:1)</span>
             </div>
 
             <div class="zoom-controls">
@@ -355,10 +363,10 @@
 
         <div id="map-viewport" class="map-viewport">
             <div class="map-status-banner">
-                <span id="map-status-text">Spostamento/zoom libero • Doppio tocco per impostare posizione</span>
+                <span id="map-status-text">Mappa 2:1 • Trascina col dito o zooma • Doppio tocco per posizione</span>
             </div>
             <canvas id="mapCanvas"></canvas>
-            <div id="hover-coords" class="crosshair-badge">Vista: --.--°, --.--°</div>
+            <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
         </div>
 
         <div class="info-card">
@@ -466,7 +474,6 @@
             };
         }
 
-        // Margine di espansione libera attorno alla mappa così puoi spostarla ampiamente senza blocchi rigidi
         function clampPan() {
             const cw = canvas.width;
             const ch = canvas.height;
@@ -721,7 +728,6 @@
             ctx.stroke();
         }
 
-        // Cambio posizione solo su doppio tocco/clic esplicito
         function handleMapDoubleTap(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const px = (clientX - rect.left) * (canvas.width / rect.width);
@@ -875,7 +881,7 @@
 
         mapImg.onload = () => {
             mapLoaded = true;
-            statusText.innerText = 'Spostamento/zoom libero • Doppio tocco per impostare posizione';
+            statusText.innerText = 'Mappa 2:1 caricata • Trascina col dito o zooma • Doppio tocco per posizione';
             clampPan();
             drawMap();
         };
