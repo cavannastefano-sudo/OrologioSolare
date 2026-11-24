@@ -105,7 +105,6 @@
             gap: 10px;
         }
 
-        /* Visualizzazione smartphone: parte sopra la mappa, mappa al centro, parte sotto la mappa */
         @media (max-width: 780px) {
             html, body {
                 overflow: auto;
@@ -162,10 +161,6 @@
 
             .box {
                 padding: 8px;
-            }
-
-            .utc-clock {
-                font-size: 1rem;
             }
 
             .local-clock {
@@ -245,18 +240,11 @@
             padding: 10px;
         }
 
-        .utc-clock {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: #38bdf8;
-            margin-top: 4px;
-        }
-
         .hover-clock {
             font-size: 0.92rem;
             font-weight: 700;
             color: #39ff14;
-            margin-top: 6px;
+            margin-top: 2px;
         }
 
         .local-clock {
@@ -304,28 +292,17 @@
             cursor: pointer;
         }
 
-        .utc-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
+        .utc-select {
+            width: 100%;
             margin-top: 6px;
-        }
-
-        .utc-btn {
             background: #0f172a;
-            color: #e2e8f0;
-            border: 1px solid #334155;
-            border-radius: 5px;
-            padding: 5px 4px;
-            font-size: 0.72rem;
-            font-weight: 700;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
             cursor: pointer;
-        }
-
-        .utc-btn:hover, .utc-btn.selected {
-            background: #0284c7;
-            border-color: #38bdf8;
-            color: #ffffff;
         }
 
         .btn-open-pos {
@@ -375,10 +352,8 @@
                 </div>
 
                 <div class="box">
-                    <div class="label-muted">Ora di riferimento UTC</div>
-                    <div id="utc-now" class="utc-clock">--:--:-- UTC</div>
                     <div id="header-time-display" class="hover-clock">Passa il mouse sulla mappa...</div>
-                    <div id="status-msg" class="label-muted">Clicca su una località per selezionarla o attiva i livelli desiderati.</div>
+                    <div id="status-msg" class="label-muted">Clicca su una località per visualizzare luogo e ora.</div>
                 </div>
             </div>
 
@@ -397,8 +372,10 @@
                 </form>
 
                 <div class="box">
-                    <div class="label-muted">Fusi / Scostamenti rapidi</div>
-                    <div id="utc-grid" class="utc-grid"></div>
+                    <label for="utc-select" class="label-muted">Fuso / Scostamento rapido</label>
+                    <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
+                        <option value="">Seleziona un fuso UTC...</option>
+                    </select>
                 </div>
             </div>
         </aside>
@@ -461,7 +438,6 @@
             return HIGH_CONTRAST_COLORS[idx];
         }
 
-        // Griglia 15° (aggiunta solo se selezionata)
         for (let lon = -180; lon <= 180; lon += 15) {
             L.polyline([[-85, lon], [85, lon]], {
                 color: lon === 0 ? '#facc15' : '#64748b',
@@ -483,7 +459,6 @@
             document.getElementById('btn-grid').classList.add('active');
         }
 
-        // Confini reali dei fusi orari da Natural Earth
         fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('Errore caricamento Natural Earth time zones');
@@ -506,7 +481,7 @@
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
                             L.DomEvent.stopPropagation(e);
-                            handleMapClick(e.latlng.lat, e.latlng.lng, true);
+                            handleMapClick(e.latlng.lat, e.latlng.lng, false);
                         });
                     }
                 }).addTo(bandsGroup);
@@ -715,7 +690,6 @@
 
         function updateHeaderTime() {
             const now = new Date();
-            document.getElementById('utc-now').textContent = now.toISOString().slice(11, 19) + ' UTC';
 
             if (currentHoverLat !== null && currentHoverLon !== null) {
                 const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
@@ -739,7 +713,7 @@
             }
         }
 
-        function handleMapClick(lat, lon, autoNavigate = true) {
+        function handleMapClick(lat, lon, autoNavigate = false) {
             currentLat = lat;
             currentLon = lon;
             marker.setLatLng([lat, lon]);
@@ -759,6 +733,7 @@
             document.getElementById('selected-offset').textContent = `Scostamento: UTC${sign}${effectiveOffset}`;
             document.getElementById('selected-coords').textContent = `${lat.toFixed(2)}°, ${lon.toFixed(2)}° • ${currentTz}`;
             document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
+            updateHeaderTime();
 
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
                 .then(res => res.json())
@@ -838,7 +813,7 @@
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
                             L.DomEvent.stopPropagation(e);
-                            handleMapClick(e.latlng.lat, e.latlng.lng, true);
+                            handleMapClick(e.latlng.lat, e.latlng.lng, false);
                         });
                     }
                 });
@@ -848,7 +823,7 @@
                     document.getElementById('btn-countries').classList.add('active');
                 }
 
-                document.getElementById('status-msg').textContent = "Clicca su una località per selezionarla.";
+                document.getElementById('status-msg').textContent = "Clicca su una località per visualizzare luogo e ora.";
             })
             .catch(() => {
                 document.getElementById('status-msg').textContent = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
@@ -859,36 +834,39 @@
         });
 
         map.on('click', (e) => {
-            handleMapClick(e.latlng.lat, e.latlng.lng, true);
+            handleMapClick(e.latlng.lat, e.latlng.lng, false);
         });
 
         const quickOffsets = [
-            { label: 'UTC-9', lat: 65.75, lon: -168.7, city: 'Stati Uniti - Piccola Diomede' },
-            { label: 'UTC-5', lat: 40.71, lon: -74.01, city: 'Stati Uniti - New York' },
-            { label: 'UTC-3', lat: -23.55, lon: -46.63, city: 'Brasile - San Paolo' },
-            { label: 'UTC+0', lat: 51.51, lon: -0.13, city: 'Regno Unito - Londra' },
-            { label: 'UTC+1', lat: 45.05, lon: 9.69, city: 'Italia - Piacenza' },
-            { label: 'UTC+2', lat: 30.04, lon: 31.24, city: 'Egitto - Il Cairo' },
-            { label: 'UTC+3', lat: 55.75, lon: 37.62, city: 'Russia - Mosca' },
-            { label: 'UTC+5:30', lat: 28.61, lon: 77.21, city: 'India - Nuova Delhi' },
-            { label: 'UTC+8', lat: 39.90, lon: 116.41, city: 'Cina - Pechino' },
-            { label: 'UTC+9', lat: 35.68, lon: 139.65, city: 'Giappone - Tokyo' },
-            { label: 'UTC+10', lat: -33.87, lon: 151.21, city: 'Australia - Sydney' },
-            { label: 'UTC+12', lat: 65.78, lon: -169.0, city: 'Russia - Grande Diomede' }
+            { label: 'UTC-9 (Piccola Diomede)', lat: 65.75, lon: -168.7 },
+            { label: 'UTC-5 (New York)', lat: 40.71, lon: -74.01 },
+            { label: 'UTC-3 (San Paolo)', lat: -23.55, lon: -46.63 },
+            { label: 'UTC+0 (Londra)', lat: 51.51, lon: -0.13 },
+            { label: 'UTC+1 (Piacenza)', lat: 45.05, lon: 9.69 },
+            { label: 'UTC+2 (Il Cairo)', lat: 30.04, lon: 31.24 },
+            { label: 'UTC+3 (Mosca)', lat: 55.75, lon: 37.62 },
+            { label: 'UTC+5:30 (Nuova Delhi)', lat: 28.61, lon: 77.21 },
+            { label: 'UTC+8 (Pechino)', lat: 39.90, lon: 116.41 },
+            { label: 'UTC+9 (Tokyo)', lat: 35.68, lon: 139.65 },
+            { label: 'UTC+10 (Sydney)', lat: -33.87, lon: 151.21 },
+            { label: 'UTC+12 (Grande Diomede)', lat: 65.78, lon: -169.0 }
         ];
 
-        const gridContainer = document.getElementById('utc-grid');
-        quickOffsets.forEach(item => {
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'utc-btn';
-            btn.textContent = item.label;
-            btn.onclick = () => {
-                map.setView([item.lat, item.lon], 4);
-                handleMapClick(item.lat, item.lon, false);
-            };
-            gridContainer.appendChild(btn);
+        const selectEl = document.getElementById('utc-select');
+        quickOffsets.forEach((item, index) => {
+            const opt = document.createElement('option');
+            opt.value = String(index);
+            opt.textContent = item.label;
+            selectEl.appendChild(opt);
         });
+
+        function selectQuickOffset(val) {
+            const idx = parseInt(val, 10);
+            if (Number.isNaN(idx) || !quickOffsets[idx]) return;
+            const item = quickOffsets[idx];
+            map.setView([item.lat, item.lon], 4);
+            handleMapClick(item.lat, item.lon, false);
+        }
 
         handleMapClick(currentLat, currentLon, false);
         updateHeaderTime();
