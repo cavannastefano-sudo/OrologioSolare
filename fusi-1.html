@@ -8,6 +8,10 @@
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
 
+    <!-- Leaflet per la mappa geografica reale sotto -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <!-- FontAwesome per le icone -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -194,24 +198,41 @@
             flex-shrink: 0;
         }
 
-        #map-viewport {
+        /* Contenitore con mappa reale sotto e immagine sopra della stessa dimensione */
+        #map-stage {
             position: relative;
             width: 100%;
             flex-grow: 1;
             background: #020617;
             overflow: hidden;
-            touch-action: none;
-            cursor: grab;
         }
 
-        #map-viewport.dragging {
-            cursor: grabbing;
-        }
-
-        #mapCanvas {
-            display: block;
+        #map-underlay {
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
+            z-index: 1;
+        }
+
+        #map-overlay-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        #overlay-world-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0;
+            opacity: 0.82;
+            user-select: none;
+            -webkit-user-drag: none;
         }
 
         #status-msg {
@@ -235,7 +256,6 @@
 <body>
 
     <header id="app-header">
-        <!-- Prima riga: Logo CavanWeb e Display Data/Ora -->
         <div class="header-row">
             <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
                 <img src="SfondoN-512.png" alt="CavanWeb Logo">
@@ -243,18 +263,17 @@
             <div id="header-time-display">Tocca la mappa...</div>
         </div>
 
-        <!-- Seconda riga: Pulsanti ottimizzati per smartphone -->
         <div class="header-row">
             <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
             <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
             <a href="index.html" class="back-btn">🏠 Indietro</a>
         </div>
 
-        <!-- Terza riga: Scelta mappa, ricerca località e zoom -->
         <div class="tools-row">
             <div class="map-switcher">
                 <button type="button" id="btn-map-tz" class="btn-map-switch active" onclick="switchMapSource('time-zones3000.gif')">Fusi GIF</button>
                 <button type="button" id="btn-map-world" class="btn-map-switch" onclick="switchMapSource('carte-du-monde.jpg')">Mondo JPG</button>
+                <button type="button" id="btn-map-none" class="btn-map-switch" onclick="switchMapSource('')">Solo Mappa</button>
             </div>
 
             <div class="search-box">
@@ -263,15 +282,21 @@
             </div>
 
             <div class="zoom-group">
-                <button type="button" class="zoom-btn" onclick="zoomBy(1 / 1.35)">−</button>
-                <button type="button" class="zoom-btn" onclick="zoomBy(1.35)">+</button>
-                <button type="button" class="zoom-btn" onclick="resetZoom()">1:1</button>
+                <button type="button" class="zoom-btn" onclick="map.zoomOut()">−</button>
+                <button type="button" class="zoom-btn" onclick="map.zoomIn()">+</button>
+                <button type="button" class="zoom-btn" onclick="map.setView([20, 0], 2)">1:1</button>
             </div>
         </div>
     </header>
 
-    <div id="map-viewport">
-        <canvas id="mapCanvas"></canvas>
+    <div id="map-stage">
+        <!-- Mappa geografica reale sotto -->
+        <div id="map-underlay"></div>
+
+        <!-- Immagine sovrapposta della stessa estensione geografica -->
+        <div id="map-overlay-layer">
+            <img id="overlay-world-img" src="time-zones3000.gif" alt="Overlay Mappa">
+        </div>
     </div>
 
     <div id="status-msg">Clicca su una località per selezionarla o esplora i fusi orari.</div>
@@ -305,62 +330,84 @@
                 const bottomPad = bottomPx > 0 ? Math.ceil(bottomPx * 0.45) + 10 : 10;
                 status.style.paddingBottom = `calc(${bottomPad}px + env(safe-area-inset-bottom, 0px))`;
             }
+
+            if (typeof map !== 'undefined') {
+                map.invalidateSize();
+                syncOverlayToMap();
+            }
         }
 
-        const MAP_FILES = {
-            tz: 'time-zones3000.gif',
-            world: 'carte-du-monde.jpg'
-        };
-        let currentMapFile = MAP_FILES.tz;
+        const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
 
-        const viewport = document.getElementById('map-viewport');
-        const canvas = document.getElementById('mapCanvas');
-        const ctx = canvas.getContext('2d');
-        const mapImg = new Image();
-        let mapLoaded = false;
+        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
+        });
 
-        let scale = 1.0;
-        const minScale = 0.7;
-        const maxScale = 16.0;
-        let offsetX = 0;
-        let offsetY = 0;
+        const savedLayerName = localStorage.getItem('sunclock_map_layer');
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+
+        const map = L.map('map-underlay', {
+            center: [20, 0],
+            zoom: 2,
+            layers: [initialLayer]
+        });
+
+        const overlayImg = document.getElementById('overlay-world-img');
+
+        // Allinea esattamente l'immagine sovrapposta all'estensione geografica [-180..180, -85..85] della mappa sotto
+        function syncOverlayToMap() {
+            if (!overlayImg || !overlayImg.src || overlayImg.style.display === 'none') return;
+            const nwTopLeft = map.latLngToContainerPoint([85, -180]);
+            const seBottomRight = map.latLngToContainerPoint([-85, 180]);
+
+            const width = seBottomRight.x - nwTopLeft.x;
+            const height = seBottomRight.y - nwTopLeft.y;
+
+            overlayImg.style.width = `${width}px`;
+            overlayImg.style.height = `${height}px`;
+            overlayImg.style.transform = `translate3d(${nwTopLeft.x}px, ${nwTopLeft.y}px, 0)`;
+        }
+
+        function switchMapSource(fileName) {
+            document.getElementById('btn-map-tz').classList.toggle('active', fileName === 'time-zones3000.gif');
+            document.getElementById('btn-map-world').classList.toggle('active', fileName === 'carte-du-monde.jpg');
+            document.getElementById('btn-map-none').classList.toggle('active', fileName === '');
+
+            if (!fileName) {
+                overlayImg.style.display = 'none';
+                document.getElementById('status-msg').innerText = "Solo mappa geografica attiva. Clicca una località.";
+                return;
+            }
+
+            overlayImg.style.display = 'block';
+            overlayImg.src = fileName;
+            syncOverlayToMap();
+            document.getElementById('status-msg').innerText = `Sovrapposta ${fileName} allineata alla mappa.`;
+        }
+
+        overlayImg.addEventListener('load', syncOverlayToMap);
+        map.on('move zoom moveend zoomend resize viewreset', syncOverlayToMap);
 
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        let isDragging = false;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let pointerDownX = 0;
-        let pointerDownY = 0;
-        let movedDuringDrag = false;
-        let activePointers = new Map();
-        let lastPinchDist = null;
-
-        function switchMapSource(fileName) {
-            currentMapFile = fileName;
-            document.getElementById('btn-map-tz').classList.toggle('active', fileName === MAP_FILES.tz);
-            document.getElementById('btn-map-world').classList.toggle('active', fileName === MAP_FILES.world);
-            mapLoaded = false;
-            document.getElementById('status-msg').innerText = `Caricamento ${fileName}...`;
-            drawMap();
-            mapImg.src = fileName;
-        }
-
-        // Funzione per gestire i fusi specifici (Stretto di Bering - Isole Diomede per prime) - identica a world.html
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 if (lon < -168.9) {
-                    return 12; // Grande Diomede (Russia) -> UTC+12
+                    return 12;
                 } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
+                    return -9;
                 }
             }
 
-            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
-            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
-            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
-            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
 
             try {
                 if (typeof tzlookup === 'function') {
@@ -383,14 +430,11 @@
                         }
                     }
                 }
-            } catch (e) {
-                console.warn("Fallback su calcolo fuso geometrico", e);
-            }
+            } catch (e) {}
 
             return Math.round(lon / 15);
         }
 
-        // Calcolo dell'ora legale - identico a world.html
         function getCurrentDstStateForCoords(lat, lon, date) {
             const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
             if (isAuto && !isNaN(lat) && !isNaN(lon)) {
@@ -414,9 +458,7 @@
                             }
                         }
                     }
-                } catch (e) {
-                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
-                }
+                } catch (e) {}
             }
             return localStorage.getItem('sunclock_dst') === 'true';
         }
@@ -425,7 +467,6 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        // Funzione unificata per ottenere ora e data precise (gestione Diomede prioritaria) - identica a world.html
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
 
@@ -473,9 +514,7 @@
                         dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
                     };
                 }
-            } catch (e) {
-                console.warn("Fallback fuso orario geometrico", e);
-            }
+            } catch (e) {}
 
             let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
             const hoursOffset = Math.round(normalizedLon / 15);
@@ -498,7 +537,6 @@
         }
         setInterval(updateHeaderTime, 1000);
 
-        // Stessa identica gestione al clic di world.html: reverse geocoding Nominatim e apertura posizione.html
         function handleMapClick(lat, lon) {
             document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
 
@@ -557,262 +595,22 @@
             }
         }
 
-        function getBaseMapRect() {
-            const cw = canvas.width;
-            const ch = canvas.height;
-            if (!mapLoaded || !mapImg.naturalWidth || !mapImg.naturalHeight) {
-                return { x: 0, y: 0, w: cw, h: ch };
-            }
-
-            const imgRatio = mapImg.naturalWidth / mapImg.naturalHeight;
-            const canvasRatio = cw / ch;
-
-            let baseW = cw;
-            let baseH = ch;
-            if (imgRatio > canvasRatio) {
-                baseW = cw;
-                baseH = cw / imgRatio;
-            } else {
-                baseH = ch;
-                baseW = ch * imgRatio;
-            }
-
-            return {
-                x: (cw - baseW) / 2,
-                y: (ch - baseH) / 2,
-                w: baseW,
-                h: baseH
-            };
-        }
-
-        function clampPan() {
-            const cw = canvas.width;
-            const ch = canvas.height;
-            const base = getBaseMapRect();
-            const mapW = base.w * scale;
-            const mapH = base.h * scale;
-            const padX = Math.max(cw * 0.5, mapW * 0.3);
-            const padY = Math.max(ch * 0.5, mapH * 0.3);
-
-            const minX = -base.x - (mapW - cw) - padX;
-            const maxX = -base.x + padX;
-            if (minX <= maxX) {
-                if (offsetX > maxX) offsetX = maxX;
-                if (offsetX < minX) offsetX = minX;
-            } else {
-                offsetX = (cw - mapW) / 2 - base.x;
-            }
-
-            const minY = -base.y - (mapH - ch) - padY;
-            const maxY = -base.y + padY;
-            if (minY <= maxY) {
-                if (offsetY > maxY) offsetY = maxY;
-                if (offsetY < minY) offsetY = minY;
-            } else {
-                offsetY = (ch - mapH) / 2 - base.y;
-            }
-        }
-
-        function setZoomAtPoint(newScale, clientX, clientY) {
-            const rect = canvas.getBoundingClientRect();
-            const px = (clientX - rect.left) * (canvas.width / rect.width);
-            const py = (clientY - rect.top) * (canvas.height / rect.height);
-
-            const clamped = Math.max(minScale, Math.min(maxScale, newScale));
-            const ratio = clamped / scale;
-
-            offsetX = px - (px - offsetX) * ratio;
-            offsetY = py - (py - offsetY) * ratio;
-            scale = clamped;
-
-            clampPan();
-            drawMap();
-        }
-
-        function zoomBy(factor) {
-            const rect = canvas.getBoundingClientRect();
-            setZoomAtPoint(scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
-        }
-
-        function resetZoom() {
-            scale = 1.0;
-            offsetX = 0;
-            offsetY = 0;
-            clampPan();
-            drawMap();
-        }
-
-        function screenToLatLon(px, py) {
-            const base = getBaseMapRect();
-            const mapW = base.w * scale;
-            const mapH = base.h * scale;
-            const relX = (px - (base.x + offsetX)) / mapW;
-            const relY = (py - (base.y + offsetY)) / mapH;
-
-            const clampedX = Math.max(0, Math.min(1, relX));
-            const clampedY = Math.max(0, Math.min(1, relY));
-
-            const lon = clampedX * 360 - 180;
-            const lat = 90 - clampedY * 180;
-            return {
-                lat: Math.max(-85, Math.min(85, lat)),
-                lon: Math.max(-180, Math.min(180, lon))
-            };
-        }
-
-        function drawMap() {
-            const cw = canvas.width;
-            const ch = canvas.height;
-            ctx.clearRect(0, 0, cw, ch);
-
-            ctx.fillStyle = '#020617';
-            ctx.fillRect(0, 0, cw, ch);
-
-            const base = getBaseMapRect();
-            const drawX = base.x + offsetX;
-            const drawY = base.y + offsetY;
-            const drawW = base.w * scale;
-            const drawH = base.h * scale;
-
-            if (mapLoaded) {
-                ctx.imageSmoothingEnabled = scale < 2.2;
-                ctx.drawImage(mapImg, drawX, drawY, drawW, drawH);
-            }
-        }
-
-        function resizeCanvas() {
-            syncNavigationBarSafeArea();
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
-            const rect = viewport.getBoundingClientRect();
-            const prevW = canvas.width || rect.width * dpr;
-            const prevH = canvas.height || rect.height * dpr;
-
-            canvas.width = Math.max(1, Math.round(rect.width * dpr));
-            canvas.height = Math.max(1, Math.round(rect.height * dpr));
-
-            if (prevW > 0 && prevH > 0) {
-                offsetX = offsetX * (canvas.width / prevW);
-                offsetY = offsetY * (canvas.height / prevH);
-            }
-            clampPan();
-            drawMap();
-        }
-
-        viewport.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
-            setZoomAtPoint(scale * factor, e.clientX, e.clientY);
-        }, { passive: false });
-
-        viewport.addEventListener('pointerdown', (e) => {
-            viewport.setPointerCapture(e.pointerId);
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-            const rect = canvas.getBoundingClientRect();
-            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
-            const ll = screenToLatLon(px, py);
-            currentHoverLat = ll.lat;
-            currentHoverLon = ll.lon;
+        map.on('mousemove', (e) => {
+            currentHoverLat = e.latlng.lat;
+            currentHoverLon = e.latlng.lng;
             updateHeaderTime();
-
-            if (activePointers.size === 1) {
-                isDragging = true;
-                movedDuringDrag = false;
-                pointerDownX = e.clientX;
-                pointerDownY = e.clientY;
-                dragStartX = e.clientX;
-                dragStartY = e.clientY;
-                viewport.classList.add('dragging');
-            } else if (activePointers.size === 2) {
-                isDragging = false;
-                const pts = Array.from(activePointers.values());
-                lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-            }
         });
 
-        viewport.addEventListener('pointermove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
-            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
-            const ll = screenToLatLon(px, py);
-            currentHoverLat = ll.lat;
-            currentHoverLon = ll.lon;
-            updateHeaderTime();
-
-            if (!activePointers.has(e.pointerId)) return;
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-            if (activePointers.size === 2) {
-                const pts = Array.from(activePointers.values());
-                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-                const midX = (pts[0].x + pts[1].x) / 2;
-                const midY = (pts[0].y + pts[1].y) / 2;
-                if (lastPinchDist && dist > 0) {
-                    setZoomAtPoint(scale * (dist / lastPinchDist), midX, midY);
-                }
-                lastPinchDist = dist;
-                return;
-            }
-
-            if (isDragging) {
-                const dx = (e.clientX - dragStartX) * (canvas.width / rect.width);
-                const dy = (e.clientY - dragStartY) * (canvas.height / rect.height);
-                dragStartX = e.clientX;
-                dragStartY = e.clientY;
-
-                if (Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY) > 6) {
-                    movedDuringDrag = true;
-                }
-
-                offsetX += dx;
-                offsetY += dy;
-                clampPan();
-                drawMap();
-            }
+        map.on('click', (e) => {
+            handleMapClick(e.latlng.lat, e.latlng.lng);
         });
 
-        function finishPointer(e) {
-            if (activePointers.has(e.pointerId)) {
-                activePointers.delete(e.pointerId);
-            }
-            if (activePointers.size < 2) {
-                lastPinchDist = null;
-            }
-            if (activePointers.size === 0) {
-                if (isDragging && !movedDuringDrag) {
-                    const rect = canvas.getBoundingClientRect();
-                    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
-                    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
-                    const ll = screenToLatLon(px, py);
-                    handleMapClick(ll.lat, ll.lon);
-                }
-                isDragging = false;
-                viewport.classList.remove('dragging');
-            }
-        }
-
-        viewport.addEventListener('pointerup', finishPointer);
-        viewport.addEventListener('pointercancel', finishPointer);
-
-        mapImg.onload = () => {
-            mapLoaded = true;
-            document.getElementById('status-msg').innerText = "Clicca su una località per selezionarla.";
-            clampPan();
-            drawMap();
-        };
-
-        mapImg.onerror = () => {
-            document.getElementById('status-msg').innerText = `Errore nel caricamento di ${currentMapFile}.`;
-        };
-
-        mapImg.src = currentMapFile;
-
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', syncNavigationBarSafeArea);
         if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', resizeCanvas);
+            window.visualViewport.addEventListener('resize', syncNavigationBarSafeArea);
         }
-        resizeCanvas();
+        syncNavigationBarSafeArea();
+        syncOverlayToMap();
         setInterval(syncNavigationBarSafeArea, 1500);
     </script>
 </body>
