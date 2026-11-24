@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mappa Fusi Orari - SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+
+    <!-- FontAwesome per le icone -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Libreria tz-lookup per i fusi orari -->
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+    <script src="timezone-manager.js"></script>
+
+    <style>
+        :root {
+            --android-top-inset: 0px;
+            --android-bottom-inset: 0px;
+        }
+
+        html, body {
+            background-color: #000;
+            font-family: sans-serif;
+            color: #facc15;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100dvh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        header {
+            width: 100%;
+            padding-top: calc(10px + env(safe-area-inset-top, 0px) + var(--android-top-inset));
+            padding-right: calc(14px + env(safe-area-inset-right, 0px));
+            padding-bottom: 8px;
+            padding-left: calc(14px + env(safe-area-inset-left, 0px));
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-bottom: 1px solid #334155;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 8px;
+        }
+
+        .logo-link {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            flex-shrink: 0;
+            background: transparent;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #header-time-display {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #39ff14;
+            background: transparent;
+            border: none;
+            padding: 0;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            white-space: nowrap;
+            text-align: center;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #btn-meteocweb, #btn-tv, .back-btn {
+            background: rgba(0,0,0,0.3);
+            color: #facc15;
+            border: 2px solid #334155;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.82rem;
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            text-decoration: none;
+            flex: 1;
+            text-align: center;
+        }
+
+        #btn-meteocweb:hover, #btn-tv:hover, .back-btn:hover {
+            background: rgba(0,0,0,0.5);
+        }
+
+        .back-btn {
+            color: #39ff14;
+            border: 1px solid #ff0000;
+        }
+
+        .tools-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+
+        .map-switcher {
+            display: inline-flex;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 2px;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .btn-map-switch {
+            background: transparent;
+            color: #cbd5e1;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 7px;
+            font-size: 0.72rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-map-switch.active {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
+        .search-box {
+            display: flex;
+            flex: 1;
+            min-width: 0;
+            gap: 4px;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 0;
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+        .search-box button, .zoom-btn {
+            background: #1e293b;
+            color: #facc15;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .zoom-group {
+            display: inline-flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+
+        #map-viewport {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+            background: #020617;
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+        }
+
+        #map-viewport.dragging {
+            cursor: grabbing;
+        }
+
+        #mapCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #status-msg {
+            width: 100%;
+            padding-top: 9px;
+            padding-right: calc(12px + env(safe-area-inset-right, 0px));
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px) + var(--android-bottom-inset));
+            padding-left: calc(12px + env(safe-area-inset-left, 0px));
+            background: rgba(0, 0, 0, 0.92);
+            color: #38bdf8;
+            font-weight: bold;
+            text-align: center;
+            font-size: 0.85rem;
+            box-sizing: border-box;
+            z-index: 1000;
+            border-top: 1px solid #334155;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <header id="app-header">
+        <!-- Prima riga: Logo CavanWeb e Display Data/Ora -->
+        <div class="header-row">
+            <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                <img src="SfondoN-512.png" alt="CavanWeb Logo">
+            </a>
+            <div id="header-time-display">Tocca la mappa...</div>
+        </div>
+
+        <!-- Seconda riga: Pulsanti ottimizzati per smartphone -->
+        <div class="header-row">
+            <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
+            <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
+            <a href="index.html" class="back-btn">🏠 Indietro</a>
+        </div>
+
+        <!-- Terza riga: Scelta mappa, ricerca località e zoom -->
+        <div class="tools-row">
+            <div class="map-switcher">
+                <button type="button" id="btn-map-tz" class="btn-map-switch active" onclick="switchMapSource('time-zones3000.gif')">Fusi GIF</button>
+                <button type="button" id="btn-map-world" class="btn-map-switch" onclick="switchMapSource('carte-du-monde.jpg')">Mondo JPG</button>
+            </div>
+
+            <div class="search-box">
+                <input type="text" id="city-search" placeholder="Cerca città..." onkeydown="if (event.key === 'Enter') searchCity();">
+                <button type="button" onclick="searchCity()">🔍</button>
+            </div>
+
+            <div class="zoom-group">
+                <button type="button" class="zoom-btn" onclick="zoomBy(1 / 1.35)">−</button>
+                <button type="button" class="zoom-btn" onclick="zoomBy(1.35)">+</button>
+                <button type="button" class="zoom-btn" onclick="resetZoom()">1:1</button>
+            </div>
+        </div>
+    </header>
+
+    <div id="map-viewport">
+        <canvas id="mapCanvas"></canvas>
+    </div>
+
+    <div id="status-msg">Clicca su una località per selezionarla o esplora i fusi orari.</div>
+
+    <script>
+        function syncNavigationBarSafeArea() {
+            const header = document.getElementById('app-header');
+            const status = document.getElementById('status-msg');
+            let topPx = 0;
+            let bottomPx = 0;
+
+            try {
+                if (window.AndroidInterface) {
+                    if (typeof window.AndroidInterface.getTopInsetPx === 'function') {
+                        const tVal = parseInt(window.AndroidInterface.getTopInsetPx(), 10);
+                        if (!Number.isNaN(tVal) && tVal > 0) topPx = tVal;
+                    }
+                    if (typeof window.AndroidInterface.getBottomInsetPx === 'function') {
+                        const bVal = parseInt(window.AndroidInterface.getBottomInsetPx(), 10);
+                        if (!Number.isNaN(bVal) && bVal > 0) bottomPx = bVal;
+                    }
+                }
+            } catch (e) {}
+
+            if (header) {
+                const topPad = topPx > 0 ? Math.ceil(topPx * 0.4) + 10 : 10;
+                header.style.paddingTop = `calc(${topPad}px + env(safe-area-inset-top, 0px))`;
+            }
+
+            if (status) {
+                const bottomPad = bottomPx > 0 ? Math.ceil(bottomPx * 0.45) + 10 : 10;
+                status.style.paddingBottom = `calc(${bottomPad}px + env(safe-area-inset-bottom, 0px))`;
+            }
+        }
+
+        const MAP_FILES = {
+            tz: 'time-zones3000.gif',
+            world: 'carte-du-monde.jpg'
+        };
+        let currentMapFile = MAP_FILES.tz;
+
+        const viewport = document.getElementById('map-viewport');
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const mapImg = new Image();
+        let mapLoaded = false;
+
+        let scale = 1.0;
+        const minScale = 0.7;
+        const maxScale = 16.0;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        let currentHoverLat = null;
+        let currentHoverLon = null;
+
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let pointerDownX = 0;
+        let pointerDownY = 0;
+        let movedDuringDrag = false;
+        let activePointers = new Map();
+        let lastPinchDist = null;
+
+        function switchMapSource(fileName) {
+            currentMapFile = fileName;
+            document.getElementById('btn-map-tz').classList.toggle('active', fileName === MAP_FILES.tz);
+            document.getElementById('btn-map-world').classList.toggle('active', fileName === MAP_FILES.world);
+            mapLoaded = false;
+            document.getElementById('status-msg').innerText = `Caricamento ${fileName}...`;
+            drawMap();
+            mapImg.src = fileName;
+        }
+
+        // Funzione per gestire i fusi specifici (Stretto di Bering - Isole Diomede per prime) - identica a world.html
+        function getPreciseStandardTimezone(lat, lon) {
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                if (lon < -168.9) {
+                    return 12; // Grande Diomede (Russia) -> UTC+12
+                } else {
+                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
+                }
+            }
+
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0; // Portogallo
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0; // Irlanda
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;  // Spagna
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;   // Francia
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = new Date();
+                    const janDate = new Date(now.getFullYear(), 0, 15);
+
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(janDate);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+
+            return Math.round(lon / 15);
+        }
+
+        // Calcolo dell'ora legale - identico a world.html
+        function getCurrentDstStateForCoords(lat, lon, date) {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && !isNaN(lat) && !isNaN(lon)) {
+                try {
+                    if (typeof tzlookup === 'function') {
+                        const tzString = tzlookup(lat, lon);
+                        if (tzString.startsWith('Africa/')) return false;
+
+                        const dtf = new Intl.DateTimeFormat('en-US', {
+                            timeZone: tzString,
+                            timeZoneName: 'shortOffset'
+                        });
+                        const parts = dtf.formatToParts(date);
+                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                        if (offsetPart) {
+                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                            if (match) {
+                                const currentOffset = parseInt(match[1], 10);
+                                const standardBaseOffset = getPreciseStandardTimezone(lat, lon);
+                                return currentOffset > standardBaseOffset;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        function isDstActiveForCoords(lat, lon) {
+            return getCurrentDstStateForCoords(lat, lon, new Date());
+        }
+
+        // Funzione unificata per ottenere ora e data precise (gestione Diomede prioritaria) - identica a world.html
+        function getTimeForCoordinates(lat, lon) {
+            const now = new Date();
+
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
+                try {
+                    const options = {
+                        timeZone: targetTz,
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                } catch (e) {}
+            }
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const options = {
+                        timeZone: tzString,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                }
+            } catch (e) {
+                console.warn("Fallback fuso orario geometrico", e);
+            }
+
+            let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
+            const hoursOffset = Math.round(normalizedLon / 15);
+            const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
+
+            return {
+                timeStr: targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }),
+                dateStr: targetTime.toLocaleDateString('it-IT', { timeZone: 'UTC' })
+            };
+        }
+
+        function updateHeaderTime() {
+            if (currentHoverLat !== null && currentHoverLon !== null) {
+                const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
+                const headerDisplay = document.getElementById('header-time-display');
+                if (headerDisplay) {
+                    headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
+                }
+            }
+        }
+        setInterval(updateHeaderTime, 1000);
+
+        // Stessa identica gestione al clic di world.html: reverse geocoding Nominatim e apertura posizione.html
+        function handleMapClick(lat, lon) {
+            document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
+                .then(res => res.json())
+                .then(geoData => {
+                    let country = '';
+                    let specificLocality = '';
+
+                    if (geoData && geoData.address) {
+                        country = geoData.address.country || '';
+                        specificLocality = geoData.address.city ||
+                                           geoData.address.town ||
+                                           geoData.address.village ||
+                                           geoData.address.municipality ||
+                                           geoData.address.county ||
+                                           geoData.address.state || '';
+                    }
+
+                    let fullName = 'Posizione';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        fullName = `${country} - ${specificLocality}`;
+                    } else {
+                        fullName = specificLocality || country || 'Posizione';
+                    }
+
+                    const activeDst = isDstActiveForCoords(lat, lon);
+                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${activeDst}`;
+                })
+                .catch(() => {
+                    const activeDst = isDstActiveForCoords(lat, lon);
+                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${activeDst}`;
+                });
+        }
+
+        async function searchCity() {
+            const q = document.getElementById('city-search').value.trim();
+            if (!q) return;
+            document.getElementById('status-msg').innerText = `Ricerca "${q}" in corso...`;
+
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    handleMapClick(lat, lon);
+                } else {
+                    document.getElementById('status-msg').innerText = "Località non trovata.";
+                }
+            } catch (e) {
+                document.getElementById('status-msg').innerText = "Errore di connessione nella ricerca.";
+            }
+        }
+
+        function getBaseMapRect() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            if (!mapLoaded || !mapImg.naturalWidth || !mapImg.naturalHeight) {
+                return { x: 0, y: 0, w: cw, h: ch };
+            }
+
+            const imgRatio = mapImg.naturalWidth / mapImg.naturalHeight;
+            const canvasRatio = cw / ch;
+
+            let baseW = cw;
+            let baseH = ch;
+            if (imgRatio > canvasRatio) {
+                baseW = cw;
+                baseH = cw / imgRatio;
+            } else {
+                baseH = ch;
+                baseW = ch * imgRatio;
+            }
+
+            return {
+                x: (cw - baseW) / 2,
+                y: (ch - baseH) / 2,
+                w: baseW,
+                h: baseH
+            };
+        }
+
+        function clampPan() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const padX = Math.max(cw * 0.5, mapW * 0.3);
+            const padY = Math.max(ch * 0.5, mapH * 0.3);
+
+            const minX = -base.x - (mapW - cw) - padX;
+            const maxX = -base.x + padX;
+            if (minX <= maxX) {
+                if (offsetX > maxX) offsetX = maxX;
+                if (offsetX < minX) offsetX = minX;
+            } else {
+                offsetX = (cw - mapW) / 2 - base.x;
+            }
+
+            const minY = -base.y - (mapH - ch) - padY;
+            const maxY = -base.y + padY;
+            if (minY <= maxY) {
+                if (offsetY > maxY) offsetY = maxY;
+                if (offsetY < minY) offsetY = minY;
+            } else {
+                offsetY = (ch - mapH) / 2 - base.y;
+            }
+        }
+
+        function setZoomAtPoint(newScale, clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const px = (clientX - rect.left) * (canvas.width / rect.width);
+            const py = (clientY - rect.top) * (canvas.height / rect.height);
+
+            const clamped = Math.max(minScale, Math.min(maxScale, newScale));
+            const ratio = clamped / scale;
+
+            offsetX = px - (px - offsetX) * ratio;
+            offsetY = py - (py - offsetY) * ratio;
+            scale = clamped;
+
+            clampPan();
+            drawMap();
+        }
+
+        function zoomBy(factor) {
+            const rect = canvas.getBoundingClientRect();
+            setZoomAtPoint(scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+
+        function resetZoom() {
+            scale = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            clampPan();
+            drawMap();
+        }
+
+        function screenToLatLon(px, py) {
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const relX = (px - (base.x + offsetX)) / mapW;
+            const relY = (py - (base.y + offsetY)) / mapH;
+
+            const clampedX = Math.max(0, Math.min(1, relX));
+            const clampedY = Math.max(0, Math.min(1, relY));
+
+            const lon = clampedX * 360 - 180;
+            const lat = 90 - clampedY * 180;
+            return {
+                lat: Math.max(-85, Math.min(85, lat)),
+                lon: Math.max(-180, Math.min(180, lon))
+            };
+        }
+
+        function drawMap() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            ctx.clearRect(0, 0, cw, ch);
+
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, cw, ch);
+
+            const base = getBaseMapRect();
+            const drawX = base.x + offsetX;
+            const drawY = base.y + offsetY;
+            const drawW = base.w * scale;
+            const drawH = base.h * scale;
+
+            if (mapLoaded) {
+                ctx.imageSmoothingEnabled = scale < 2.2;
+                ctx.drawImage(mapImg, drawX, drawY, drawW, drawH);
+            }
+        }
+
+        function resizeCanvas() {
+            syncNavigationBarSafeArea();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const rect = viewport.getBoundingClientRect();
+            const prevW = canvas.width || rect.width * dpr;
+            const prevH = canvas.height || rect.height * dpr;
+
+            canvas.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas.height = Math.max(1, Math.round(rect.height * dpr));
+
+            if (prevW > 0 && prevH > 0) {
+                offsetX = offsetX * (canvas.width / prevW);
+                offsetY = offsetY * (canvas.height / prevH);
+            }
+            clampPan();
+            drawMap();
+        }
+
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
+            setZoomAtPoint(scale * factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        viewport.addEventListener('pointerdown', (e) => {
+            viewport.setPointerCapture(e.pointerId);
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            const rect = canvas.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const ll = screenToLatLon(px, py);
+            currentHoverLat = ll.lat;
+            currentHoverLon = ll.lon;
+            updateHeaderTime();
+
+            if (activePointers.size === 1) {
+                isDragging = true;
+                movedDuringDrag = false;
+                pointerDownX = e.clientX;
+                pointerDownY = e.clientY;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                viewport.classList.add('dragging');
+            } else if (activePointers.size === 2) {
+                isDragging = false;
+                const pts = Array.from(activePointers.values());
+                lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            }
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const ll = screenToLatLon(px, py);
+            currentHoverLat = ll.lat;
+            currentHoverLon = ll.lon;
+            updateHeaderTime();
+
+            if (!activePointers.has(e.pointerId)) return;
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size === 2) {
+                const pts = Array.from(activePointers.values());
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                const midX = (pts[0].x + pts[1].x) / 2;
+                const midY = (pts[0].y + pts[1].y) / 2;
+                if (lastPinchDist && dist > 0) {
+                    setZoomAtPoint(scale * (dist / lastPinchDist), midX, midY);
+                }
+                lastPinchDist = dist;
+                return;
+            }
+
+            if (isDragging) {
+                const dx = (e.clientX - dragStartX) * (canvas.width / rect.width);
+                const dy = (e.clientY - dragStartY) * (canvas.height / rect.height);
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+
+                if (Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY) > 6) {
+                    movedDuringDrag = true;
+                }
+
+                offsetX += dx;
+                offsetY += dy;
+                clampPan();
+                drawMap();
+            }
+        });
+
+        function finishPointer(e) {
+            if (activePointers.has(e.pointerId)) {
+                activePointers.delete(e.pointerId);
+            }
+            if (activePointers.size < 2) {
+                lastPinchDist = null;
+            }
+            if (activePointers.size === 0) {
+                if (isDragging && !movedDuringDrag) {
+                    const rect = canvas.getBoundingClientRect();
+                    const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+                    const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+                    const ll = screenToLatLon(px, py);
+                    handleMapClick(ll.lat, ll.lon);
+                }
+                isDragging = false;
+                viewport.classList.remove('dragging');
+            }
+        }
+
+        viewport.addEventListener('pointerup', finishPointer);
+        viewport.addEventListener('pointercancel', finishPointer);
+
+        mapImg.onload = () => {
+            mapLoaded = true;
+            document.getElementById('status-msg').innerText = "Clicca su una località per selezionarla.";
+            clampPan();
+            drawMap();
+        };
+
+        mapImg.onerror = () => {
+            document.getElementById('status-msg').innerText = `Errore nel caricamento di ${currentMapFile}.`;
+        };
+
+        mapImg.src = currentMapFile;
+
+        window.addEventListener('resize', resizeCanvas);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', resizeCanvas);
+        }
+        resizeCanvas();
+        setInterval(syncNavigationBarSafeArea, 1500);
+    </script>
+</body>
+</html>
