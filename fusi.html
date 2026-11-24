@@ -103,6 +103,41 @@
             letter-spacing: 0.3px;
         }
 
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .map-switcher {
+            display: inline-flex;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2px;
+            gap: 2px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-map-switch {
+            background: transparent;
+            color: #cbd5e1;
+            border: none;
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-map-switch.active {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
         .zoom-controls {
             display: flex;
             align-items: center;
@@ -357,11 +392,18 @@
                 <span class="page-title">🌍 Fusi Orari</span>
             </div>
 
-            <div class="zoom-controls">
-                <button type="button" class="btn-zoom" onclick="zoomBy(1 / 1.35)" title="Zoom indietro">−</button>
-                <span id="zoom-readout" class="zoom-readout">100%</span>
-                <button type="button" class="btn-zoom" onclick="zoomBy(1.35)" title="Zoom avanti">+</button>
-                <button type="button" class="btn-zoom" onclick="resetZoom()" title="Ripristina vista">1:1</button>
+            <div class="right-controls">
+                <div class="map-switcher" role="group" aria-label="Selettore mappa">
+                    <button type="button" id="btn-map-tz" class="btn-map-switch active" onclick="switchMapSource('time-zones3000.gif')">Fusi GIF</button>
+                    <button type="button" id="btn-map-world" class="btn-map-switch" onclick="switchMapSource('carte-du-monde.jpg')">Mondo JPG</button>
+                </div>
+
+                <div class="zoom-controls">
+                    <button type="button" class="btn-zoom" onclick="zoomBy(1 / 1.35)" title="Zoom indietro">−</button>
+                    <span id="zoom-readout" class="zoom-readout">100%</span>
+                    <button type="button" class="btn-zoom" onclick="zoomBy(1.35)" title="Zoom avanti">+</button>
+                    <button type="button" class="btn-zoom" onclick="resetZoom()" title="Ripristina vista">1:1</button>
+                </div>
             </div>
         </div>
 
@@ -407,7 +449,11 @@
     </div>
 
     <script>
-        const MAP_IMAGE_FILE = 'time-zones3000.gif';
+        const MAP_FILES = {
+            tz: 'time-zones3000.gif',
+            world: 'carte-du-monde.jpg'
+        };
+        let currentMapFile = MAP_FILES.tz;
 
         const params = new URLSearchParams(window.location.search);
         let selectedLat = params.get('lat') ? parseFloat(params.get('lat')) : 45.05;
@@ -455,6 +501,22 @@
         let lastTapTime = 0;
         let activePointers = new Map();
         let lastPinchDist = null;
+
+        function updateMapSwitcherUI(fileName) {
+            const btnTz = document.getElementById('btn-map-tz');
+            const btnWorld = document.getElementById('btn-map-world');
+            if (btnTz) btnTz.classList.toggle('active', fileName === MAP_FILES.tz);
+            if (btnWorld) btnWorld.classList.toggle('active', fileName === MAP_FILES.world);
+        }
+
+        function switchMapSource(fileName) {
+            currentMapFile = fileName;
+            updateMapSwitcherUI(fileName);
+            mapLoaded = false;
+            statusText.innerText = `Caricamento ${fileName}...`;
+            drawMap();
+            mapImg.src = fileName;
+        }
 
         function formatCoordLabel(lat, lon) {
             const latDir = lat >= 0 ? 'N' : 'S';
@@ -958,16 +1020,16 @@
 
         mapImg.onload = () => {
             mapLoaded = true;
-            statusText.innerText = 'Trascina col dito o zooma • Doppio tocco per luogo';
+            statusText.innerText = `${currentMapFile} • Trascina col dito o zooma • Doppio tocco per luogo`;
             clampPan();
             drawMap();
         };
 
         mapImg.onerror = () => {
-            statusText.innerText = 'Errore nel caricamento di time-zones3000.gif nella repository.';
+            statusText.innerText = `Errore nel caricamento di ${currentMapFile} nella repository.`;
         };
 
-        mapImg.src = MAP_IMAGE_FILE;
+        mapImg.src = currentMapFile;
 
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
