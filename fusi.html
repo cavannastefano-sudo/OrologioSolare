@@ -15,7 +15,7 @@
     <style>
         :root {
             --bg-main: #020617;
-            --panel-bg: rgba(15, 23, 42, 0.92);
+            --panel-bg: rgba(15, 23, 42, 0.94);
             --border-color: #334155;
             --accent-cyan: #38bdf8;
             --accent-green: #39ff14;
@@ -50,7 +50,6 @@
             gap: 8px;
         }
 
-        /* Barra superiore */
         .top-bar {
             display: flex;
             align-items: center;
@@ -93,7 +92,6 @@
             font-weight: 800;
             color: var(--accent-yellow);
             letter-spacing: 0.3px;
-            text-shadow: 0 0 8px rgba(250, 204, 21, 0.25);
         }
 
         .zoom-controls {
@@ -136,7 +134,6 @@
             color: var(--accent-green);
         }
 
-        /* Ricerca rapida città */
         .search-row {
             display: flex;
             gap: 6px;
@@ -175,7 +172,6 @@
             background: #1d4ed8;
         }
 
-        /* Contenitore mappa con zoom */
         .map-viewport {
             position: relative;
             flex: 1;
@@ -200,11 +196,11 @@
             height: 100%;
         }
 
-        .map-hint {
+        .map-status-banner {
             position: absolute;
             top: 8px;
             left: 8px;
-            background: rgba(2, 6, 23, 0.78);
+            background: rgba(2, 6, 23, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.35);
             color: #cbd5e1;
             font-size: 0.73rem;
@@ -219,7 +215,7 @@
             position: absolute;
             bottom: 8px;
             left: 8px;
-            background: rgba(2, 6, 23, 0.84);
+            background: rgba(2, 6, 23, 0.86);
             border: 1px solid rgba(56, 189, 248, 0.45);
             color: #e2e8f0;
             font-size: 0.74rem;
@@ -230,7 +226,6 @@
             z-index: 5;
         }
 
-        /* Pannello info in basso */
         .info-card {
             background: var(--panel-bg);
             border: 2px solid var(--border-color);
@@ -353,9 +348,9 @@
         </div>
 
         <div id="map-viewport" class="map-viewport">
-            <div class="map-hint">Tocca o clicca sulla mappa • Rotella / Pinch per zoom • Trascina per spostarti</div>
+            <div id="map-status" class="map-status-banner">Caricamento mappa time-zones3000.gif...</div>
             <canvas id="mapCanvas"></canvas>
-            <div id="hover-coords" class="crosshair-badge">Lat: --.-- | Lon: --.--</div>
+            <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
         </div>
 
         <div class="info-card">
@@ -387,68 +382,14 @@
     </div>
 
     <script>
+        const MAP_IMAGE_URL = 'https://carte-monde.org/wp-content/uploads/2016/09/time-zones3000.gif';
+
         const params = new URLSearchParams(window.location.search);
         let selectedLat = params.get('lat') ? parseFloat(params.get('lat')) : 45.05;
         let selectedLon = params.get('lon') ? parseFloat(params.get('lon')) : 9.69;
         let selectedName = params.get('city') ? decodeURIComponent(params.get('city')) : 'Piacenza';
         let selectedTz = 'Europe/Rome';
         let selectedOffsetHours = 1;
-
-        // Mappa semplificata a poligoni (continenti principali) + griglia fusi orari ogni 15°
-        const CONTINENTS = [
-            // Nord America
-            [
-                [-168, 66], [-140, 70], [-95, 72], [-78, 62], [-60, 47], [-70, 42],
-                [-81, 25], [-97, 18], [-105, 20], [-117, 32], [-124, 48], [-150, 61]
-            ],
-            // Groenlandia
-            [
-                [-52, 60], [-20, 71], [-18, 82], [-45, 83], [-70, 76], [-56, 68]
-            ],
-            // Sud America
-            [
-                [-80, 9], [-61, 10], [-50, 1], [-35, -6], [-39, -18], [-48, -28],
-                [-58, -38], [-66, -46], [-72, -54], [-75, -45], [-71, -30], [-70, -18], [-81, -4]
-            ],
-            // Europa
-            [
-                [-9, 37], [-9, 43], [-2, 48], [5, 51], [8, 55], [5, 60], [15, 68],
-                [28, 71], [41, 66], [38, 55], [30, 46], [24, 38], [16, 38], [12, 44], [3, 42], [-5, 36]
-            ],
-            // Africa
-            [
-                [-17, 15], [-13, 28], [-6, 36], [10, 37], [12, 32], [25, 31], [33, 28],
-                [43, 12], [51, 11], [41, -2], [40, -12], [35, -24], [27, -33], [18, -34],
-                [14, -22], [12, -6], [9, 4], [1, 6], [-8, 5], [-16, 11]
-            ],
-            // Asia
-            [
-                [38, 41], [48, 30], [56, 26], [68, 24], [77, 8], [88, 22], [98, 16],
-                [104, 2], [109, 15], [121, 25], [122, 40], [131, 43], [141, 53], [162, 60],
-                [172, 66], [140, 72], [95, 76], [65, 70], [42, 65], [38, 55]
-            ],
-            // Australia
-            [
-                [114, -22], [122, -17], [131, -12], [136, -15], [142, -11], [146, -19],
-                [153, -28], [150, -37], [140, -38], [131, -32], [115, -34]
-            ],
-            // Nuova Zelanda
-            [
-                [167, -46], [174, -41], [178, -37], [173, -35], [171, -43]
-            ],
-            // Giappone
-            [
-                [130, 31], [136, 34], [140, 36], [141, 41], [145, 44], [139, 39], [132, 34]
-            ],
-            // Regno Unito / Irlanda
-            [
-                [-10, 52], [-6, 55], [-5, 50], [1, 51], [1, 53], [-3, 58], [-6, 57]
-            ],
-            // Madagascar
-            [
-                [44, -25], [49, -25], [50, -13], [44, -16]
-            ]
-        ];
 
         const QUICK_CITIES = [
             { name: 'Piacenza', lat: 45.0526, lon: 9.6930 },
@@ -468,6 +409,11 @@
         const viewport = document.getElementById('map-viewport');
         const canvas = document.getElementById('mapCanvas');
         const ctx = canvas.getContext('2d');
+        const statusBanner = document.getElementById('map-status');
+
+        const mapImg = new Image();
+        mapImg.crossOrigin = 'anonymous';
+        let mapLoaded = false;
 
         let scale = 1.0;
         const minScale = 1.0;
@@ -484,26 +430,58 @@
         let activePointers = new Map();
         let lastPinchDist = null;
 
-        function clampPan() {
-            const w = canvas.width;
-            const h = canvas.height;
-            const worldW = w * scale;
-            const worldH = h * scale;
-
-            if (worldW <= w) {
-                offsetX = (w - worldW) / 2;
-            } else {
-                const minX = w - worldW;
-                if (offsetX > 0) offsetX = 0;
-                if (offsetX < minX) offsetX = minX;
+        // Calcola il rettangolo base in cui l'immagine è adattata dentro il canvas (letterbox/cover bilanciato)
+        function getBaseMapRect() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            if (!mapLoaded || !mapImg.naturalWidth || !mapImg.naturalHeight) {
+                return { x: 0, y: 0, w: cw, h: ch };
             }
 
-            if (worldH <= h) {
-                offsetY = (h - worldH) / 2;
+            const imgRatio = mapImg.naturalWidth / mapImg.naturalHeight;
+            const canvasRatio = cw / ch;
+
+            let baseW = cw;
+            let baseH = ch;
+            if (imgRatio > canvasRatio) {
+                baseW = cw;
+                baseH = cw / imgRatio;
             } else {
-                const minY = h - worldH;
-                if (offsetY > 0) offsetY = 0;
-                if (offsetY < minY) offsetY = minY;
+                baseH = ch;
+                baseW = ch * imgRatio;
+            }
+
+            return {
+                x: (cw - baseW) / 2,
+                y: (ch - baseH) / 2,
+                w: baseW,
+                h: baseH
+            };
+        }
+
+        function clampPan() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+
+            if (mapW <= cw) {
+                offsetX = (cw - mapW) / 2 - base.x;
+            } else {
+                const minOffsetX = -base.x - (mapW - cw);
+                const maxOffsetX = -base.x;
+                if (offsetX > maxOffsetX) offsetX = maxOffsetX;
+                if (offsetX < minOffsetX) offsetX = minOffsetX;
+            }
+
+            if (mapH <= ch) {
+                offsetY = (ch - mapH) / 2 - base.y;
+            } else {
+                const minOffsetY = -base.y - (mapH - ch);
+                const maxOffsetY = -base.y;
+                if (offsetY > maxOffsetY) offsetY = maxOffsetY;
+                if (offsetY < minOffsetY) offsetY = minOffsetY;
             }
         }
 
@@ -559,25 +537,36 @@
             drawMap();
         }
 
-        function latLonToWorld(lat, lon) {
-            const w = canvas.width * scale;
-            const h = canvas.height * scale;
-            const x = ((lon + 180) / 360) * w;
-            const y = ((90 - lat) / 180) * h;
-            return { x, y };
+        // Converte coordinate geografiche (lat/lon) in coordinate schermo (px/py) sulla mappa
+        function latLonToScreen(lat, lon) {
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const relX = ((lon + 180) / 360) * mapW;
+            const relY = ((90 - lat) / 180) * mapH;
+            return {
+                x: base.x + offsetX + relX,
+                y: base.y + offsetY + relY
+            };
         }
 
-        function canvasToLatLon(px, py) {
-            const w = canvas.width * scale;
-            const h = canvas.height * scale;
-            const worldX = px - offsetX;
-            const worldY = py - offsetY;
+        // Converte coordinate schermo (px/py) in coordinate geografiche (lat/lon)
+        function screenToLatLon(px, py) {
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const relX = (px - (base.x + offsetX)) / mapW;
+            const relY = (py - (base.y + offsetY)) / mapH;
 
-            const lon = (worldX / w) * 360 - 180;
-            const lat = 90 - (worldY / h) * 180;
+            const clampedX = Math.max(0, Math.min(1, relX));
+            const clampedY = Math.max(0, Math.min(1, relY));
+
+            const lon = clampedX * 360 - 180;
+            const lat = 90 - clampedY * 180;
             return {
                 lat: Math.max(-85, Math.min(85, lat)),
-                lon: Math.max(-180, Math.min(180, lon))
+                lon: Math.max(-180, Math.min(180, lon)),
+                insideMap: relX >= 0 && relX <= 1 && relY >= 0 && relY <= 1
             };
         }
 
@@ -652,9 +641,13 @@
             selectedName = name || `Punto (${selectedLat.toFixed(2)}, ${selectedLon.toFixed(2)})`;
 
             if (centerView) {
-                const pt = latLonToWorld(selectedLat, selectedLon);
-                offsetX = canvas.width / 2 - pt.x;
-                offsetY = canvas.height / 2 - pt.y;
+                const base = getBaseMapRect();
+                const mapW = base.w * scale;
+                const mapH = base.h * scale;
+                const relX = ((selectedLon + 180) / 360) * mapW;
+                const relY = ((90 - selectedLat) / 180) * mapH;
+                offsetX = canvas.width / 2 - (base.x + relX);
+                offsetY = canvas.height / 2 - (base.y + relY);
                 clampPan();
             }
 
@@ -663,101 +656,54 @@
         }
 
         function drawMap() {
-            const w = canvas.width;
-            const h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
+            const cw = canvas.width;
+            const ch = canvas.height;
+            ctx.clearRect(0, 0, cw, ch);
 
-            // Oceano
-            const grad = ctx.createLinearGradient(0, 0, 0, h);
-            grad.addColorStop(0, '#071326');
-            grad.addColorStop(0.5, '#0b1d38');
-            grad.addColorStop(1, '#071326');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, w, h);
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, cw, ch);
 
-            ctx.save();
-            ctx.translate(offsetX, offsetY);
+            const base = getBaseMapRect();
+            const drawX = base.x + offsetX;
+            const drawY = base.y + offsetY;
+            const drawW = base.w * scale;
+            const drawH = base.h * scale;
 
-            // Fasce orarie ogni 15 gradi di longitudine
-            for (let zone = -12; zone <= 12; zone++) {
-                const lonStart = zone * 15 - 7.5;
-                const lonEnd = zone * 15 + 7.5;
-                const p1 = latLonToWorld(90, lonStart);
-                const p2 = latLonToWorld(-90, lonEnd);
-
-                if (Math.abs(zone) % 2 === 1) {
-                    ctx.fillStyle = 'rgba(56, 189, 248, 0.04)';
-                    ctx.fillRect(p1.x, 0, p2.x - p1.x, canvas.height * scale);
-                }
-
-                // Linea meridiano fuso
-                ctx.beginPath();
-                ctx.moveTo(p1.x, 0);
-                ctx.lineTo(p1.x, canvas.height * scale);
-                ctx.strokeStyle = zone === 0 ? 'rgba(250, 204, 21, 0.45)' : 'rgba(148, 163, 184, 0.16)';
-                ctx.lineWidth = zone === 0 ? 1.8 : 1;
-                ctx.stroke();
-
-                // Etichetta UTC in alto
-                ctx.fillStyle = 'rgba(148, 163, 184, 0.72)';
-                ctx.font = 'bold 11px sans-serif';
-                ctx.textAlign = 'center';
-                const labelLon = zone * 15;
-                const lp = latLonToWorld(82, labelLon);
-                if (lp.x > 16 && lp.x < canvas.width * scale - 16) {
-                    const sign = zone >= 0 ? `+${zone}` : `${zone}`;
-                    ctx.fillText(sign, lp.x, 16);
-                }
+            if (mapLoaded) {
+                ctx.imageSmoothingEnabled = scale < 2.2;
+                ctx.drawImage(mapImg, drawX, drawY, drawW, drawH);
+            } else {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(drawX, drawY, drawW, drawH);
             }
 
-            // Paralleli ogni 30 gradi
-            for (let lat = -60; lat <= 60; lat += 30) {
-                const p = latLonToWorld(lat, -180);
-                ctx.beginPath();
-                ctx.moveTo(0, p.y);
-                ctx.lineTo(canvas.width * scale, p.y);
-                ctx.strokeStyle = lat === 0 ? 'rgba(250, 204, 21, 0.35)' : 'rgba(148, 163, 184, 0.12)';
-                ctx.lineWidth = lat === 0 ? 1.5 : 1;
-                ctx.stroke();
-            }
-
-            // Continenti
-            CONTINENTS.forEach(poly => {
-                ctx.beginPath();
-                poly.forEach(([lon, lat], idx) => {
-                    const pt = latLonToWorld(lat, lon);
-                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
-                    else ctx.lineTo(pt.x, pt.y);
-                });
-                ctx.closePath();
-                ctx.fillStyle = 'rgba(34, 197, 94, 0.22)';
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(74, 222, 128, 0.72)';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-            });
-
-            // Città di riferimento
+            // Segnaposto città principali
             QUICK_CITIES.forEach(c => {
-                const pt = latLonToWorld(c.lat, c.lon);
+                const pt = latLonToScreen(c.lat, c.lon);
                 ctx.beginPath();
                 ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
                 ctx.fillStyle = '#38bdf8';
                 ctx.fill();
+                ctx.strokeStyle = '#020617';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
 
-                if (scale >= 1.4 || c.name === 'Piacenza' || c.name === 'Roma' || c.name === 'New York' || c.name === 'Tokyo') {
+                if (scale >= 1.5 || c.name === 'Piacenza' || c.name === 'Roma' || c.name === 'New York' || c.name === 'Tokyo') {
                     ctx.font = 'bold 11px sans-serif';
                     ctx.textAlign = 'left';
-                    ctx.fillStyle = '#e2e8f0';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                    ctx.shadowBlur = 4;
                     ctx.fillText(c.name, pt.x + 6, pt.y + 3);
+                    ctx.shadowBlur = 0;
                 }
             });
 
             // Marker punto selezionato
-            const selPt = latLonToWorld(selectedLat, selectedLon);
+            const selPt = latLonToScreen(selectedLat, selectedLon);
             ctx.beginPath();
-            ctx.arc(selPt.x, selPt.y, 11, 0, Math.PI * 2);
-            ctx.strokeStyle = 'rgba(255, 0, 127, 0.45)';
+            ctx.arc(selPt.x, selPt.y, 12, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.55)';
             ctx.lineWidth = 3;
             ctx.stroke();
 
@@ -766,25 +712,20 @@
             ctx.fillStyle = '#ff007f';
             ctx.fill();
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.8;
             ctx.stroke();
-
-            ctx.restore();
         }
 
         function handleMapTap(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const px = (clientX - rect.left) * (canvas.width / rect.width);
             const py = (clientY - rect.top) * (canvas.height / rect.height);
-            const ll = canvasToLatLon(px, py);
+            const ll = screenToLatLon(px, py);
 
-            // Controlla se il tocco è vicino a una città nota
             let matchedCity = null;
             for (const c of QUICK_CITIES) {
-                const pt = latLonToWorld(c.lat, c.lon);
-                const dx = (pt.x + offsetX) - px;
-                const dy = (pt.y + offsetY) - py;
-                if (Math.hypot(dx, dy) < 18) {
+                const pt = latLonToScreen(c.lat, c.lon);
+                if (Math.hypot(pt.x - px, pt.y - py) < 18) {
                     matchedCity = c;
                     break;
                 }
@@ -797,14 +738,12 @@
             }
         }
 
-        // Rotella mouse per zoom
         viewport.addEventListener('wheel', (e) => {
             e.preventDefault();
             const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
             setZoomAtPoint(scale * factor, e.clientX, e.clientY);
         }, { passive: false });
 
-        // Pointer + Pinch to zoom + Pan
         viewport.addEventListener('pointerdown', (e) => {
             viewport.setPointerCapture(e.pointerId);
             activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -828,7 +767,7 @@
             const rect = canvas.getBoundingClientRect();
             const px = (e.clientX - rect.left) * (canvas.width / rect.width);
             const py = (e.clientY - rect.top) * (canvas.height / rect.height);
-            const hoverLL = canvasToLatLon(px, py);
+            const hoverLL = screenToLatLon(px, py);
             document.getElementById('hover-coords').innerText = `Puntatore: ${hoverLL.lat.toFixed(2)}°, ${hoverLL.lon.toFixed(2)}°`;
 
             if (!activePointers.has(e.pointerId)) return;
@@ -921,6 +860,19 @@
             const url = `posizione.html?lat=${selectedLat.toFixed(4)}&lon=${selectedLon.toFixed(4)}&city=${encodeURIComponent(selectedName)}`;
             window.location.href = url;
         }
+
+        mapImg.onload = () => {
+            mapLoaded = true;
+            statusBanner.innerText = 'Mappa time-zones3000.gif caricata • Rotella/Pinch per zoom • Trascina';
+            clampPan();
+            drawMap();
+        };
+
+        mapImg.onerror = () => {
+            statusBanner.innerText = 'Impossibile caricare time-zones3000.gif (controlla connessione o CORS)';
+        };
+
+        mapImg.src = MAP_IMAGE_URL;
 
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
