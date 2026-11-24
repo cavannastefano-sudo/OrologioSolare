@@ -45,7 +45,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background: #ffffff;
+            background: #0f172a;
         }
 
         .map-overlay-bar {
@@ -337,23 +337,21 @@
             attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
         });
 
-        // Nessuna mappa base attiva finché non la selezioni tu
+        // Mappa Chiara predefinita all'avvio, salvo diversa scelta salvata dall'utente
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        const initialLayers = [];
-        if (savedLayerName === 'Mappa Chiara') initialLayers.push(chiara);
-        else if (savedLayerName === 'Topografica') initialLayers.push(topo);
+        const initialLayer = (savedLayerName === 'Topografica') ? topo : chiara;
 
         const map = L.map('map', {
             center: [20, 0],
             zoom: 2,
             minZoom: 2,
             maxZoom: 12,
-            layers: initialLayers
+            layers: [initialLayer]
         });
 
         const baseMaps = {
-            "Topografica": topo,
-            "Mappa Chiara": chiara
+            "Mappa Chiara": chiara,
+            "Topografica": topo
         };
         L.control.layers(baseMaps).addTo(map);
 
@@ -361,7 +359,7 @@
         const bandsGroup = L.layerGroup();
         let geojsonLayer = null;
 
-        // Nessun livello predefinito all'avvio: solo ciò che selezioni tu viene salvato e mantenuto
+        // Nessun livello overlay predefinito all'avvio: solo ciò che selezioni tu viene salvato e mantenuto
         let showGrid = localStorage.getItem('sunclock_layer_grid') === 'true';
         let showBands = localStorage.getItem('sunclock_layer_bands') === 'true';
         let showCountries = localStorage.getItem('sunclock_layer_countries') === 'true';
