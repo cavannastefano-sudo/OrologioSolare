@@ -3,157 +3,139 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mappa Fusi Orari - SunClock24</title>
+    <title>SunClock24 - Mappa Fusi Orari</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
 
-    <!-- Leaflet per la mappa geografica reale sotto -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-    <!-- FontAwesome per le icone -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- Libreria tz-lookup per i fusi orari -->
+    <!-- Libreria fuso orario da coordinate -->
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
 
     <style>
         :root {
+            --bg-main: #020617;
+            --panel-bg: rgba(15, 23, 42, 0.94);
+            --border-color: #334155;
+            --accent-cyan: #38bdf8;
+            --accent-green: #39ff14;
+            --accent-yellow: #facc15;
+            --accent-pink: #ff007f;
             --android-top-inset: 0px;
             --android-bottom-inset: 0px;
         }
 
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         html, body {
-            background-color: #000;
-            font-family: sans-serif;
-            color: #facc15;
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100dvh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            box-sizing: border-box;
+            width: 100%;
+            min-height: 100%;
+            background: var(--bg-main);
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-y: auto;
+            overflow-x: hidden;
             user-select: none;
             -webkit-user-select: none;
         }
 
-        header {
-            width: 100%;
-            padding-top: calc(10px + env(safe-area-inset-top, 0px) + var(--android-top-inset));
-            padding-right: calc(14px + env(safe-area-inset-right, 0px));
-            padding-bottom: 8px;
-            padding-left: calc(14px + env(safe-area-inset-left, 0px));
-            background: rgba(0, 0, 0, 0.95);
+        .app-shell {
             display: flex;
             flex-direction: column;
-            box-sizing: border-box;
-            z-index: 1000;
-            border-bottom: 1px solid #334155;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .header-row {
-            display: flex;
-            justify-content: space-between;
             align-items: center;
             width: 100%;
-            gap: 8px;
-        }
-
-        .logo-link {
-            display: inline-block;
-            width: 36px;
-            height: 36px;
-            flex-shrink: 0;
-            background: transparent;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .logo-link img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        #header-time-display {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: #39ff14;
-            background: transparent;
-            border: none;
-            padding: 0;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            white-space: nowrap;
-            text-align: center;
-            flex-grow: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        #btn-meteocweb, #btn-tv, .back-btn {
-            background: rgba(0,0,0,0.3);
-            color: #facc15;
-            border: 2px solid #334155;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.8);
-            padding: 6px 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.82rem;
-            font-weight: bold;
-            white-space: nowrap;
-            text-shadow: -1px -1px 0 #ff0000, 1px -1px 0 #ff0000, -1px 1px 0 #ff0000, 1px 1px 0 #ff0000, 0 0 6px #ff0000;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
+            min-height: 100dvh;
+            padding-top: calc(8px + env(safe-area-inset-top, 0px) + var(--android-top-inset));
+            padding-right: calc(4px + env(safe-area-inset-right, 0px));
+            padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px) + var(--android-bottom-inset));
+            padding-left: calc(4px + env(safe-area-inset-left, 0px));
             gap: 4px;
-            text-decoration: none;
-            flex: 1;
-            text-align: center;
         }
 
-        #btn-meteocweb:hover, #btn-tv:hover, .back-btn:hover {
-            background: rgba(0,0,0,0.5);
+        .top-bar,
+        .search-row,
+        .info-card {
+            width: 100%;
+            max-width: 1400px;
         }
 
-        .back-btn {
-            color: #39ff14;
-            border: 1px solid #ff0000;
-        }
-
-        .tools-row {
+        .top-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 6px;
-            width: 100%;
+            flex-wrap: wrap;
+            z-index: 20;
+        }
+
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-nav {
+            background: #0f172a;
+            color: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        .btn-nav:hover {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #e0f2fe;
+        }
+
+        .page-title {
+            font-size: 0.92rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+            letter-spacing: 0.3px;
+        }
+
+        .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
         }
 
         .map-switcher {
             display: inline-flex;
-            background: #0f172a;
-            border: 1px solid #334155;
-            border-radius: 6px;
+            align-items: center;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             padding: 2px;
             gap: 2px;
-            flex-shrink: 0;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
         }
 
         .btn-map-switch {
             background: transparent;
             color: #cbd5e1;
             border: none;
-            border-radius: 4px;
-            padding: 4px 7px;
+            border-radius: 6px;
+            padding: 3px 7px;
             font-size: 0.72rem;
-            font-weight: bold;
+            font-weight: 700;
             cursor: pointer;
+            white-space: nowrap;
         }
 
         .btn-map-switch.active {
@@ -161,150 +143,320 @@
             color: #ffffff;
         }
 
-        .search-box {
+        .zoom-controls {
             display: flex;
-            flex: 1;
-            min-width: 0;
+            align-items: center;
             gap: 4px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 2px 5px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
         }
 
-        .search-box input {
+        .btn-zoom {
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 5px;
+            min-width: 26px;
+            height: 24px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .btn-zoom:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .zoom-readout {
+            min-width: 44px;
+            text-align: center;
+            font-size: 0.76rem;
+            font-weight: 800;
+            color: var(--accent-green);
+        }
+
+        .search-row {
+            display: flex;
+            gap: 5px;
+            z-index: 20;
+        }
+
+        .search-input {
             flex: 1;
             min-width: 0;
             background: #0f172a;
-            color: #ffffff;
+            color: #f8fafc;
             border: 1px solid #475569;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 0.8rem;
+            border-radius: 7px;
+            padding: 5px 8px;
+            font-size: 0.82rem;
             outline: none;
         }
 
-        .search-box button, .zoom-btn {
-            background: #1e293b;
-            color: #facc15;
-            border: 1px solid #475569;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 0.78rem;
-            font-weight: bold;
+        .search-input:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-search {
+            background: #2563eb;
+            color: #ffffff;
+            border: 1px solid #93c5fd;
+            border-radius: 7px;
+            padding: 0 10px;
+            font-size: 0.8rem;
+            font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
         }
 
-        .zoom-group {
-            display: inline-flex;
-            gap: 3px;
-            flex-shrink: 0;
+        .btn-search:hover {
+            background: #1d4ed8;
         }
 
-        /* Contenitore con mappa reale sotto e immagine sopra della stessa dimensione */
-        #map-stage {
+        .map-viewport {
             position: relative;
+            flex: 1 1 auto;
             width: 100%;
-            flex-grow: 1;
-            background: #020617;
+            max-width: 1400px;
+            min-height: 60dvh;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: #030712;
             overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
         }
 
-        #map-underlay {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
+        @media (min-aspect-ratio: 16/10) and (min-width: 760px) {
+            .map-viewport {
+                flex: 0 1 auto;
+                aspect-ratio: 2 / 1;
+                min-height: 460px;
+            }
         }
 
-        #map-overlay-layer {
-            position: absolute;
-            inset: 0;
+        .map-viewport.dragging {
+            cursor: grabbing;
+        }
+
+        #mapCanvas {
+            display: block;
             width: 100%;
             height: 100%;
-            z-index: 2;
+        }
+
+        .map-status-banner {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            background: rgba(2, 6, 23, 0.82);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #e2e8f0;
+            font-size: 0.68rem;
+            font-weight: 600;
+            padding: 3px 7px;
+            border-radius: 6px;
             pointer-events: none;
-            overflow: hidden;
+            z-index: 5;
         }
 
-        #overlay-world-img {
+        .crosshair-badge {
             position: absolute;
-            top: 0;
-            left: 0;
-            transform-origin: 0 0;
-            opacity: 0.82;
-            user-select: none;
-            -webkit-user-drag: none;
+            bottom: 6px;
+            left: 6px;
+            background: rgba(2, 6, 23, 0.86);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            color: #e2e8f0;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 3px 7px;
+            border-radius: 6px;
+            pointer-events: none;
+            z-index: 5;
         }
 
-        #status-msg {
-            width: 100%;
-            padding-top: 9px;
-            padding-right: calc(12px + env(safe-area-inset-right, 0px));
-            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px) + var(--android-bottom-inset));
-            padding-left: calc(12px + env(safe-area-inset-left, 0px));
-            background: rgba(0, 0, 0, 0.92);
-            color: #38bdf8;
-            font-weight: bold;
-            text-align: center;
-            font-size: 0.85rem;
-            box-sizing: border-box;
-            z-index: 1000;
-            border-top: 1px solid #334155;
-            flex-shrink: 0;
+        .info-card {
+            background: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 20;
+            box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.65);
+        }
+
+        .info-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .place-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--accent-yellow);
+        }
+
+        .tz-pill {
+            background: rgba(56, 189, 248, 0.14);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            font-size: 0.72rem;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            font-size: 0.74rem;
+        }
+
+        .info-box {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 3px 6px;
+        }
+
+        .info-box small {
+            display: block;
+            color: #94a3b8;
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .info-box strong {
+            color: var(--accent-green);
+            font-size: 0.8rem;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 5px;
+        }
+
+        .btn-primary-open {
+            flex: 1;
+            background: #16a34a;
+            color: #ffffff;
+            border: 1px solid #86efac;
+            border-radius: 7px;
+            padding: 6px 9px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary-open:hover {
+            background: #15803d;
+        }
+
+        .btn-gps {
+            background: #0f172a;
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 7px;
+            padding: 6px 9px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .btn-gps:hover {
+            background: rgba(250, 204, 21, 0.14);
         }
     </style>
 </head>
 <body>
-
-    <header id="app-header">
-        <div class="header-row">
-            <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
-                <img src="SfondoN-512.png" alt="CavanWeb Logo">
-            </a>
-            <div id="header-time-display">Tocca la mappa...</div>
-        </div>
-
-        <div class="header-row">
-            <a id="btn-meteocweb" href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
-            <a id="btn-tv" href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
-            <a href="index.html" class="back-btn">🏠 Indietro</a>
-        </div>
-
-        <div class="tools-row">
-            <div class="map-switcher">
-                <button type="button" id="btn-map-tz" class="btn-map-switch active" onclick="switchMapSource('time-zones3000.gif')">Fusi GIF</button>
-                <button type="button" id="btn-map-world" class="btn-map-switch" onclick="switchMapSource('carte-du-monde.jpg')">Mondo JPG</button>
-                <button type="button" id="btn-map-none" class="btn-map-switch" onclick="switchMapSource('')">Solo Mappa</button>
+    <div id="app-shell" class="app-shell">
+        <div class="top-bar">
+            <div class="nav-group">
+                <a href="index.html" class="btn-nav">🏠 Home</a>
+                <span class="page-title">🌍 Fusi Orari</span>
             </div>
 
-            <div class="search-box">
-                <input type="text" id="city-search" placeholder="Cerca città..." onkeydown="if (event.key === 'Enter') searchCity();">
-                <button type="button" onclick="searchCity()">🔍</button>
-            </div>
+            <div class="right-controls">
+                <div class="map-switcher" role="group" aria-label="Selettore mappa">
+                    <button type="button" id="btn-map-tz" class="btn-map-switch active" onclick="switchMapSource('time-zones3000.gif')">Fusi GIF</button>
+                    <button type="button" id="btn-map-world" class="btn-map-switch" onclick="switchMapSource('carte-du-monde.jpg')">Mondo JPG</button>
+                </div>
 
-            <div class="zoom-group">
-                <button type="button" class="zoom-btn" onclick="map.zoomOut()">−</button>
-                <button type="button" class="zoom-btn" onclick="map.zoomIn()">+</button>
-                <button type="button" class="zoom-btn" onclick="map.setView([20, 0], 2)">1:1</button>
+                <div class="zoom-controls">
+                    <button type="button" class="btn-zoom" onclick="zoomBy(1 / 1.35)" title="Zoom indietro">−</button>
+                    <span id="zoom-readout" class="zoom-readout">100%</span>
+                    <button type="button" class="btn-zoom" onclick="zoomBy(1.35)" title="Zoom avanti">+</button>
+                    <button type="button" class="btn-zoom" onclick="resetZoom()" title="Ripristina vista">1:1</button>
+                </div>
             </div>
         </div>
-    </header>
 
-    <div id="map-stage">
-        <!-- Mappa geografica reale sotto -->
-        <div id="map-underlay"></div>
+        <div class="search-row">
+            <input type="text" id="city-search" class="search-input" placeholder="Cerca località (es. Piacenza, Tokyo, New York, Londra)..." onkeydown="if (event.key === 'Enter') searchPlace();">
+            <button type="button" class="btn-search" onclick="searchPlace()">Cerca</button>
+        </div>
 
-        <!-- Immagine sovrapposta della stessa estensione geografica -->
-        <div id="map-overlay-layer">
-            <img id="overlay-world-img" src="time-zones3000.gif" alt="Overlay Mappa">
+        <div id="map-viewport" class="map-viewport">
+            <div class="map-status-banner">
+                <span id="map-status-text">Trascina col dito o zooma • Doppio tocco per luogo</span>
+            </div>
+            <canvas id="mapCanvas"></canvas>
+            <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
+        </div>
+
+        <div id="info-card" class="info-card">
+            <div class="info-top">
+                <div id="selected-place-name" class="place-title">Piacenza</div>
+                <div id="selected-tz-badge" class="tz-pill">UTC+1 • Europe/Rome</div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-box">
+                    <small>Coordinate</small>
+                    <strong id="selected-coords">45.05°N, 9.69°E</strong>
+                </div>
+                <div class="info-box">
+                    <small>Ora locale stimata</small>
+                    <strong id="selected-local-time">--:--:--</strong>
+                </div>
+                <div class="info-box">
+                    <small>Offset attuale</small>
+                    <strong id="selected-offset">UTC +1</strong>
+                </div>
+            </div>
+
+            <div class="actions-row">
+                <button type="button" class="btn-gps" onclick="useCurrentGps()">📍 Mia posizione</button>
+                <button type="button" class="btn-primary-open" onclick="openInPositionClock()">☀️ Apri in Orologio Posizione</button>
+            </div>
         </div>
     </div>
 
-    <div id="status-msg">Clicca su una località per selezionarla o esplora i fusi orari.</div>
-
     <script>
         function syncNavigationBarSafeArea() {
-            const header = document.getElementById('app-header');
-            const status = document.getElementById('status-msg');
+            const shell = document.getElementById('app-shell');
+            const infoCard = document.getElementById('info-card');
             let topPx = 0;
             let bottomPx = 0;
 
@@ -321,89 +473,99 @@
                 }
             } catch (e) {}
 
-            if (header) {
-                const topPad = topPx > 0 ? Math.ceil(topPx * 0.4) + 10 : 10;
-                header.style.paddingTop = `calc(${topPad}px + env(safe-area-inset-top, 0px))`;
+            if (shell) {
+                const topPad = topPx > 0 ? Math.ceil(topPx * 0.35) + 8 : 8;
+                const bottomPad = bottomPx > 0 ? Math.ceil(bottomPx * 0.35) + 8 : 8;
+                shell.style.paddingTop = `calc(${topPad}px + env(safe-area-inset-top, 0px))`;
+                shell.style.paddingBottom = `calc(${bottomPad}px + env(safe-area-inset-bottom, 0px))`;
             }
 
-            if (status) {
-                const bottomPad = bottomPx > 0 ? Math.ceil(bottomPx * 0.45) + 10 : 10;
-                status.style.paddingBottom = `calc(${bottomPad}px + env(safe-area-inset-bottom, 0px))`;
-            }
-
-            if (typeof map !== 'undefined') {
-                map.invalidateSize();
-                syncOverlayToMap();
+            if (infoCard && bottomPx > 0) {
+                const safeMargin = Math.min(80, Math.max(12, Math.round(bottomPx * 0.25)));
+                infoCard.style.marginBottom = `${safeMargin}px`;
             }
         }
 
-        const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-        });
+        const MAP_FILES = {
+            tz: 'time-zones3000.gif',
+            world: 'carte-du-monde.jpg'
+        };
+        let currentMapFile = MAP_FILES.tz;
 
-        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            maxZoom: 17,
-            attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
-        });
+        const params = new URLSearchParams(window.location.search);
+        let selectedLat = params.get('lat') ? parseFloat(params.get('lat')) : 45.0526;
+        let selectedLon = params.get('lon') ? parseFloat(params.get('lon')) : 9.6930;
+        let selectedName = params.get('city') ? decodeURIComponent(params.get('city')) : 'Italia - Piacenza';
+        let selectedTz = 'Europe/Rome';
+        let selectedOffsetHours = 1;
+        let reverseLookupSeq = 0;
 
-        const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
+        const QUICK_CITIES = [
+            { name: 'Italia - Piacenza', lat: 45.0526, lon: 9.6930 },
+            { name: 'Italia - Roma', lat: 41.9028, lon: 12.4964 },
+            { name: 'Italia - Milano', lat: 45.4642, lon: 9.1900 },
+            { name: 'Regno Unito - Londra', lat: 51.5072, lon: -0.1276 },
+            { name: 'Stati Uniti - New York', lat: 40.7128, lon: -74.0060 },
+            { name: 'Stati Uniti - Los Angeles', lat: 34.0522, lon: -118.2437 },
+            { name: 'Giappone - Tokyo', lat: 35.6762, lon: 139.6503 },
+            { name: 'Australia - Sydney', lat: -33.8688, lon: 151.2093 },
+            { name: 'Brasile - Rio de Janeiro', lat: -22.9068, lon: -43.1729 },
+            { name: 'Egitto - Il Cairo', lat: 30.0444, lon: 31.2357 },
+            { name: 'Islanda - Reykjavik', lat: 64.1466, lon: -21.9426 },
+            { name: 'Nuova Zelanda - Auckland', lat: -36.8485, lon: 174.7633 }
+        ];
 
-        const map = L.map('map-underlay', {
-            center: [20, 0],
-            zoom: 2,
-            layers: [initialLayer]
-        });
+        const viewport = document.getElementById('map-viewport');
+        const canvas = document.getElementById('mapCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('map-status-text');
 
-        const overlayImg = document.getElementById('overlay-world-img');
+        const mapImg = new Image();
+        let mapLoaded = false;
 
-        // Allinea esattamente l'immagine sovrapposta all'estensione geografica [-180..180, -85..85] della mappa sotto
-        function syncOverlayToMap() {
-            if (!overlayImg || !overlayImg.src || overlayImg.style.display === 'none') return;
-            const nwTopLeft = map.latLngToContainerPoint([85, -180]);
-            const seBottomRight = map.latLngToContainerPoint([-85, 180]);
+        let scale = 1.0;
+        const minScale = 0.65;
+        const maxScale = 16.0;
+        let offsetX = 0;
+        let offsetY = 0;
 
-            const width = seBottomRight.x - nwTopLeft.x;
-            const height = seBottomRight.y - nwTopLeft.y;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let pointerDownX = 0;
+        let pointerDownY = 0;
+        let movedDuringDrag = false;
+        let lastTapTime = 0;
+        let activePointers = new Map();
+        let lastPinchDist = null;
 
-            overlayImg.style.width = `${width}px`;
-            overlayImg.style.height = `${height}px`;
-            overlayImg.style.transform = `translate3d(${nwTopLeft.x}px, ${nwTopLeft.y}px, 0)`;
+        function updateMapSwitcherUI(fileName) {
+            const btnTz = document.getElementById('btn-map-tz');
+            const btnWorld = document.getElementById('btn-map-world');
+            if (btnTz) btnTz.classList.toggle('active', fileName === MAP_FILES.tz);
+            if (btnWorld) btnWorld.classList.toggle('active', fileName === MAP_FILES.world);
         }
 
         function switchMapSource(fileName) {
-            document.getElementById('btn-map-tz').classList.toggle('active', fileName === 'time-zones3000.gif');
-            document.getElementById('btn-map-world').classList.toggle('active', fileName === 'carte-du-monde.jpg');
-            document.getElementById('btn-map-none').classList.toggle('active', fileName === '');
-
-            if (!fileName) {
-                overlayImg.style.display = 'none';
-                document.getElementById('status-msg').innerText = "Solo mappa geografica attiva. Clicca una località.";
-                return;
-            }
-
-            overlayImg.style.display = 'block';
-            overlayImg.src = fileName;
-            syncOverlayToMap();
-            document.getElementById('status-msg').innerText = `Sovrapposta ${fileName} allineata alla mappa.`;
+            currentMapFile = fileName;
+            updateMapSwitcherUI(fileName);
+            mapLoaded = false;
+            statusText.innerText = `Caricamento ${fileName}...`;
+            drawMap();
+            mapImg.src = fileName;
         }
 
-        overlayImg.addEventListener('load', syncOverlayToMap);
-        map.on('move zoom moveend zoomend resize viewreset', syncOverlayToMap);
+        function formatCoordLabel(lat, lon) {
+            const latDir = lat >= 0 ? 'N' : 'S';
+            const lonDir = lon >= 0 ? 'E' : 'W';
+            return `${Math.abs(lat).toFixed(2)}°${latDir}, ${Math.abs(lon).toFixed(2)}°${lonDir}`;
+        }
 
-        let currentHoverLat = null;
-        let currentHoverLon = null;
-
+        // Metodo di calcolo fuso standard (con gestione Diomede prioritaria)
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-                if (lon < -168.9) {
-                    return 12;
-                } else {
-                    return -9;
-                }
+                return (lon < -168.9) ? 12 : -9;
             }
-
             if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
             if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
             if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
@@ -412,14 +574,11 @@
             try {
                 if (typeof tzlookup === 'function') {
                     const tzString = tzlookup(lat, lon);
-                    const now = new Date();
-                    const janDate = new Date(now.getFullYear(), 0, 15);
-
-                    const dtf = new Intl.DateTimeFormat('en-US', {
+                    const janDate = new Date(new Date().getFullYear(), 0, 15);
+                    const parts = new Intl.DateTimeFormat('en-US', {
                         timeZone: tzString,
                         timeZoneName: 'shortOffset'
-                    });
-                    const parts = dtf.formatToParts(janDate);
+                    }).formatToParts(janDate);
                     const offsetPart = parts.find(p => p.type === 'timeZoneName');
                     if (offsetPart) {
                         const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
@@ -442,12 +601,10 @@
                     if (typeof tzlookup === 'function') {
                         const tzString = tzlookup(lat, lon);
                         if (tzString.startsWith('Africa/')) return false;
-
-                        const dtf = new Intl.DateTimeFormat('en-US', {
+                        const parts = new Intl.DateTimeFormat('en-US', {
                             timeZone: tzString,
                             timeZoneName: 'shortOffset'
-                        });
-                        const parts = dtf.formatToParts(date);
+                        }).formatToParts(date);
                         const offsetPart = parts.find(p => p.type === 'timeZoneName');
                         if (offsetPart) {
                             const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
@@ -467,150 +624,533 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        function getTimeForCoordinates(lat, lon) {
-            const now = new Date();
+        // Reverse geocoding nello stile Nazione - Località
+        async function resolveExactPlaceName(lat, lon, tzName) {
+            const seq = ++reverseLookupSeq;
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=it&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+                const res = await fetch(url);
+                if (!res.ok) return;
+                const geoData = await res.json();
+                if (seq !== reverseLookupSeq) return;
 
-            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
-                const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
-                try {
-                    const options = {
-                        timeZone: targetTz,
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        year: 'numeric', month: '2-digit', day: '2-digit',
-                        hour12: false
-                    };
-                    const formatter = new Intl.DateTimeFormat('it-IT', options);
-                    const parts = formatter.formatToParts(now);
-                    let timeObj = {};
-                    parts.forEach(p => { timeObj[p.type] = p.value; });
-                    return {
-                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
-                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
-                    };
-                } catch (e) {}
+                let country = '';
+                let specificLocality = '';
+                if (geoData && geoData.address) {
+                    country = geoData.address.country || '';
+                    specificLocality = geoData.address.city ||
+                                       geoData.address.town ||
+                                       geoData.address.village ||
+                                       geoData.address.municipality ||
+                                       geoData.address.county ||
+                                       geoData.address.state || '';
+                }
+
+                let fullName = '';
+                if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                    fullName = `${country} - ${specificLocality}`;
+                } else {
+                    fullName = specificLocality || country || '';
+                }
+
+                if (!fullName && tzName && tzName.includes('/')) {
+                    const region = tzName.split('/').pop().replace(/_/g, ' ');
+                    if (region && region !== 'UTC') fullName = region;
+                }
+
+                if (fullName) {
+                    selectedName = fullName;
+                    document.getElementById('selected-place-name').innerText = selectedName;
+                }
+            } catch (e) {
+                if (seq !== reverseLookupSeq) return;
+                if (tzName && tzName.includes('/')) {
+                    const region = tzName.split('/').pop().replace(/_/g, ' ');
+                    if (region && region !== 'UTC' && selectedName === formatCoordLabel(lat, lon)) {
+                        selectedName = region;
+                        document.getElementById('selected-place-name').innerText = selectedName;
+                    }
+                }
+            }
+        }
+
+        function getBaseMapRect() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            if (!mapLoaded || !mapImg.naturalWidth || !mapImg.naturalHeight) {
+                return { x: 0, y: 0, w: cw, h: ch };
             }
 
-            try {
-                if (typeof tzlookup === 'function') {
-                    const tzString = tzlookup(lat, lon);
-                    const options = {
-                        timeZone: tzString,
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour12: false
-                    };
-                    const formatter = new Intl.DateTimeFormat('it-IT', options);
-                    const parts = formatter.formatToParts(now);
+            const imgRatio = mapImg.naturalWidth / mapImg.naturalHeight;
+            const canvasRatio = cw / ch;
 
-                    let timeObj = {};
-                    parts.forEach(p => { timeObj[p.type] = p.value; });
-
-                    return {
-                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
-                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
-                    };
-                }
-            } catch (e) {}
-
-            let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
-            const hoursOffset = Math.round(normalizedLon / 15);
-            const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
+            let baseW = cw;
+            let baseH = ch;
+            if (imgRatio > canvasRatio) {
+                baseW = cw;
+                baseH = cw / imgRatio;
+            } else {
+                baseH = ch;
+                baseW = ch * imgRatio;
+            }
 
             return {
-                timeStr: targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }),
-                dateStr: targetTime.toLocaleDateString('it-IT', { timeZone: 'UTC' })
+                x: (cw - baseW) / 2,
+                y: (ch - baseH) / 2,
+                w: baseW,
+                h: baseH
             };
         }
 
-        function updateHeaderTime() {
-            if (currentHoverLat !== null && currentHoverLon !== null) {
-                const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
-                const headerDisplay = document.getElementById('header-time-display');
-                if (headerDisplay) {
-                    headerDisplay.innerHTML = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
-                }
+        function clampPan() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const padX = Math.max(cw * 0.5, mapW * 0.3);
+            const padY = Math.max(ch * 0.5, mapH * 0.3);
+
+            const minX = -base.x - (mapW - cw) - padX;
+            const maxX = -base.x + padX;
+            if (minX <= maxX) {
+                if (offsetX > maxX) offsetX = maxX;
+                if (offsetX < minX) offsetX = minX;
+            } else {
+                offsetX = (cw - mapW) / 2 - base.x;
+            }
+
+            const minY = -base.y - (mapH - ch) - padY;
+            const maxY = -base.y + padY;
+            if (minY <= maxY) {
+                if (offsetY > maxY) offsetY = maxY;
+                if (offsetY < minY) offsetY = minY;
+            } else {
+                offsetY = (ch - mapH) / 2 - base.y;
             }
         }
-        setInterval(updateHeaderTime, 1000);
 
-        function handleMapClick(lat, lon) {
-            document.getElementById('status-msg').innerText = "Rilevamento località in corso...";
+        function setZoomAtPoint(newScale, clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const px = (clientX - rect.left) * (canvas.width / rect.width);
+            const py = (clientY - rect.top) * (canvas.height / rect.height);
 
-            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
-                .then(res => res.json())
-                .then(geoData => {
-                    let country = '';
-                    let specificLocality = '';
+            const clamped = Math.max(minScale, Math.min(maxScale, newScale));
+            const ratio = clamped / scale;
 
-                    if (geoData && geoData.address) {
-                        country = geoData.address.country || '';
-                        specificLocality = geoData.address.city ||
-                                           geoData.address.town ||
-                                           geoData.address.village ||
-                                           geoData.address.municipality ||
-                                           geoData.address.county ||
-                                           geoData.address.state || '';
-                    }
+            offsetX = px - (px - offsetX) * ratio;
+            offsetY = py - (py - offsetY) * ratio;
+            scale = clamped;
 
-                    let fullName = 'Posizione';
-                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
-                        fullName = `${country} - ${specificLocality}`;
-                    } else {
-                        fullName = specificLocality || country || 'Posizione';
-                    }
-
-                    const activeDst = isDstActiveForCoords(lat, lon);
-                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-
-                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${activeDst}`;
-                })
-                .catch(() => {
-                    const activeDst = isDstActiveForCoords(lat, lon);
-                    const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
-                    window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${activeDst}`;
-                });
+            clampPan();
+            updateZoomReadout();
+            drawMap();
         }
 
-        async function searchCity() {
+        function zoomBy(factor) {
+            const rect = canvas.getBoundingClientRect();
+            setZoomAtPoint(scale * factor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+        }
+
+        function resetZoom() {
+            scale = 1.0;
+            offsetX = 0;
+            offsetY = 0;
+            clampPan();
+            updateZoomReadout();
+            drawMap();
+        }
+
+        function updateZoomReadout() {
+            document.getElementById('zoom-readout').innerText = `${Math.round(scale * 100)}%`;
+        }
+
+        function resizeCanvas() {
+            syncNavigationBarSafeArea();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const rect = viewport.getBoundingClientRect();
+            const prevW = canvas.width || rect.width * dpr;
+            const prevH = canvas.height || rect.height * dpr;
+
+            canvas.width = Math.max(1, Math.round(rect.width * dpr));
+            canvas.height = Math.max(1, Math.round(rect.height * dpr));
+
+            if (prevW > 0 && prevH > 0) {
+                offsetX = offsetX * (canvas.width / prevW);
+                offsetY = offsetY * (canvas.height / prevH);
+            }
+            clampPan();
+            drawMap();
+        }
+
+        function latLonToScreen(lat, lon) {
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const relX = ((lon + 180) / 360) * mapW;
+            const relY = ((90 - lat) / 180) * mapH;
+            return {
+                x: base.x + offsetX + relX,
+                y: base.y + offsetY + relY
+            };
+        }
+
+        function screenToLatLon(px, py) {
+            const base = getBaseMapRect();
+            const mapW = base.w * scale;
+            const mapH = base.h * scale;
+            const relX = (px - (base.x + offsetX)) / mapW;
+            const relY = (py - (base.y + offsetY)) / mapH;
+
+            const clampedX = Math.max(0, Math.min(1, relX));
+            const clampedY = Math.max(0, Math.min(1, relY));
+
+            const lon = clampedX * 360 - 180;
+            const lat = 90 - clampedY * 180;
+            return {
+                lat: Math.max(-85, Math.min(85, lat)),
+                lon: Math.max(-180, Math.min(180, lon))
+            };
+        }
+
+        function resolveTimezoneInfo(lat, lon) {
+            let tzName = 'UTC';
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                tzName = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
+            } else {
+                try {
+                    if (typeof tzlookup === 'function') {
+                        tzName = tzlookup(lat, lon) || 'UTC';
+                    }
+                } catch (e) {
+                    tzName = 'UTC';
+                }
+            }
+
+            let offsetHours = getPreciseStandardTimezone(lat, lon);
+            try {
+                const now = new Date();
+                const parts = new Intl.DateTimeFormat('en-US', {
+                    timeZone: tzName,
+                    timeZoneName: 'shortOffset'
+                }).formatToParts(now);
+                const tzPart = parts.find(p => p.type === 'timeZoneName');
+                if (tzPart) {
+                    const m = tzPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                    if (m) {
+                        const h = parseInt(m[1], 10);
+                        const min = m[2] ? parseInt(m[2], 10) / 60 : 0;
+                        offsetHours = h + (h < 0 ? -min : min);
+                    }
+                }
+            } catch (e) {}
+
+            return { tzName, offsetHours };
+        }
+
+        function formatOffset(offsetHours) {
+            const sign = offsetHours >= 0 ? '+' : '-';
+            const abs = Math.abs(offsetHours);
+            const h = Math.floor(abs);
+            const m = Math.round((abs - h) * 60);
+            return m > 0 ? `UTC ${sign}${h}:${String(m).padStart(2, '0')}` : `UTC ${sign}${h}`;
+        }
+
+        function updateInfoCard(lookupExactPlace = false) {
+            const info = resolveTimezoneInfo(selectedLat, selectedLon);
+            selectedTz = info.tzName;
+            selectedOffsetHours = info.offsetHours;
+
+            document.getElementById('selected-place-name').innerText = selectedName;
+            document.getElementById('selected-tz-badge').innerText = `${formatOffset(selectedOffsetHours).replace(' ', '')} • ${selectedTz}`;
+            document.getElementById('selected-coords').innerText = formatCoordLabel(selectedLat, selectedLon);
+            document.getElementById('selected-offset').innerText = formatOffset(selectedOffsetHours);
+            updateLocalClockReadout();
+
+            if (lookupExactPlace) {
+                resolveExactPlaceName(selectedLat, selectedLon, selectedTz);
+            }
+        }
+
+        function updateLocalClockReadout() {
+            const now = new Date();
+            try {
+                const formatter = new Intl.DateTimeFormat('it-IT', {
+                    timeZone: selectedTz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+                const parts = formatter.formatToParts(now);
+                const obj = {};
+                parts.forEach(p => { obj[p.type] = p.value; });
+                if (obj.hour && obj.minute && obj.second) {
+                    document.getElementById('selected-local-time').innerText = `${obj.hour}:${obj.minute}:${obj.second}`;
+                    return;
+                }
+            } catch (e) {}
+
+            const target = new Date(now.getTime() + selectedOffsetHours * 3600000);
+            const hh = String(target.getUTCHours()).padStart(2, '0');
+            const mm = String(target.getUTCMinutes()).padStart(2, '0');
+            const ss = String(target.getUTCSeconds()).padStart(2, '0');
+            document.getElementById('selected-local-time').innerText = `${hh}:${mm}:${ss}`;
+        }
+
+        function selectCoordinates(lat, lon, name, centerView = false, lookupExactPlace = false) {
+            selectedLat = Math.max(-85, Math.min(85, lat));
+            selectedLon = Math.max(-180, Math.min(180, lon));
+            selectedName = name || formatCoordLabel(selectedLat, selectedLon);
+
+            if (centerView) {
+                const base = getBaseMapRect();
+                const mapW = base.w * scale;
+                const mapH = base.h * scale;
+                const relX = ((selectedLon + 180) / 360) * mapW;
+                const relY = ((90 - selectedLat) / 180) * mapH;
+                offsetX = canvas.width / 2 - (base.x + relX);
+                offsetY = canvas.height / 2 - (base.y + relY);
+                clampPan();
+            }
+
+            updateInfoCard(lookupExactPlace);
+            drawMap();
+        }
+
+        function drawMap() {
+            const cw = canvas.width;
+            const ch = canvas.height;
+            ctx.clearRect(0, 0, cw, ch);
+
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, cw, ch);
+
+            const base = getBaseMapRect();
+            const drawX = base.x + offsetX;
+            const drawY = base.y + offsetY;
+            const drawW = base.w * scale;
+            const drawH = base.h * scale;
+
+            if (mapLoaded) {
+                ctx.imageSmoothingEnabled = scale < 2.2;
+                ctx.drawImage(mapImg, drawX, drawY, drawW, drawH);
+            } else {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(drawX, drawY, drawW, drawH);
+            }
+
+            QUICK_CITIES.forEach(c => {
+                const pt = latLonToScreen(c.lat, c.lon);
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+                ctx.strokeStyle = '#020617';
+                ctx.lineWidth = 1.2;
+                ctx.stroke();
+
+                if (scale >= 1.5 || c.name.includes('Piacenza') || c.name.includes('Roma') || c.name.includes('New York') || c.name.includes('Tokyo')) {
+                    const shortLabel = c.name.includes(' - ') ? c.name.split(' - ')[1] : c.name;
+                    ctx.font = 'bold 11px sans-serif';
+                    ctx.textAlign = 'left';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+                    ctx.shadowBlur = 4;
+                    ctx.fillText(shortLabel, pt.x + 6, pt.y + 3);
+                    ctx.shadowBlur = 0;
+                }
+            });
+
+            const selPt = latLonToScreen(selectedLat, selectedLon);
+            ctx.beginPath();
+            ctx.arc(selPt.x, selPt.y, 12, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 0, 127, 0.55)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(selPt.x, selPt.y, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff007f';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.8;
+            ctx.stroke();
+        }
+
+        function handleMapDoubleTap(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const px = (clientX - rect.left) * (canvas.width / rect.width);
+            const py = (clientY - rect.top) * (canvas.height / rect.height);
+            const ll = screenToLatLon(px, py);
+
+            let matchedCity = null;
+            for (const c of QUICK_CITIES) {
+                const pt = latLonToScreen(c.lat, c.lon);
+                if (Math.hypot(pt.x - px, pt.y - py) < 20) {
+                    matchedCity = c;
+                    break;
+                }
+            }
+
+            if (matchedCity) {
+                selectCoordinates(matchedCity.lat, matchedCity.lon, matchedCity.name, false, true);
+            } else {
+                selectCoordinates(ll.lat, ll.lon, formatCoordLabel(ll.lat, ll.lon), false, true);
+            }
+        }
+
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const factor = e.deltaY < 0 ? 1.22 : 1 / 1.22;
+            setZoomAtPoint(scale * factor, e.clientX, e.clientY);
+        }, { passive: false });
+
+        viewport.addEventListener('pointerdown', (e) => {
+            viewport.setPointerCapture(e.pointerId);
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size === 1) {
+                isDragging = true;
+                movedDuringDrag = false;
+                pointerDownX = e.clientX;
+                pointerDownY = e.clientY;
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+                viewport.classList.add('dragging');
+            } else if (activePointers.size === 2) {
+                isDragging = false;
+                const pts = Array.from(activePointers.values());
+                lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+            }
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const px = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const py = (e.clientY - rect.top) * (canvas.height / rect.height);
+            const hoverLL = screenToLatLon(px, py);
+            document.getElementById('hover-coords').innerText = `Puntatore: ${hoverLL.lat.toFixed(2)}°, ${hoverLL.lon.toFixed(2)}°`;
+
+            if (!activePointers.has(e.pointerId)) return;
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+            if (activePointers.size === 2) {
+                const pts = Array.from(activePointers.values());
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                const midX = (pts[0].x + pts[1].x) / 2;
+                const midY = (pts[0].y + pts[1].y) / 2;
+                if (lastPinchDist && dist > 0) {
+                    setZoomAtPoint(scale * (dist / lastPinchDist), midX, midY);
+                }
+                lastPinchDist = dist;
+                return;
+            }
+
+            if (isDragging) {
+                const dx = (e.clientX - dragStartX) * (canvas.width / rect.width);
+                const dy = (e.clientY - dragStartY) * (canvas.height / rect.height);
+                dragStartX = e.clientX;
+                dragStartY = e.clientY;
+
+                if (Math.hypot(e.clientX - pointerDownX, e.clientY - pointerDownY) > 6) {
+                    movedDuringDrag = true;
+                }
+
+                offsetX += dx;
+                offsetY += dy;
+                clampPan();
+                drawMap();
+            }
+        });
+
+        function finishPointer(e) {
+            if (activePointers.has(e.pointerId)) {
+                activePointers.delete(e.pointerId);
+            }
+            if (activePointers.size < 2) {
+                lastPinchDist = null;
+            }
+            if (activePointers.size === 0) {
+                if (isDragging && !movedDuringDrag) {
+                    const now = Date.now();
+                    if (now - lastTapTime < 340) {
+                        handleMapDoubleTap(e.clientX, e.clientY);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
+                    }
+                }
+                isDragging = false;
+                viewport.classList.remove('dragging');
+            }
+        }
+
+        viewport.addEventListener('pointerup', finishPointer);
+        viewport.addEventListener('pointercancel', finishPointer);
+
+        async function searchPlace() {
             const q = document.getElementById('city-search').value.trim();
             if (!q) return;
-            document.getElementById('status-msg').innerText = `Ricerca "${q}" in corso...`;
+
+            const localMatch = QUICK_CITIES.find(c => c.name.toLowerCase().includes(q.toLowerCase()));
+            if (localMatch) {
+                selectCoordinates(localMatch.lat, localMatch.lon, localMatch.name, true, false);
+                return;
+            }
 
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`);
+                const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`;
+                const res = await fetch(url);
                 const data = await res.json();
                 if (Array.isArray(data) && data.length > 0) {
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
-                    handleMapClick(lat, lon);
-                } else {
-                    document.getElementById('status-msg').innerText = "Località non trovata.";
+                    selectCoordinates(lat, lon, formatCoordLabel(lat, lon), true, true);
                 }
             } catch (e) {
-                document.getElementById('status-msg').innerText = "Errore di connessione nella ricerca.";
+                console.warn('Ricerca località non disponibile offline', e);
             }
         }
 
-        map.on('mousemove', (e) => {
-            currentHoverLat = e.latlng.lat;
-            currentHoverLon = e.latlng.lng;
-            updateHeaderTime();
-        });
-
-        map.on('click', (e) => {
-            handleMapClick(e.latlng.lat, e.latlng.lng);
-        });
-
-        window.addEventListener('resize', syncNavigationBarSafeArea);
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', syncNavigationBarSafeArea);
+        function useCurrentGps() {
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    selectCoordinates(pos.coords.latitude, pos.coords.longitude, formatCoordLabel(pos.coords.latitude, pos.coords.longitude), true, true);
+                },
+                () => {},
+                { enableHighAccuracy: true, timeout: 8000 }
+            );
         }
-        syncNavigationBarSafeArea();
-        syncOverlayToMap();
+
+        function openInPositionClock() {
+            const activeDst = isDstActiveForCoords(selectedLat, selectedLon);
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            const url = `posizione.html?lat=${selectedLat}&lon=${selectedLon}&city=${encodeURIComponent(selectedName)}&auto=${isAuto}&dst=${activeDst}`;
+            window.location.href = url;
+        }
+
+        mapImg.onload = () => {
+            mapLoaded = true;
+            statusText.innerText = `${currentMapFile} • Trascina col dito o zooma • Doppio tocco per luogo`;
+            clampPan();
+            drawMap();
+        };
+
+        mapImg.onerror = () => {
+            statusText.innerText = `Errore nel caricamento di ${currentMapFile} nella repository.`;
+        };
+
+        mapImg.src = currentMapFile;
+
+        window.addEventListener('resize', resizeCanvas);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', resizeCanvas);
+        }
+        resizeCanvas();
+        updateInfoCard(!params.get('city'));
+        setInterval(updateLocalClockReadout, 1000);
         setInterval(syncNavigationBarSafeArea, 1500);
     </script>
 </body>
