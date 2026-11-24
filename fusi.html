@@ -46,15 +46,15 @@
             flex-direction: column;
             width: 100%;
             height: 100dvh;
-            padding: 8px;
-            gap: 8px;
+            padding: 6px;
+            gap: 6px;
         }
 
         .top-bar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             z-index: 20;
         }
@@ -70,8 +70,8 @@
             color: var(--accent-cyan);
             border: 1px solid var(--accent-cyan);
             border-radius: 6px;
-            padding: 5px 10px;
-            font-size: 0.84rem;
+            padding: 5px 9px;
+            font-size: 0.82rem;
             font-weight: 700;
             text-decoration: none;
             cursor: pointer;
@@ -88,7 +88,7 @@
         }
 
         .page-title {
-            font-size: 1rem;
+            font-size: 0.96rem;
             font-weight: 800;
             color: var(--accent-yellow);
             letter-spacing: 0.3px;
@@ -101,7 +101,7 @@
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 3px 6px;
+            padding: 2px 5px;
             box-shadow: 0 3px 10px rgba(0, 0, 0, 0.6);
         }
 
@@ -110,9 +110,9 @@
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 5px;
-            min-width: 30px;
-            height: 28px;
-            font-size: 0.9rem;
+            min-width: 28px;
+            height: 26px;
+            font-size: 0.88rem;
             font-weight: 800;
             cursor: pointer;
             display: inline-flex;
@@ -127,9 +127,9 @@
         }
 
         .zoom-readout {
-            min-width: 48px;
+            min-width: 46px;
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 800;
             color: var(--accent-green);
         }
@@ -147,8 +147,8 @@
             color: #f8fafc;
             border: 1px solid #475569;
             border-radius: 7px;
-            padding: 7px 10px;
-            font-size: 0.88rem;
+            padding: 6px 9px;
+            font-size: 0.85rem;
             outline: none;
         }
 
@@ -161,8 +161,8 @@
             color: #ffffff;
             border: 1px solid #93c5fd;
             border-radius: 7px;
-            padding: 0 12px;
-            font-size: 0.85rem;
+            padding: 0 11px;
+            font-size: 0.82rem;
             font-weight: 700;
             cursor: pointer;
             white-space: nowrap;
@@ -172,10 +172,11 @@
             background: #1d4ed8;
         }
 
+        /* Area mappa espansa */
         .map-viewport {
             position: relative;
             flex: 1;
-            min-height: 220px;
+            min-height: 260px;
             width: 100%;
             border-radius: 10px;
             border: 2px solid var(--border-color);
@@ -208,10 +209,11 @@
             background: rgba(2, 6, 23, 0.82);
             border: 1px solid rgba(148, 163, 184, 0.35);
             color: #e2e8f0;
-            font-size: 0.73rem;
+            font-size: 0.72rem;
             font-weight: 600;
             padding: 4px 8px;
             border-radius: 6px;
+            pointer-events: none;
             z-index: 5;
         }
 
@@ -222,7 +224,7 @@
             background: rgba(2, 6, 23, 0.86);
             border: 1px solid rgba(56, 189, 248, 0.45);
             color: #e2e8f0;
-            font-size: 0.74rem;
+            font-size: 0.72rem;
             font-weight: 700;
             padding: 4px 8px;
             border-radius: 6px;
@@ -234,10 +236,10 @@
             background: var(--panel-bg);
             border: 2px solid var(--border-color);
             border-radius: 10px;
-            padding: 9px 11px;
+            padding: 7px 9px;
             display: flex;
             flex-direction: column;
-            gap: 7px;
+            gap: 6px;
             z-index: 20;
             box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.65);
         }
@@ -251,7 +253,7 @@
         }
 
         .place-title {
-            font-size: 0.98rem;
+            font-size: 0.92rem;
             font-weight: 800;
             color: var(--accent-yellow);
         }
@@ -260,41 +262,41 @@
             background: rgba(56, 189, 248, 0.14);
             border: 1px solid var(--accent-cyan);
             color: var(--accent-cyan);
-            font-size: 0.8rem;
+            font-size: 0.76rem;
             font-weight: 800;
-            padding: 3px 8px;
+            padding: 2px 8px;
             border-radius: 999px;
         }
 
         .info-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 6px;
-            font-size: 0.8rem;
+            gap: 5px;
+            font-size: 0.78rem;
         }
 
         .info-box {
             background: rgba(30, 41, 59, 0.75);
             border: 1px solid #334155;
             border-radius: 7px;
-            padding: 5px 7px;
+            padding: 4px 7px;
         }
 
         .info-box small {
             display: block;
             color: #94a3b8;
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: 700;
         }
 
         .info-box strong {
             color: var(--accent-green);
-            font-size: 0.86rem;
+            font-size: 0.82rem;
         }
 
         .actions-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .btn-primary-open {
@@ -303,8 +305,8 @@
             color: #ffffff;
             border: 1px solid #86efac;
             border-radius: 7px;
-            padding: 8px 12px;
-            font-size: 0.88rem;
+            padding: 7px 10px;
+            font-size: 0.84rem;
             font-weight: 800;
             cursor: pointer;
         }
@@ -318,8 +320,8 @@
             color: var(--accent-yellow);
             border: 1px solid var(--accent-yellow);
             border-radius: 7px;
-            padding: 8px 11px;
-            font-size: 0.84rem;
+            padding: 7px 10px;
+            font-size: 0.8rem;
             font-weight: 800;
             cursor: pointer;
             white-space: nowrap;
@@ -353,10 +355,10 @@
 
         <div id="map-viewport" class="map-viewport">
             <div class="map-status-banner">
-                <span id="map-status-text">Caricamento time-zones3000.gif...</span>
+                <span id="map-status-text">Spostamento/zoom libero • Doppio tocco per impostare posizione</span>
             </div>
             <canvas id="mapCanvas"></canvas>
-            <div id="hover-coords" class="crosshair-badge">Puntatore: --.--°, --.--°</div>
+            <div id="hover-coords" class="crosshair-badge">Vista: --.--°, --.--°</div>
         </div>
 
         <div class="info-card">
@@ -422,7 +424,7 @@
 
         let scale = 1.0;
         const minScale = 1.0;
-        const maxScale = 12.0;
+        const maxScale = 16.0;
         let offsetX = 0;
         let offsetY = 0;
 
@@ -432,6 +434,7 @@
         let pointerDownX = 0;
         let pointerDownY = 0;
         let movedDuringDrag = false;
+        let lastTapTime = 0;
         let activePointers = new Map();
         let lastPinchDist = null;
 
@@ -463,29 +466,32 @@
             };
         }
 
+        // Margine di espansione libera attorno alla mappa così puoi spostarla ampiamente senza blocchi rigidi
         function clampPan() {
             const cw = canvas.width;
             const ch = canvas.height;
             const base = getBaseMapRect();
             const mapW = base.w * scale;
             const mapH = base.h * scale;
+            const padX = Math.max(cw * 0.45, mapW * 0.25);
+            const padY = Math.max(ch * 0.45, mapH * 0.25);
 
-            if (mapW <= cw) {
-                offsetX = (cw - mapW) / 2 - base.x;
+            const minX = -base.x - (mapW - cw) - padX;
+            const maxX = -base.x + padX;
+            if (minX <= maxX) {
+                if (offsetX > maxX) offsetX = maxX;
+                if (offsetX < minX) offsetX = minX;
             } else {
-                const minOffsetX = -base.x - (mapW - cw);
-                const maxOffsetX = -base.x;
-                if (offsetX > maxOffsetX) offsetX = maxOffsetX;
-                if (offsetX < minOffsetX) offsetX = minOffsetX;
+                offsetX = (cw - mapW) / 2 - base.x;
             }
 
-            if (mapH <= ch) {
-                offsetY = (ch - mapH) / 2 - base.y;
+            const minY = -base.y - (mapH - ch) - padY;
+            const maxY = -base.y + padY;
+            if (minY <= maxY) {
+                if (offsetY > maxY) offsetY = maxY;
+                if (offsetY < minY) offsetY = minY;
             } else {
-                const minOffsetY = -base.y - (mapH - ch);
-                const maxOffsetY = -base.y;
-                if (offsetY > maxOffsetY) offsetY = maxOffsetY;
-                if (offsetY < minOffsetY) offsetY = minOffsetY;
+                offsetY = (ch - mapH) / 2 - base.y;
             }
         }
 
@@ -715,7 +721,8 @@
             ctx.stroke();
         }
 
-        function handleMapTap(clientX, clientY) {
+        // Cambio posizione solo su doppio tocco/clic esplicito
+        function handleMapDoubleTap(clientX, clientY) {
             const rect = canvas.getBoundingClientRect();
             const px = (clientX - rect.left) * (canvas.width / rect.width);
             const py = (clientY - rect.top) * (canvas.height / rect.height);
@@ -724,7 +731,7 @@
             let matchedCity = null;
             for (const c of QUICK_CITIES) {
                 const pt = latLonToScreen(c.lat, c.lon);
-                if (Math.hypot(pt.x - px, pt.y - py) < 18) {
+                if (Math.hypot(pt.x - px, pt.y - py) < 20) {
                     matchedCity = c;
                     break;
                 }
@@ -810,7 +817,13 @@
             }
             if (activePointers.size === 0) {
                 if (isDragging && !movedDuringDrag) {
-                    handleMapTap(e.clientX, e.clientY);
+                    const now = Date.now();
+                    if (now - lastTapTime < 340) {
+                        handleMapDoubleTap(e.clientX, e.clientY);
+                        lastTapTime = 0;
+                    } else {
+                        lastTapTime = now;
+                    }
                 }
                 isDragging = false;
                 viewport.classList.remove('dragging');
@@ -862,7 +875,7 @@
 
         mapImg.onload = () => {
             mapLoaded = true;
-            statusText.innerText = 'time-zones3000.gif caricata • Rotella/Pinch per zoom • Trascina';
+            statusText.innerText = 'Spostamento/zoom libero • Doppio tocco per impostare posizione';
             clampPan();
             drawMap();
         };
