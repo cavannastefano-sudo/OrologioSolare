@@ -365,7 +365,7 @@
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        // Colori molto diversi tra loro (rosso, blu, verde, giallo, viola, arancio, ciano, magenta, lime, ecc.)
+        // Colori ben distinti tra fusi vicini
         const HIGH_CONTRAST_COLORS = [
             '#ef4444', '#2563eb', '#16a34a', '#eab308', '#9333ea',
             '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#4f46e5',
@@ -406,10 +406,10 @@
             document.getElementById('btn-grid').classList.add('active');
         }
 
-        // Confini reali dei fusi orari (non dritti), con colori ben distinti tra fusi diversi
-        fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
+        // Confini reali dei fusi orari da Natural Earth (allineati senza sfasature)
+        fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson')
             .then(res => {
-                if (!res.ok) throw new Error('Errore caricamento confini fusi');
+                if (!res.ok) throw new Error('Errore caricamento Natural Earth time zones');
                 return res.json();
             })
             .then(data => {
@@ -417,12 +417,12 @@
                 L.geoJSON(data, {
                     style: (feature) => {
                         const props = feature.properties || {};
-                        const zoneName = props.tzid || props.TZID || props.name || props.zone || 'tz';
+                        const zoneKey = props.tz_name1st || props.name || props.time_zone || props.zone || 'tz';
                         return {
                             color: '#1e293b',
-                            weight: 1.2,
+                            weight: 1.1,
                             opacity: 0.85,
-                            fillColor: getColor(zoneName),
+                            fillColor: getColor(zoneKey),
                             fillOpacity: 0.36
                         };
                     },
@@ -439,8 +439,7 @@
                 }
             })
             .catch(() => {
-                // In caso di errore di rete sui confini reali, non disegna strisce dritte
-                document.getElementById('status-msg').textContent = 'Confini reali dei fusi non disponibili al momento; il clic sulla mappa funziona comunque.';
+                document.getElementById('status-msg').textContent = 'Dataset Natural Earth non raggiungibile al momento; il clic sulla mappa funziona comunque.';
             });
 
         if (showBands) {
