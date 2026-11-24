@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mappa Mondiale e Fusi Orari - SunClock24</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#000000">
+    <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            max-width: 100vw;
+            height: 100dvh;
+            background: #0b1120;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+            overflow-y: hidden;
+        }
+
+        .layout {
+            display: flex;
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+        }
+
+        .map-area {
+            position: relative;
+            flex: 1 1 auto;
+            height: 100%;
+            min-width: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+        }
+
+        .map-overlay-bar {
+            position: absolute;
+            top: 10px;
+            left: 52px;
+            right: 52px;
+            z-index: 500;
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            background: rgba(15, 23, 42, 0.92);
+            border: 1px solid #334155;
+            padding: 6px 8px;
+            border-radius: 8px;
+            width: fit-content;
+            max-width: calc(100% - 104px);
+        }
+
+        .map-overlay-bar button,
+        .map-overlay-bar a {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .map-overlay-bar button.active {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff;
+        }
+
+        .sidebar {
+            width: 340px;
+            max-width: 100%;
+            height: 100%;
+            background: #0f172a;
+            border-left: 1px solid #334155;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar-top,
+        .sidebar-bottom {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        @media (max-width: 780px) {
+            html, body {
+                overflow-x: hidden;
+                overflow-y: auto;
+                height: auto;
+                min-height: 100dvh;
+            }
+
+            .layout {
+                display: grid;
+                grid-template-rows: auto minmax(280px, 44dvh) auto;
+                grid-template-areas:
+                    "top"
+                    "map"
+                    "bottom";
+                height: auto;
+                min-height: 100dvh;
+                width: 100%;
+                max-width: 100vw;
+            }
+
+            .map-area {
+                grid-area: map;
+                width: 100%;
+                max-width: 100vw;
+                height: 100%;
+                min-height: 280px;
+            }
+
+            .sidebar {
+                display: contents;
+            }
+
+            .sidebar-top {
+                grid-area: top;
+                background: #0f172a;
+                padding: 8px;
+                gap: 6px;
+                border-bottom: 1px solid #334155;
+                width: 100%;
+                max-width: 100vw;
+            }
+
+            .sidebar-bottom {
+                grid-area: bottom;
+                background: #0f172a;
+                padding: 8px 8px 14px;
+                gap: 8px;
+                border-top: 1px solid #334155;
+                width: 100%;
+                max-width: 100vw;
+            }
+
+            .brand-header {
+                padding: 6px 8px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+
+            .logo-link {
+                width: 28px;
+                height: 28px;
+            }
+
+            .quick-links {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            .quick-links a {
+                padding: 4px 6px;
+                font-size: 0.7rem;
+            }
+
+            .box {
+                padding: 8px;
+            }
+
+            .local-clock {
+                font-size: 1rem;
+            }
+
+            .map-overlay-bar {
+                top: 8px;
+                left: 48px;
+                right: 8px;
+                width: auto;
+                max-width: calc(100% - 56px);
+                gap: 4px;
+                padding: 5px 6px;
+            }
+
+            .map-overlay-bar button,
+            .map-overlay-bar a {
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+        }
+
+        .brand-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 8px 10px;
+            max-width: 100%;
+        }
+
+        .brand-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .logo-link {
+            display: inline-block;
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .logo-link img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .quick-links a {
+            background: #0f172a;
+            color: #facc15;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 4px 7px;
+            font-size: 0.74rem;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .box {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px;
+            max-width: 100%;
+        }
+
+        .hover-clock {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: #39ff14;
+            margin-top: 2px;
+        }
+
+        .local-clock {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #4ade80;
+            margin-top: 4px;
+        }
+
+        .label-muted {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 2px;
+            word-break: break-word;
+        }
+
+        .place-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #facc15;
+            word-break: break-word;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        .search-form input {
+            flex: 1 1 auto;
+            min-width: 0;
+            background: #0f172a;
+            color: #ffffff;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.85rem;
+        }
+
+        .search-form button {
+            flex: 0 0 auto;
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .utc-select {
+            width: 100%;
+            max-width: 100%;
+            margin-top: 6px;
+            background: #0f172a;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-open-pos {
+            width: 100%;
+            max-width: 100%;
+            margin-top: 8px;
+            background: #16a34a;
+            color: #ffffff;
+            border: 1px solid #86efac;
+            border-radius: 6px;
+            padding: 7px 10px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-open-pos:hover {
+            background: #15803d;
+        }
+
+        .tz-band-label {
+            background: rgba(15, 23, 42, 0.78);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 4px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-align: center;
+            line-height: 18px;
+            white-space: nowrap;
+            pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="map-area">
+            <div id="map"></div>
+            <div class="map-overlay-bar">
+                <button type="button" id="btn-grid" onclick="toggleGrid()">Griglia 15°</button>
+                <button type="button" id="btn-bands" onclick="toggleBands()">Fasce UTC</button>
+                <button type="button" id="btn-countries" onclick="toggleCountries()">Paesi Geo</button>
+                <button type="button" onclick="map.setView([20, 0], 2)">Vista Globale</button>
+            </div>
+        </div>
+
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="brand-header">
+                    <div class="brand-left">
+                        <a href="https://www.cavanweb.com/" target="_blank" class="logo-link" title="Visita CavanWeb">
+                            <img src="SfondoN-512.png" alt="CavanWeb Logo">
+                        </a>
+                        <span class="place-name">SunClock24</span>
+                    </div>
+                    <div class="quick-links">
+                        <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" title="Apri MeteoCWEB"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
+                        <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" title="Apri IPTV"><i class="fa-solid fa-tv"></i> IPTV</a>
+                        <a href="index.html">🏠 Indietro</a>
+                    </div>
+                </div>
+
+                <div class="box">
+                    <div id="header-time-display" class="hover-clock">Passa il mouse sulla mappa...</div>
+                    <div id="status-msg" class="label-muted">Clicca su una località per visualizzare luogo e ora.</div>
+                </div>
+            </div>
+
+            <div class="sidebar-bottom">
+                <div class="box">
+                    <div id="selected-place" class="place-name">Italia - Piacenza</div>
+                    <div id="selected-coords" class="label-muted">45.05°N, 9.69°E • Europe/Rome</div>
+                    <div id="selected-local-time" class="local-clock">--:--:--</div>
+                    <div id="selected-offset" class="label-muted">Scostamento: UTC+1</div>
+                    <button type="button" class="btn-open-pos" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
+                </div>
+
+                <form class="search-form" onsubmit="event.preventDefault(); searchCity();">
+                    <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                    <button type="submit">Cerca</button>
+                </form>
+
+                <div class="box">
+                    <label for="utc-select" class="label-muted">Fuso / Scostamento rapido</label>
+                    <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
+                        <option value="">Seleziona un fuso UTC...</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        });
+
+        const topo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            maxZoom: 17,
+            attribution: 'Map data: &copy; OpenStreetMap contributors | Map style: &copy; OpenTopoMap'
+        });
+
+        const savedLayerName = localStorage.getItem('sunclock_map_layer');
+        const initialLayer = (savedLayerName === 'Topografica') ? topo : chiara;
+
+        const map = L.map('map', {
+            center: [20, 0],
+            zoom: 2,
+            minZoom: 2,
+            maxZoom: 12,
+            layers: [initialLayer]
+        });
+
+        const baseMaps = {
+            "Mappa Chiara": chiara,
+            "Topografica": topo
+        };
+        L.control.layers(baseMaps).addTo(map);
+
+        const gridGroup = L.layerGroup();
+        const bandsGroup = L.layerGroup();
+        let geojsonLayer = null;
+
+        let showGrid = localStorage.getItem('sunclock_layer_grid') === 'true';
+        let showBands = localStorage.getItem('sunclock_layer_bands') === 'true';
+        let showCountries = localStorage.getItem('sunclock_layer_countries') === 'true';
+
+        let currentHoverLat = null;
+        let currentHoverLon = null;
+
+        const HIGH_CONTRAST_COLORS = [
+            '#ef4444', '#2563eb', '#16a34a', '#eab308', '#9333ea',
+            '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#4f46e5',
+            '#14b8a6', '#dc2626', '#0ea5e9', '#22c55e', '#d946ef',
+            '#f59e0b', '#7c3aed', '#10b981', '#e11d48', '#3b82f6',
+            '#65a30d', '#a855f7', '#0284c7', '#ea580c', '#c026d3'
+        ];
+
+        function getColor(name) {
+            let hash = 0;
+            const str = String(name || 'zona');
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash * 37) + str.charCodeAt(i)) >>> 0;
+            }
+            const idx = (hash * 11) % HIGH_CONTRAST_COLORS.length;
+            return HIGH_CONTRAST_COLORS[idx];
+        }
+
+        for (let lon = -180; lon <= 180; lon += 15) {
+            L.polyline([[-85, lon], [85, lon]], {
+                color: lon === 0 ? '#facc15' : '#64748b',
+                weight: lon === 0 ? 2 : 1,
+                opacity: 0.55,
+                dashArray: lon === 0 ? null : '4 4'
+            }).addTo(gridGroup);
+        }
+        for (let lat = -75; lat <= 75; lat += 15) {
+            L.polyline([[lat, -180], [lat, 180]], {
+                color: lat === 0 ? '#facc15' : '#94a3b8',
+                weight: lat === 0 ? 1.5 : 0.9,
+                opacity: 0.45
+            }).addTo(gridGroup);
+        }
+
+        if (showGrid) {
+            gridGroup.addTo(map);
+            document.getElementById('btn-grid').classList.add('active');
+        }
+
+        fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_time_zones.geojson')
+            .then(res => {
+                if (!res.ok) throw new Error('Errore caricamento Natural Earth time zones');
+                return res.json();
+            })
+            .then(data => {
+                bandsGroup.clearLayers();
+                L.geoJSON(data, {
+                    style: (feature) => {
+                        const props = feature.properties || {};
+                        const zoneKey = props.tz_name1st || props.name || props.time_zone || props.zone || 'tz';
+                        return {
+                            color: '#1e293b',
+                            weight: 1.1,
+                            opacity: 0.85,
+                            fillColor: getColor(zoneKey),
+                            fillOpacity: 0.36
+                        };
+                    },
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            handleMapClick(e.latlng.lat, e.latlng.lng, false);
+                        });
+                    }
+                }).addTo(bandsGroup);
+
+                for (let offset = -12; offset <= 12; offset++) {
+                    const lon = offset * 15;
+                    const labelText = offset === 0 ? '0' : (offset > 0 ? `+${offset}` : `${offset}`);
+
+                    const icon = L.divIcon({
+                        className: 'tz-band-label',
+                        html: labelText,
+                        iconSize: [30, 18],
+                        iconAnchor: [15, 9]
+                    });
+
+                    L.marker([76, lon], { icon: icon, interactive: false }).addTo(bandsGroup);
+                    L.marker([-62, lon], { icon: icon, interactive: false }).addTo(bandsGroup);
+                }
+
+                if (showBands) {
+                    bandsGroup.addTo(map);
+                }
+            })
+            .catch(() => {
+                document.getElementById('status-msg').textContent = 'Dataset Natural Earth non raggiungibile al momento; il clic sulla mappa funziona comunque.';
+            });
+
+        if (showBands) {
+            document.getElementById('btn-bands').classList.add('active');
+        }
+
+        function toggleGrid() {
+            showGrid = !showGrid;
+            localStorage.setItem('sunclock_layer_grid', showGrid);
+            document.getElementById('btn-grid').classList.toggle('active', showGrid);
+            if (showGrid) gridGroup.addTo(map);
+            else map.removeLayer(gridGroup);
+        }
+
+        function toggleBands() {
+            showBands = !showBands;
+            localStorage.setItem('sunclock_layer_bands', showBands);
+            document.getElementById('btn-bands').classList.toggle('active', showBands);
+            if (showBands) bandsGroup.addTo(map);
+            else map.removeLayer(bandsGroup);
+        }
+
+        function toggleCountries() {
+            showCountries = !showCountries;
+            localStorage.setItem('sunclock_layer_countries', showCountries);
+            document.getElementById('btn-countries').classList.toggle('active', showCountries);
+            if (!geojsonLayer) return;
+            if (showCountries) geojsonLayer.addTo(map);
+            else map.removeLayer(geojsonLayer);
+        }
+
+        function getPreciseStandardTimezone(lat, lon) {
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                if (lon < -168.9) {
+                    return 12;
+                } else {
+                    return -9;
+                }
+            }
+
+            if (lat >= 36.9 && lat <= 42.2 && lon >= -9.5 && lon <= -6.0) return 0;
+            if (lat >= 51.4 && lat <= 55.5 && lon >= -10.7 && lon <= -5.3) return 0;
+            if (lat >= 36.0 && lat <= 43.8 && lon >= -9.3 && lon <= 3.4) return 1;
+            if (lat >= 42.3 && lat <= 51.1 && lon >= -5.1 && lon <= 8.3) return 1;
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const now = new Date();
+                    const janDate = new Date(now.getFullYear(), 0, 15);
+
+                    const dtf = new Intl.DateTimeFormat('en-US', {
+                        timeZone: tzString,
+                        timeZoneName: 'shortOffset'
+                    });
+                    const parts = dtf.formatToParts(janDate);
+                    const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                    if (offsetPart) {
+                        const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                        if (match) {
+                            const hours = parseInt(match[1], 10);
+                            const minutes = match[2] ? parseInt(match[2], 10) / 60 : 0;
+                            return hours + (hours < 0 ? -minutes : minutes);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Fallback su calcolo fuso geometrico", e);
+            }
+
+            return Math.round(lon / 15);
+        }
+
+        function getCurrentDstStateForCoords(lat, lon, date) {
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            if (isAuto && !isNaN(lat) && !isNaN(lon)) {
+                try {
+                    if (typeof tzlookup === 'function') {
+                        const tzString = tzlookup(lat, lon);
+                        if (tzString.startsWith('Africa/')) return false;
+
+                        const dtf = new Intl.DateTimeFormat('en-US', {
+                            timeZone: tzString,
+                            timeZoneName: 'shortOffset'
+                        });
+                        const parts = dtf.formatToParts(date);
+                        const offsetPart = parts.find(p => p.type === 'timeZoneName');
+                        if (offsetPart) {
+                            const match = offsetPart.value.match(/GMT([+-]\d+)(?::(\d+))?/);
+                            if (match) {
+                                const currentOffset = parseInt(match[1], 10);
+                                const standardBaseOffset = getPreciseStandardTimezone(lat, lon);
+                                return currentOffset > standardBaseOffset;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Impossibile determinare l'ora legale tramite tzlookup", e);
+                }
+            }
+            return localStorage.getItem('sunclock_dst') === 'true';
+        }
+
+        function isDstActiveForCoords(lat, lon) {
+            return getCurrentDstStateForCoords(lat, lon, new Date());
+        }
+
+        function getTimeForCoordinates(lat, lon) {
+            const now = new Date();
+
+            if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
+                const targetTz = (lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome';
+                try {
+                    const options = {
+                        timeZone: targetTz,
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        year: 'numeric', month: '2-digit', day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                } catch (e) {}
+            }
+
+            try {
+                if (typeof tzlookup === 'function') {
+                    const tzString = tzlookup(lat, lon);
+                    const options = {
+                        timeZone: tzString,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour12: false
+                    };
+                    const formatter = new Intl.DateTimeFormat('it-IT', options);
+                    const parts = formatter.formatToParts(now);
+
+                    let timeObj = {};
+                    parts.forEach(p => { timeObj[p.type] = p.value; });
+
+                    return {
+                        timeStr: `${timeObj.hour}:${timeObj.minute}:${timeObj.second}`,
+                        dateStr: `${timeObj.day}/${timeObj.month}/${timeObj.year}`
+                    };
+                }
+            } catch (e) {
+                console.warn("Fallback fuso orario geometrico", e);
+            }
+
+            let normalizedLon = ((lon + 180) % 360 + 360) % 360 - 180;
+            const hoursOffset = Math.round(normalizedLon / 15);
+            const targetTime = new Date(now.getTime() + (hoursOffset * 3600000));
+
+            return {
+                timeStr: targetTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'UTC' }),
+                dateStr: targetTime.toLocaleDateString('it-IT', { timeZone: 'UTC' })
+            };
+        }
+
+        let currentLat = 45.0526;
+        let currentLon = 9.6930;
+        let currentName = 'Italia - Piacenza';
+        let currentTz = 'Europe/Rome';
+
+        const marker = L.circleMarker([currentLat, currentLon], {
+            radius: 7,
+            color: '#ffffff',
+            weight: 2,
+            fillColor: '#ff007f',
+            fillOpacity: 1
+        }).addTo(map);
+
+        map.on('mousemove', (e) => {
+            currentHoverLat = e.latlng.lat;
+            currentHoverLon = e.latlng.lng;
+            updateHeaderTime();
+        });
+
+        map.on('mouseout', () => {
+            currentHoverLat = null;
+            currentHoverLon = null;
+            const headerDisplay = document.getElementById('header-time-display');
+            if (headerDisplay) {
+                headerDisplay.textContent = 'Passa il mouse sulla mappa...';
+            }
+        });
+
+        function updateHeaderTime() {
+            const now = new Date();
+
+            if (currentHoverLat !== null && currentHoverLon !== null) {
+                const localInfo = getTimeForCoordinates(currentHoverLat, currentHoverLon);
+                const headerDisplay = document.getElementById('header-time-display');
+                if (headerDisplay) {
+                    headerDisplay.textContent = `📅 ${localInfo.dateStr} ⏰ ${localInfo.timeStr}`;
+                }
+            }
+
+            try {
+                const selStr = new Intl.DateTimeFormat('it-IT', {
+                    timeZone: currentTz,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                }).format(now);
+                document.getElementById('selected-local-time').textContent = selStr;
+            } catch (e) {
+                document.getElementById('selected-local-time').textContent = '--:--:--';
+            }
+        }
+
+        function handleMapClick(lat, lon, autoNavigate = false) {
+            currentLat = lat;
+            currentLon = lon;
+            marker.setLatLng([lat, lon]);
+
+            try {
+                currentTz = (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3)
+                    ? ((lon < -168.9) ? 'Asia/Anadyr' : 'America/Nome')
+                    : (typeof tzlookup === 'function' ? (tzlookup(lat, lon) || 'UTC') : 'UTC');
+            } catch (e) {
+                currentTz = 'UTC';
+            }
+
+            const stdOffset = getPreciseStandardTimezone(lat, lon);
+            const dstActive = isDstActiveForCoords(lat, lon);
+            const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
+            const sign = effectiveOffset >= 0 ? '+' : '';
+            document.getElementById('selected-offset').textContent = `Scostamento: UTC${sign}${effectiveOffset}`;
+            document.getElementById('selected-coords').textContent = `${lat.toFixed(2)}°, ${lon.toFixed(2)}° • ${currentTz}`;
+            document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
+            updateHeaderTime();
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
+                .then(res => res.json())
+                .then(geoData => {
+                    let country = '';
+                    let specificLocality = '';
+
+                    if (geoData && geoData.address) {
+                        country = geoData.address.country || '';
+                        specificLocality = geoData.address.city ||
+                                           geoData.address.town ||
+                                           geoData.address.village ||
+                                           geoData.address.municipality ||
+                                           geoData.address.county ||
+                                           geoData.address.state || '';
+                    }
+
+                    let fullName = 'Posizione';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        fullName = `${country} - ${specificLocality}`;
+                    } else {
+                        fullName = specificLocality || country || 'Posizione';
+                    }
+
+                    currentName = fullName;
+                    document.getElementById('selected-place').textContent = fullName;
+                    document.getElementById('status-msg').textContent = `Selezionato: ${fullName}`;
+
+                    if (autoNavigate) {
+                        const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+                        window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent(fullName)}&auto=${isAuto}&dst=${dstActive}`;
+                    }
+                })
+                .catch(() => {
+                    currentName = 'Posizione';
+                    document.getElementById('selected-place').textContent = 'Posizione';
+                    document.getElementById('status-msg').textContent = 'Posizione rilevata (offline).';
+                    if (autoNavigate) {
+                        const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+                        window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${dstActive}`;
+                    }
+                });
+        }
+
+        function openSelectedInPosition() {
+            const activeDst = isDstActiveForCoords(currentLat, currentLon);
+            const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+            window.location.href = `posizione.html?lat=${currentLat}&lon=${currentLon}&city=${encodeURIComponent(currentName)}&auto=${isAuto}&dst=${activeDst}`;
+        }
+
+        async function searchCity() {
+            const q = document.getElementById('city-input').value.trim();
+            if (!q) return;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=it&q=${encodeURIComponent(q)}`);
+                const list = await res.json();
+                if (Array.isArray(list) && list.length > 0) {
+                    const lat = parseFloat(list[0].lat);
+                    const lon = parseFloat(list[0].lon);
+                    map.setView([lat, lon], 6);
+                    handleMapClick(lat, lon, false);
+                }
+            } catch (e) {}
+        }
+
+        fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+            .then(res => res.json())
+            .then(data => {
+                geojsonLayer = L.geoJSON(data, {
+                    style: (feature) => ({
+                        fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
+                        weight: 1,
+                        opacity: 0.8,
+                        color: '#333',
+                        fillOpacity: 0.55
+                    }),
+                    onEachFeature: (feature, layer) => {
+                        layer.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            handleMapClick(e.latlng.lat, e.latlng.lng, false);
+                        });
+                    }
+                });
+
+                if (showCountries) {
+                    geojsonLayer.addTo(map);
+                    document.getElementById('btn-countries').classList.add('active');
+                }
+
+                document.getElementById('status-msg').textContent = "Clicca su una località per visualizzare luogo e ora.";
+            })
+            .catch(() => {
+                document.getElementById('status-msg').textContent = "Errore nel caricamento confini. Clicca comunque sulla mappa.";
+            });
+
+        map.on('baselayerchange', function(e) {
+            localStorage.setItem('sunclock_map_layer', e.name);
+        });
+
+        map.on('click', (e) => {
+            handleMapClick(e.latlng.lat, e.latlng.lng, false);
+        });
+
+        const quickOffsets = [
+            { label: 'UTC-9 (Piccola Diomede)', lat: 65.75, lon: -168.7 },
+            { label: 'UTC-5 (New York)', lat: 40.71, lon: -74.01 },
+            { label: 'UTC-3 (San Paolo)', lat: -23.55, lon: -46.63 },
+            { label: 'UTC+0 (Londra)', lat: 51.51, lon: -0.13 },
+            { label: 'UTC+1 (Piacenza)', lat: 45.05, lon: 9.69 },
+            { label: 'UTC+2 (Il Cairo)', lat: 30.04, lon: 31.24 },
+            { label: 'UTC+3 (Mosca)', lat: 55.75, lon: 37.62 },
+            { label: 'UTC+5:30 (Nuova Delhi)', lat: 28.61, lon: 77.21 },
+            { label: 'UTC+8 (Pechino)', lat: 39.90, lon: 116.41 },
+            { label: 'UTC+9 (Tokyo)', lat: 35.68, lon: 139.65 },
+            { label: 'UTC+10 (Sydney)', lat: -33.87, lon: 151.21 },
+            { label: 'UTC+12 (Grande Diomede)', lat: 65.78, lon: -169.0 }
+        ];
+
+        const selectEl = document.getElementById('utc-select');
+        quickOffsets.forEach((item, index) => {
+            const opt = document.createElement('option');
+            opt.value = String(index);
+            opt.textContent = item.label;
+            selectEl.appendChild(opt);
+        });
+
+        function selectQuickOffset(val) {
+            const idx = parseInt(val, 10);
+            if (Number.isNaN(idx) || !quickOffsets[idx]) return;
+            const item = quickOffsets[idx];
+            map.setView([item.lat, item.lon], 4);
+            handleMapClick(item.lat, item.lon, false);
+        }
+
+        handleMapClick(currentLat, currentLon, false);
+        updateHeaderTime();
+        setInterval(updateHeaderTime, 1000);
+    </script>
+</body>
+</html>
