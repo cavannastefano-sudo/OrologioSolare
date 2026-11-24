@@ -60,6 +60,21 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+function openWorldMapPage() {
+    const qs = new URLSearchParams();
+    if (typeof cachedLat === 'number' && !Number.isNaN(cachedLat)) {
+        qs.set('lat', cachedLat.toFixed(4));
+    }
+    if (typeof cachedLon === 'number' && !Number.isNaN(cachedLon)) {
+        qs.set('lon', cachedLon.toFixed(4));
+    }
+    if (typeof currentPlaceDisplayName === 'string' && currentPlaceDisplayName.trim()) {
+        qs.set('city', currentPlaceDisplayName.trim());
+    }
+    const query = qs.toString();
+    window.location.href = query ? `world.html?${query}` : 'world.html';
+}
+
 function formatOffsetLabel(offsetHours) {
     const num = Number(offsetHours);
     if (isNaN(num)) return 'UTC +1';
