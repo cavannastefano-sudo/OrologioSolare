@@ -62,18 +62,13 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        // 3. Riferimenti ai contenitori
+        // 3. Riferimenti ai contenitori (ricarica col trascinamento disattivata)
         final SwipeRefreshLayout layoutPadre = binding.swiperefreshlayout1;
+        layoutPadre.setEnabled(false);
+        layoutPadre.setOnRefreshListener(null);
+
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] navBarPx = new int[]{0};
-
-        // Gestione ricarica con trascinamento verso il basso
-        layoutPadre.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
-            @Override
-            public void onRefresh() {
-                wv.reload();
-            }
-        });
 
         // 4. Insets su layoutPadre
         ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
@@ -161,10 +156,6 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (layoutPadre.isRefreshing()) {
-                    layoutPadre.setRefreshing(false);
-                }
-
                 String js = "javascript:(function() { " +
                     "function toHex(c) { var h = Math.max(0, Math.min(255, Math.round(c))).toString(16); return h.length == 1 ? '0' + h : h; } " +
                     "function rgbToHex(rgb) { " +
