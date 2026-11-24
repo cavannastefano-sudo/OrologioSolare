@@ -2,10 +2,10 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mappa Mondiale e Fusi Orari - SunClock24</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#000000">
+    <meta name="theme-color" content="#0b1120">
     <link rel="icon" type="image/jpeg" href="IMG_20260808_102945.jpg">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,6 +14,15 @@
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
 
     <style>
+        :root {
+            --android-top-inset: 0px;
+            --android-bottom-inset: 0px;
+            --safe-top: max(env(safe-area-inset-top, 0px), var(--android-top-inset));
+            --safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--android-bottom-inset));
+            --system-bar-bg: #0b1120;
+            --panel-bg: #0f172a;
+        }
+
         * {
             box-sizing: border-box;
         }
@@ -24,11 +33,34 @@
             width: 100%;
             max-width: 100vw;
             height: 100dvh;
-            background: #0b1120;
+            background: var(--system-bar-bg);
             color: #f8fafc;
             font-family: system-ui, -apple-system, sans-serif;
             overflow-x: hidden;
             overflow-y: hidden;
+        }
+
+        /* Barre solide non trasparenti per status bar (alto) e navigation bar (basso) */
+        .sys-bar-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--safe-top);
+            background: var(--system-bar-bg);
+            z-index: 1200;
+            pointer-events: none;
+        }
+
+        .sys-bar-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--safe-bottom);
+            background: var(--system-bar-bg);
+            z-index: 1200;
+            pointer-events: none;
         }
 
         .layout {
@@ -36,6 +68,9 @@
             width: 100%;
             max-width: 100%;
             height: 100%;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            background: var(--system-bar-bg);
         }
 
         .map-area {
@@ -43,12 +78,13 @@
             flex: 1 1 auto;
             height: 100%;
             min-width: 0;
+            background: var(--panel-bg);
         }
 
         #map {
             width: 100%;
             height: 100%;
-            background: #0f172a;
+            background: var(--panel-bg);
         }
 
         .map-overlay-bar {
@@ -60,7 +96,7 @@
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
-            background: rgba(15, 23, 42, 0.92);
+            background: rgba(15, 23, 42, 0.96);
             border: 1px solid #334155;
             padding: 6px 8px;
             border-radius: 8px;
@@ -95,7 +131,7 @@
             width: 340px;
             max-width: 100%;
             height: 100%;
-            background: #0f172a;
+            background: var(--panel-bg);
             border-left: 1px solid #334155;
             padding: 12px;
             display: flex;
@@ -123,7 +159,7 @@
 
             .layout {
                 display: grid;
-                grid-template-rows: auto minmax(340px, 53dvh) auto;
+                grid-template-rows: auto minmax(320px, 52dvh) auto;
                 grid-template-areas:
                     "top"
                     "map"
@@ -139,7 +175,7 @@
                 width: 100%;
                 max-width: 100vw;
                 height: 100%;
-                min-height: 340px;
+                min-height: 320px;
             }
 
             .sidebar {
@@ -148,8 +184,8 @@
 
             .sidebar-top {
                 grid-area: top;
-                background: #0f172a;
-                padding: 6px 8px;
+                background: var(--panel-bg);
+                padding: 8px;
                 gap: 0;
                 border-bottom: 1px solid #334155;
                 width: 100%;
@@ -158,7 +194,7 @@
 
             .sidebar-bottom {
                 grid-area: bottom;
-                background: #0f172a;
+                background: var(--panel-bg);
                 padding: 8px 8px 14px;
                 gap: 8px;
                 border-top: 1px solid #334155;
@@ -372,6 +408,9 @@
     </style>
 </head>
 <body>
+    <div class="sys-bar-top" aria-hidden="true"></div>
+    <div class="sys-bar-bottom" aria-hidden="true"></div>
+
     <div class="layout">
         <div class="map-area">
             <div id="map"></div>
@@ -426,6 +465,36 @@
     </div>
 
     <script>
+        function syncAndroidSystemBars() {
+            const root = document.documentElement;
+            const dpr = window.devicePixelRatio || 1;
+            let topPx = 0;
+            let bottomPx = 0;
+
+            try {
+                if (window.AndroidInterface) {
+                    if (typeof window.AndroidInterface.getTopInsetPx === 'function') {
+                        const rawTop = Number(window.AndroidInterface.getTopInsetPx()) || 0;
+                        topPx = rawTop > 0 ? rawTop / dpr : 0;
+                    }
+                    if (typeof window.AndroidInterface.getBottomInsetPx === 'function') {
+                        const rawBottom = Number(window.AndroidInterface.getBottomInsetPx()) || 0;
+                        bottomPx = rawBottom > 0 ? rawBottom / dpr : 0;
+                    }
+                    if (typeof window.AndroidInterface.updateColors === 'function') {
+                        window.AndroidInterface.updateColors('#0b1120');
+                    }
+                }
+            } catch (e) {
+                console.warn('Sincronizzazione barre Android non disponibile:', e);
+            }
+
+            root.style.setProperty('--android-top-inset', `${Math.round(topPx)}px`);
+            root.style.setProperty('--android-bottom-inset', `${Math.round(bottomPx)}px`);
+        }
+
+        syncAndroidSystemBars();
+
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -446,6 +515,19 @@
             maxZoom: 12,
             layers: [initialLayer]
         });
+
+        window.addEventListener('resize', () => {
+            syncAndroidSystemBars();
+            map.invalidateSize();
+        });
+        window.addEventListener('orientationchange', () => {
+            syncAndroidSystemBars();
+            setTimeout(() => map.invalidateSize(), 150);
+        });
+        setTimeout(() => {
+            syncAndroidSystemBars();
+            map.invalidateSize();
+        }, 100);
 
         const baseMaps = {
             "Mappa Chiara": chiara,
