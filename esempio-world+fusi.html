@@ -45,7 +45,7 @@
         #map {
             width: 100%;
             height: 100%;
-            background: #ffffff;
+            background: #000;
         }
 
         .map-overlay-bar {
@@ -62,8 +62,7 @@
             border-radius: 8px;
         }
 
-        .map-overlay-bar button,
-        .map-overlay-bar a {
+        .map-overlay-bar button {
             background: #1e293b;
             color: #e2e8f0;
             border: 1px solid #475569;
@@ -72,10 +71,6 @@
             font-size: 0.78rem;
             font-weight: 600;
             cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
         }
 
         .map-overlay-bar button.active {
@@ -282,7 +277,6 @@
             <div class="map-overlay-bar">
                 <button type="button" id="btn-tz-boundaries" class="active" onclick="toggleTzBoundaries()">Confini Fusi</button>
                 <button type="button" id="btn-countries" class="active" onclick="toggleCountries()">Paesi</button>
-                <button type="button" id="btn-no-map" onclick="toggleNoTiles()">Nessuna Mappa</button>
                 <button type="button" onclick="map.setView([20, 0], 2)">Vista Globale</button>
             </div>
         </div>
@@ -337,18 +331,7 @@
     </div>
 
     <script>
-        // Mappa bianca predefinita (terza mappa senza tessere esterne, sempre cliccabile e funzionante)
-        const bianca = L.gridLayer({
-            attribution: 'Mappa Bianca SunClock24',
-            createTile: function(coords) {
-                const tile = document.createElement('div');
-                tile.style.background = '#ffffff';
-                tile.style.border = '1px solid #e2e8f0';
-                tile.style.boxSizing = 'border-box';
-                return tile;
-            }
-        });
-
+        // Mappe della pagina precedente: Topografica e Mappa Chiara
         const chiara = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors',
             maxZoom: 19
@@ -360,9 +343,7 @@
         });
 
         const savedLayerName = localStorage.getItem('sunclock_map_layer');
-        let initialLayer = bianca;
-        if (savedLayerName === 'Mappa Chiara') initialLayer = chiara;
-        else if (savedLayerName === 'Topografica') initialLayer = topo;
+        const initialLayer = (savedLayerName === 'Mappa Chiara') ? chiara : topo;
 
         const map = L.map('map', {
             center: [20, 0],
@@ -373,7 +354,6 @@
         });
 
         const baseMaps = {
-            "Mappa Bianca": bianca,
             "Topografica": topo,
             "Mappa Chiara": chiara
         };
@@ -383,13 +363,11 @@
         let countriesGeojsonLayer = null;
         let showTzBoundaries = true;
         let showCountries = true;
-        let noTilesMode = false;
-        let activeTileLayerBeforeHide = initialLayer;
 
         let currentHoverLat = null;
         let currentHoverLon = null;
 
-        // Palette ben distinta per evitare che fusi o zone vicine abbiano colori simili
+        // Colori ben distinti così fusi o paesi vicini non hanno tonalità simili
         const DISTINCT_COLORS = [
             '#e11d48', '#0284c7', '#16a34a', '#eab308', '#9333ea',
             '#ea580c', '#06b6d4', '#d946ef', '#84cc16', '#f43f5e',
@@ -428,28 +406,12 @@
             else map.removeLayer(countriesGeojsonLayer);
         }
 
-        function toggleNoTiles() {
-            noTilesMode = !noTilesMode;
-            document.getElementById('btn-no-map').classList.toggle('active', noTilesMode);
-            if (noTilesMode) {
-                if (map.hasLayer(bianca)) { activeTileLayerBeforeHide = bianca; map.removeLayer(bianca); }
-                if (map.hasLayer(chiara)) { activeTileLayerBeforeHide = chiara; map.removeLayer(chiara); }
-                if (map.hasLayer(topo)) { activeTileLayerBeforeHide = topo; map.removeLayer(topo); }
-                document.getElementById('status-msg').textContent = 'Modalità senza mappa attiva: clicca o inserisci coordinate/luogo.';
-            } else {
-                const target = activeTileLayerBeforeHide || bianca;
-                target.addTo(map);
-                document.getElementById('status-msg').textContent = 'Mappa riattivata.';
-            }
-        }
-
-        // Gestione fusi specifici (Stretto di Bering - Isole Diomede per prime)
         function getPreciseStandardTimezone(lat, lon) {
             if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
                 if (lon < -168.9) {
-                    return 12; // Grande Diomede (Russia) -> UTC+12
+                    return 12;
                 } else {
-                    return -9; // Piccola Diomede (USA/Alaska) -> UTC-9
+                    return -9;
                 }
             }
 
@@ -701,7 +663,7 @@
                 const lat = parseFloat(parts[0]);
                 const lon = parseFloat(parts[1]);
                 if (!Number.isNaN(lat) && !Number.isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
-                    map.setView([lat, lon], Math.max(map.getZoom(), 5));
+                    map.panTo([lat, lon]);
                     handleMapClick(lat, lon, false);
                 }
             }
@@ -722,13 +684,13 @@
                 if (Array.isArray(list) && list.length > 0) {
                     const lat = parseFloat(list[0].lat);
                     const lon = parseFloat(list[0].lon);
-                    map.setView([lat, lon], 6);
+                    map.panTo([lat, lon]);
                     handleMapClick(lat, lon, false);
                 }
             } catch (e) {}
         }
 
-        // Caricamento confini reali dei fusi orari (non linee dritte ogni 15°)
+        // Confini reali dei fusi orari (non linee dritte ogni 15°)
         fetch('https://raw.githubusercontent.com/evansiroky/timezone-boundary-builder/master/dist/timezones-now.geojson')
             .then(res => {
                 if (!res.ok) throw new Error('Fallback tz');
@@ -743,7 +705,7 @@
                             weight: 1.1,
                             opacity: 0.85,
                             color: '#1e293b',
-                            fillOpacity: 0.36
+                            fillOpacity: 0.34
                         };
                     },
                     onEachFeature: (feature, layer) => {
@@ -756,13 +718,13 @@
                 if (showTzBoundaries) {
                     tzGeojsonLayer.addTo(map);
                 }
-                document.getElementById('status-msg').textContent = 'Confini reali dei fusi caricatesi. Clicca su una località.';
+                document.getElementById('status-msg').textContent = 'Confini reali dei fusi caricati. Clicca su una località.';
             })
             .catch(() => {
                 document.getElementById('status-msg').textContent = 'Confini fusi non caricati da rete; clicca comunque sulla mappa.';
             });
 
-        // Confini dei Paesi
+        // Confini dei Paesi come nella pagina precedente
         fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
             .then(res => res.json())
             .then(data => {
@@ -770,9 +732,9 @@
                     style: (feature) => ({
                         fillColor: getColor(feature.properties.ADMIN || feature.properties.name || "Sconosciuto"),
                         weight: 1,
-                        opacity: 0.75,
-                        color: '#334155',
-                        fillOpacity: 0.25
+                        opacity: 0.8,
+                        color: '#333',
+                        fillOpacity: 0.35
                     }),
                     onEachFeature: (feature, layer) => {
                         layer.on('click', (e) => {
@@ -782,7 +744,7 @@
                     }
                 });
 
-                if (showCountries) {
+                if (map.hasLayer(chiara) && showCountries) {
                     countriesGeojsonLayer.addTo(map);
                 }
             })
@@ -790,6 +752,16 @@
 
         map.on('baselayerchange', function(e) {
             localStorage.setItem('sunclock_map_layer', e.name);
+
+            if (e.name === "Topografica") {
+                if (countriesGeojsonLayer && map.hasLayer(countriesGeojsonLayer)) {
+                    map.removeLayer(countriesGeojsonLayer);
+                }
+            } else if (e.name === "Mappa Chiara") {
+                if (countriesGeojsonLayer && !map.hasLayer(countriesGeojsonLayer) && showCountries) {
+                    countriesGeojsonLayer.addTo(map);
+                }
+            }
         });
 
         map.on('click', (e) => {
@@ -818,7 +790,6 @@
             btn.className = 'utc-btn';
             btn.textContent = item.label;
             btn.onclick = () => {
-                map.setView([item.lat, item.lon], 4);
                 handleMapClick(item.lat, item.lon, false);
             };
             gridContainer.appendChild(btn);
