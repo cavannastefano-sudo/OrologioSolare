@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
         final View layoutPadre = binding.getRoot();
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] navBarPx = new int[]{0};
+        final int[] statusBarPx = new int[]{0};
 
         if (Build.VERSION.SDK_INT >= 21) {
             Window window = getWindow();
@@ -80,8 +81,9 @@ public class MainActivity extends AppCompatActivity {
                 Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
                 Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
 
-                int topPad = statusInsets.top;
+                int topPad = Math.max(statusInsets.top, 24);
                 int bottomPad = Math.max(navInsets.bottom, imeInsets.bottom);
+                statusBarPx[0] = topPad;
                 navBarPx[0] = bottomPad;
 
                 v.setPadding(0, topPad, 0, bottomPad);
@@ -142,6 +144,11 @@ public class MainActivity extends AppCompatActivity {
             @JavascriptInterface
             public int getBottomInsetPx() {
                 return navBarPx[0];
+            }
+
+            @JavascriptInterface
+            public int getTopInsetPx() {
+                return statusBarPx[0];
             }
         }, "AndroidInterface");
 
@@ -224,11 +231,11 @@ public class MainActivity extends AppCompatActivity {
                     "  if (count === 0) return null; " +
                     "  return '#' + toHex(sumR / count) + toHex(sumG / count) + toHex(sumB / count); " +
                     "} " +
-                    "function ensureBottomSafeSpace() { " +
-                    "  var pad = (window.AndroidInterface && AndroidInterface.getBottomInsetPx) ? AndroidInterface.getBottomInsetPx() : 0; " +
-                    "  var safeSpace = Math.max(pad, 24); " +
+                    "function ensureSafeSpaces() { " +
+                    "  var padBottom = (window.AndroidInterface && AndroidInterface.getBottomInsetPx) ? AndroidInterface.getBottomInsetPx() : 0; " +
+                    "  var safeBottom = Math.max(padBottom + 16, 48); " +
                     "  if (document.body) { " +
-                    "    document.body.style.setProperty('padding-bottom', safeSpace + 'px', 'important'); " +
+                    "    document.body.style.setProperty('padding-bottom', safeBottom + 'px', 'important'); " +
                     "  } " +
                     "  var nodes = document.querySelectorAll('div, section, aside, footer, form, nav, header'); " +
                     "  for (var i = 0; i < nodes.length; i++) { " +
@@ -236,8 +243,8 @@ public class MainActivity extends AppCompatActivity {
                     "    var cs = window.getComputedStyle(el); " +
                     "    if (cs.position === 'fixed' || cs.position === 'sticky') { " +
                     "      var r = el.getBoundingClientRect(); " +
-                    "      if (r.bottom >= window.innerHeight - 24) { " +
-                    "        el.style.setProperty('margin-bottom', safeSpace + 'px', 'important'); " +
+                    "      if (r.bottom >= window.innerHeight - 30) { " +
+                    "        el.style.setProperty('margin-bottom', safeBottom + 'px', 'important'); " +
                     "      } " +
                     "    } " +
                     "  } " +
@@ -245,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
                     "function scan() { " +
                     "  var ads = document.querySelectorAll('.adsbygoogle, [id^=google_ads]'); " +
                     "  for(var i=0; i<ads.length; i++) ads[i].remove(); " +
-                    "  ensureBottomSafeSpace(); " +
+                    "  ensureSafeSpaces(); " +
                     "  var href = (window.location && window.location.href) ? window.location.href.toLowerCase() : ''; " +
                     "  if (href.indexOf('cavanweb.com') !== -1 || href.indexOf('cavanweb') !== -1) { " +
                     "    AndroidInterface.updateColors('#76858C'); " +
