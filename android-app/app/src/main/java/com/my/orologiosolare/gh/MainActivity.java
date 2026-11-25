@@ -56,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
 
         final View layoutPadre = binding.getRoot();
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
+        final int[] topBarPx = new int[]{0};
         final int[] navBarPx = new int[]{0};
-        final int[] statusBarPx = new int[]{0};
 
         if (Build.VERSION.SDK_INT >= 21) {
             Window window = getWindow();
@@ -77,20 +77,24 @@ public class MainActivity extends AppCompatActivity {
         ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
+                Insets sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
                 Insets statusInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars());
                 Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
                 Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
 
-                int topPad = Math.max(statusInsets.top, 24);
-                int bottomPad = Math.max(navInsets.bottom, imeInsets.bottom);
-                statusBarPx[0] = topPad;
+                int topPad = Math.max(statusInsets.top, sysBars.top);
+                int bottomPad = Math.max(Math.max(navInsets.bottom, sysBars.bottom), imeInsets.bottom);
+
+                topBarPx[0] = topPad;
                 navBarPx[0] = bottomPad;
 
                 v.setPadding(0, topPad, 0, bottomPad);
                 wv.setPadding(0, 0, 0, 0);
-                return insets;
+                return WindowInsetsCompat.CONSUMED;
             }
         });
+
+        ViewCompat.requestApplyInsets(layoutPadre);
 
         wv.addJavascriptInterface(new Object() {
             @JavascriptInterface
@@ -111,22 +115,13 @@ public class MainActivity extends AppCompatActivity {
                             int parsed = Color.parseColor(safeHex);
                             final int solidColor = Color.argb(255, Color.red(parsed), Color.green(parsed), Color.blue(parsed));
 
-                            double luminance = (0.299 * Color.red(solidColor)
-                                    + 0.587 * Color.green(solidColor)
-                                    + 0.114 * Color.blue(solidColor)) / 255.0;
-                            boolean isLightBg = luminance > 0.55;
-
-                            SystemBarStyle barStyle = isLightBg
-                                    ? SystemBarStyle.light(solidColor, solidColor)
-                                    : SystemBarStyle.dark(solidColor);
-
-                            EdgeToEdge.enable(MainActivity.this, barStyle, barStyle);
-
                             Window win = getWindow();
-                            win.setStatusBarColor(solidColor);
-                            win.setNavigationBarColor(solidColor);
-                            if (Build.VERSION.SDK_INT >= 29) {
-                                win.setNavigationBarContrastEnforced(true);
+                            if (Build.VERSION.SDK_INT >= 21) {
+                                win.setStatusBarColor(solidColor);
+                                win.setNavigationBarColor(solidColor);
+                                if (Build.VERSION.SDK_INT >= 29) {
+                                    win.setNavigationBarContrastEnforced(true);
+                                }
                             }
 
                             if (contentRoot != null) {
@@ -134,6 +129,26 @@ public class MainActivity extends AppCompatActivity {
                             }
                             if (layoutPadre != null) {
                                 layoutPadre.setBackgroundColor(solidColor);
+                            }
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                double darkness = 1 - (0.299 * Color.red(solidColor)
+                                        + 0.587 * Color.green(solidColor)
+                                        + 0.114 * Color.blue(solidColor)) / 255.0;
+                                View decorView = win.getDecorView();
+                                int flags = decorView.getSystemUiVisibility();
+                                if (darkness < 0.5) {
+                                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                                    if (Build.VERSION.SDK_INT >= 26) {
+                                        flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                                    }
+                                } else {
+                                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                                    if (Build.VERSION.SDK_INT >= 26) {
+                                        flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+                                    }
+                                }
+                                decorView.setSystemUiVisibility(flags);
                             }
                         } catch (Exception e) {
                         }
@@ -148,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
             @JavascriptInterface
             public int getTopInsetPx() {
-                return statusBarPx[0];
+                return topBarPx[0];
             }
         }, "AndroidInterface");
 
