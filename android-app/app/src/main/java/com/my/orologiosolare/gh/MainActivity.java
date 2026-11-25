@@ -37,7 +37,7 @@ public class MainActivity extends AppCompatActivity {
         wv.getSettings().setJavaScriptEnabled(true);
         wv.getSettings().setDomStorageEnabled(true);
         wv.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        wv.setBackgroundColor(Color.parseColor("#E1E8FF"));
+        wv.setBackgroundColor(Color.parseColor("#0D1321"));
 
         // Abilita Pinch-to-Zoom
         wv.getSettings().setSupportZoom(true);
@@ -46,14 +46,16 @@ public class MainActivity extends AppCompatActivity {
         wv.getSettings().setTextZoom(100);
         wv.getSettings().setUseWideViewPort(true);
 
-        // 2. Edge-to-edge per ricevere i WindowInsets reali
+        final int defaultSolidColor = Color.parseColor("#0D1321");
+
+        // 2. Barra di navigazione non trasparente con supporto WindowInsets
         if (Build.VERSION.SDK_INT >= 21) {
             Window window = getWindow();
-            window.setStatusBarColor(Color.TRANSPARENT);
-            window.setNavigationBarColor(Color.TRANSPARENT);
+            window.setStatusBarColor(defaultSolidColor);
+            window.setNavigationBarColor(defaultSolidColor);
 
             if (Build.VERSION.SDK_INT >= 29) {
-                window.setNavigationBarContrastEnforced(false);
+                window.setNavigationBarContrastEnforced(true);
             }
 
             if (Build.VERSION.SDK_INT >= 30) {
@@ -66,13 +68,26 @@ public class MainActivity extends AppCompatActivity {
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] navBarPx = new int[]{0};
 
-        // 4. Insets sul contenitore principale
+        if (contentRoot != null) {
+            contentRoot.setBackgroundColor(defaultSolidColor);
+        }
+        if (layoutPadre != null) {
+            layoutPadre.setBackgroundColor(defaultSolidColor);
+        }
+
+        // 4. Insets sul contenitore principale (navigationBars + ime)
         ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
-                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-                navBarPx[0] = systemBars.bottom;
-                v.setPadding(0, systemBars.top, 0, systemBars.bottom);
+                Insets statusInsets = insets.getInsets(WindowInsetsCompat.Type.statusBars());
+                Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
+                Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
+
+                int topPad = statusInsets.top;
+                int bottomPad = Math.max(navInsets.bottom, imeInsets.bottom);
+                navBarPx[0] = bottomPad;
+
+                v.setPadding(0, topPad, 0, bottomPad);
                 wv.setPadding(0, 0, 0, 0);
                 return insets;
             }
@@ -92,14 +107,20 @@ public class MainActivity extends AppCompatActivity {
                             if (currentUrl.contains("cavanweb.com") || currentUrl.contains("cavanweb")) {
                                 safeHex = "#76858C";
                             } else if (!safeHex.startsWith("#")) {
-                                safeHex = "#111827";
+                                safeHex = "#0D1321";
                             }
 
                             int color = Color.parseColor(safeHex);
+                            // Assicura sempre alfa pieno (barra non trasparente)
+                            color = Color.argb(255, Color.red(color), Color.green(color), Color.blue(color));
 
                             Window win = getWindow();
                             win.setStatusBarColor(color);
                             win.setNavigationBarColor(color);
+
+                            if (Build.VERSION.SDK_INT >= 29) {
+                                win.setNavigationBarContrastEnforced(true);
+                            }
 
                             if (contentRoot != null) {
                                 contentRoot.setBackgroundColor(color);
@@ -155,7 +176,7 @@ public class MainActivity extends AppCompatActivity {
                 String js = "javascript:(function() { " +
                     "function toHex(c) { var h = Math.max(0, Math.min(255, Math.round(c))).toString(16); return h.length == 1 ? '0' + h : h; } " +
                     "function rgbToHex(rgb) { " +
-                    "  var p = rgb.match(/\\d+/g); if (!p || p.length < 3) return '#111827'; " +
+                    "  var p = rgb.match(/\\d+/g); if (!p || p.length < 3) return '#0D1321'; " +
                     "  var r = parseInt(p[0], 10), g = parseInt(p[1], 10), b = parseInt(p[2], 10); " +
                     "  var maxC = Math.max(r, g, b), minC = Math.min(r, g, b); " +
                     "  if (b > r && b > g && (b - Math.min(r, g)) <= 45 && (maxC - minC) <= 55) { " +
@@ -214,16 +235,19 @@ public class MainActivity extends AppCompatActivity {
                     "  if (count === 0) return null; " +
                     "  return '#' + toHex(sumR / count) + toHex(sumG / count) + toHex(sumB / count); " +
                     "} " +
-                    "function liftBottomFixed() { " +
+                    "function ensureBottomSafeSpace() { " +
                     "  var pad = (window.AndroidInterface && AndroidInterface.getBottomInsetPx) ? AndroidInterface.getBottomInsetPx() : 0; " +
-                    "  var safeSpace = Math.max(pad + 12, 48); " +
-                    "  var nodes = document.querySelectorAll('div, section, aside, footer, form'); " +
+                    "  var safeSpace = Math.max(pad, 24); " +
+                    "  if (document.body) { " +
+                    "    document.body.style.setProperty('padding-bottom', safeSpace + 'px', 'important'); " +
+                    "  } " +
+                    "  var nodes = document.querySelectorAll('div, section, aside, footer, form, nav, header'); " +
                     "  for (var i = 0; i < nodes.length; i++) { " +
                     "    var el = nodes[i]; " +
                     "    var cs = window.getComputedStyle(el); " +
-                    "    if ((cs.position === 'fixed' || cs.position === 'sticky') && parseInt(cs.zIndex || '0', 10) >= 5) { " +
+                    "    if (cs.position === 'fixed' || cs.position === 'sticky') { " +
                     "      var r = el.getBoundingClientRect(); " +
-                    "      if (r.bottom >= window.innerHeight - 50) { " +
+                    "      if (r.bottom >= window.innerHeight - 24) { " +
                     "        el.style.setProperty('margin-bottom', safeSpace + 'px', 'important'); " +
                     "      } " +
                     "    } " +
@@ -232,13 +256,13 @@ public class MainActivity extends AppCompatActivity {
                     "function scan() { " +
                     "  var ads = document.querySelectorAll('.adsbygoogle, [id^=google_ads]'); " +
                     "  for(var i=0; i<ads.length; i++) ads[i].remove(); " +
-                    "  liftBottomFixed(); " +
+                    "  ensureBottomSafeSpace(); " +
                     "  var href = (window.location && window.location.href) ? window.location.href.toLowerCase() : ''; " +
                     "  if (href.indexOf('cavanweb.com') !== -1 || href.indexOf('cavanweb') !== -1) { " +
                     "    AndroidInterface.updateColors('#76858C'); " +
                     "    return; " +
                     "  } " +
-                    "  var col = getMetaThemeColor() || getAverageGridColor() || getColorFromPoint(window.innerWidth / 2, 10) || '#111827'; " +
+                    "  var col = getMetaThemeColor() || getAverageGridColor() || getColorFromPoint(window.innerWidth / 2, 10) || '#0D1321'; " +
                     "  AndroidInterface.updateColors(col); " +
                     "} " +
                     "if (window.__cwScanTimer) clearInterval(window.__cwScanTimer); " +
