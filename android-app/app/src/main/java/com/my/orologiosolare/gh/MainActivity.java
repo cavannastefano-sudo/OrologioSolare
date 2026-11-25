@@ -13,7 +13,9 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.SystemBarStyle;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
@@ -28,46 +30,42 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        final int defaultSolidColor = Color.parseColor("#0D1321");
+
+        EdgeToEdge.enable(
+                this,
+                SystemBarStyle.dark(defaultSolidColor),
+                SystemBarStyle.dark(defaultSolidColor)
+        );
+
         super.onCreate(savedInstanceState);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // 1. Riferimento alla WebView e impostazioni base
         final WebView wv = binding.webview1;
         wv.getSettings().setJavaScriptEnabled(true);
         wv.getSettings().setDomStorageEnabled(true);
         wv.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        wv.setBackgroundColor(Color.parseColor("#0D1321"));
+        wv.setBackgroundColor(defaultSolidColor);
 
-        // Abilita Pinch-to-Zoom
         wv.getSettings().setSupportZoom(true);
         wv.getSettings().setBuiltInZoomControls(true);
         wv.getSettings().setDisplayZoomControls(false);
         wv.getSettings().setTextZoom(100);
         wv.getSettings().setUseWideViewPort(true);
 
-        final int defaultSolidColor = Color.parseColor("#0D1321");
-
-        // 2. Barra di navigazione non trasparente con supporto WindowInsets
-        if (Build.VERSION.SDK_INT >= 21) {
-            Window window = getWindow();
-            window.setStatusBarColor(defaultSolidColor);
-            window.setNavigationBarColor(defaultSolidColor);
-
-            if (Build.VERSION.SDK_INT >= 29) {
-                window.setNavigationBarContrastEnforced(true);
-            }
-
-            if (Build.VERSION.SDK_INT >= 30) {
-                window.setDecorFitsSystemWindows(false);
-            }
-        }
-
-        // 3. Riferimenti ai contenitori
         final View layoutPadre = binding.getRoot();
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] navBarPx = new int[]{0};
 
+        if (Build.VERSION.SDK_INT >= 21) {
+            Window window = getWindow();
+            window.setStatusBarColor(defaultSolidColor);
+            window.setNavigationBarColor(defaultSolidColor);
+            if (Build.VERSION.SDK_INT >= 29) {
+                window.setNavigationBarContrastEnforced(true);
+            }
+        }
         if (contentRoot != null) {
             contentRoot.setBackgroundColor(defaultSolidColor);
         }
@@ -75,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
             layoutPadre.setBackgroundColor(defaultSolidColor);
         }
 
-        // 4. Insets sul contenitore principale (navigationBars + ime)
         ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
@@ -93,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 5. Interfaccia Java
         wv.addJavascriptInterface(new Object() {
             @JavascriptInterface
             public void updateColors(final String colorHex) {
@@ -110,40 +106,34 @@ public class MainActivity extends AppCompatActivity {
                                 safeHex = "#0D1321";
                             }
 
-                            int color = Color.parseColor(safeHex);
-                            // Assicura sempre alfa pieno (barra non trasparente)
-                            color = Color.argb(255, Color.red(color), Color.green(color), Color.blue(color));
+                            int parsed = Color.parseColor(safeHex);
+                            final int solidColor = Color.argb(255, Color.red(parsed), Color.green(parsed), Color.blue(parsed));
+
+                            double luminance = (0.299 * Color.red(solidColor)
+                                    + 0.587 * Color.green(solidColor)
+                                    + 0.114 * Color.blue(solidColor)) / 255.0;
+                            boolean isLightBg = luminance > 0.55;
+
+                            SystemBarStyle barStyle = isLightBg
+                                    ? SystemBarStyle.light(solidColor, solidColor)
+                                    : SystemBarStyle.dark(solidColor);
+
+                            EdgeToEdge.enable(MainActivity.this, barStyle, barStyle);
 
                             Window win = getWindow();
-                            win.setStatusBarColor(color);
-                            win.setNavigationBarColor(color);
-
+                            win.setStatusBarColor(solidColor);
+                            win.setNavigationBarColor(solidColor);
                             if (Build.VERSION.SDK_INT >= 29) {
                                 win.setNavigationBarContrastEnforced(true);
                             }
 
                             if (contentRoot != null) {
-                                contentRoot.setBackgroundColor(color);
+                                contentRoot.setBackgroundColor(solidColor);
                             }
                             if (layoutPadre != null) {
-                                layoutPadre.setBackgroundColor(color);
-                            }
-
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                double darkness = 1 - (0.299 * Color.red(color) + 0.587 * Color.green(color) + 0.114 * Color.blue(color)) / 255;
-                                View decorView = win.getDecorView();
-                                int flags = decorView.getSystemUiVisibility();
-                                if (darkness < 0.5) {
-                                    flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-                                    if (Build.VERSION.SDK_INT >= 26) flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                                } else {
-                                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-                                    if (Build.VERSION.SDK_INT >= 26) flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                                }
-                                decorView.setSystemUiVisibility(flags);
+                                layoutPadre.setBackgroundColor(solidColor);
                             }
                         } catch (Exception e) {
-                            // Ignora errori di parsing
                         }
                     }
                 });
@@ -155,7 +145,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }, "AndroidInterface");
 
-        // 6. WebViewClient completo
         wv.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -273,7 +262,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 7. WebChromeClient per geolocalizzazione
         wv.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
@@ -281,10 +269,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // 8. Caricamento iniziale
         wv.loadUrl("https://cavannastefano-sudo.github.io/OrologioSolare");
 
-        // 9. Gestione tasto Indietro
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
