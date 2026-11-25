@@ -54,24 +54,25 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
+            gap: 6px;
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: 12px;
-            padding: 6px 10px;
+            padding: 6px 8px;
         }
 
         .brand-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             min-width: 0;
+            flex-shrink: 0;
         }
 
         .brand-avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
             overflow: hidden;
             border: 1px solid rgba(251, 191, 36, 0.45);
             flex-shrink: 0;
@@ -86,29 +87,67 @@
         }
 
         .brand-name {
-            font-size: 0.94rem;
+            font-size: 0.86rem;
             font-weight: 700;
             color: var(--accent-gold);
             white-space: nowrap;
+        }
+
+        .top-right-controls {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .top-right-controls::-webkit-scrollbar {
+            display: none;
+        }
+
+        .layer-btn {
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 7px;
+            padding: 5px 7px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .layer-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #ffffff;
         }
 
         .menu-toggle-btn {
             background: var(--bg-input);
             color: var(--text-main);
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 6px 10px;
-            font-size: 0.85rem;
+            border-radius: 7px;
+            padding: 5px 8px;
+            font-size: 0.78rem;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            justify-content: center;
             white-space: nowrap;
+            flex-shrink: 0;
         }
 
-        .menu-toggle-btn:hover {
+        .menu-toggle-btn:hover,
+        .layer-btn:hover {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
+        }
+
+        .layer-btn.active:hover {
+            color: #ffffff;
         }
 
         .top-dropdown-menu {
@@ -117,26 +156,92 @@
             top: calc(100% + 6px);
             right: 0;
             z-index: 1500;
-            min-width: 185px;
+            width: min(310px, calc(100vw - 20px));
             background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: 10px;
-            padding: 6px;
+            border-radius: 12px;
+            padding: 10px;
             flex-direction: column;
-            gap: 4px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+            gap: 8px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
         }
 
         .top-dropdown-menu.open {
             display: flex;
         }
 
-        .top-dropdown-menu a {
+        .menu-search-box {
+            display: flex;
+            gap: 6px;
+        }
+
+        .menu-search-box input {
+            flex: 1 1 auto;
+            min-width: 0;
+            height: 34px;
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0 9px;
+            font-size: 0.8rem;
+        }
+
+        .menu-search-box button {
+            flex: 0 0 auto;
+            height: 34px;
+            background: var(--accent-blue);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 0 11px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .menu-utc-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .field-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .utc-select {
+            width: 100%;
+            height: 34px;
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 0 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .menu-divider {
+            height: 1px;
+            background: var(--border-subtle);
+            margin: 2px 0;
+        }
+
+        .menu-links {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .menu-links a {
             background: var(--bg-input);
             color: var(--text-main);
             border: 1px solid transparent;
             border-radius: 7px;
-            padding: 8px 10px;
+            padding: 7px 10px;
             font-size: 0.8rem;
             font-weight: 600;
             text-decoration: none;
@@ -145,7 +250,7 @@
             gap: 8px;
         }
 
-        .top-dropdown-menu a:hover {
+        .menu-links a:hover {
             border-color: var(--accent-gold);
             color: var(--accent-gold);
         }
@@ -153,8 +258,8 @@
         .map-stage {
             position: relative;
             width: 100%;
-            height: 64vh;
-            min-height: 360px;
+            height: 70vh;
+            min-height: 390px;
             border-radius: 14px;
             overflow: hidden;
             border: 1px solid var(--border-subtle);
@@ -164,41 +269,6 @@
         #map {
             width: 100%;
             height: 100%;
-        }
-
-        .layer-toolbar {
-            position: absolute;
-            top: 10px;
-            left: 50px;
-            right: 54px;
-            z-index: 600;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 4px;
-            width: fit-content;
-            max-width: calc(100% - 104px);
-            background: rgba(13, 19, 33, 0.92);
-            backdrop-filter: blur(6px);
-            border: 1px solid var(--border-subtle);
-            border-radius: 9px;
-            padding: 4px;
-        }
-
-        .layer-btn {
-            background: var(--bg-card);
-            color: var(--text-main);
-            border: 1px solid transparent;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 0.72rem;
-            font-weight: 600;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-
-        .layer-btn.active {
-            background: var(--accent-blue);
-            color: #ffffff;
         }
 
         .below-map-panel {
@@ -259,74 +329,6 @@
             filter: brightness(1.06);
         }
 
-        .bottom-controls-bar {
-            width: 100%;
-            background: var(--bg-card);
-            border: 1px solid var(--border-subtle);
-            border-radius: 12px;
-            padding: 9px 12px;
-            display: grid;
-            grid-template-columns: 1fr 270px;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .search-box {
-            display: flex;
-            gap: 6px;
-        }
-
-        .search-box input {
-            flex: 1 1 auto;
-            min-width: 0;
-            height: 34px;
-            background: var(--bg-input);
-            color: var(--text-main);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 0 10px;
-            font-size: 0.82rem;
-        }
-
-        .search-box button {
-            flex: 0 0 auto;
-            height: 34px;
-            background: var(--accent-blue);
-            color: #ffffff;
-            border: none;
-            border-radius: 8px;
-            padding: 0 12px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .utc-group {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .field-label {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .utc-select {
-            flex: 1 1 auto;
-            min-width: 0;
-            height: 34px;
-            background: var(--bg-input);
-            color: var(--text-main);
-            border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 0 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
         .tz-band-label {
             background: rgba(13, 19, 33, 0.82);
             color: #ffffff;
@@ -346,26 +348,25 @@
                 gap: 6px;
             }
 
-            .map-stage {
-                height: 50vh;
-                min-height: 290px;
-                border-radius: 12px;
-            }
-
-            .layer-toolbar {
-                top: 8px;
-                left: 46px;
-                right: 52px;
-                width: fit-content;
-                max-width: calc(100% - 98px);
-                gap: 3px;
-                padding: 3px 4px;
+            .brand-name {
+                font-size: 0.8rem;
             }
 
             .layer-btn {
-                padding: 3px 6px;
-                font-size: 0.64rem;
-                border-radius: 5px;
+                padding: 4px 5px;
+                font-size: 0.62rem;
+                border-radius: 6px;
+            }
+
+            .menu-toggle-btn {
+                padding: 4px 7px;
+                font-size: 0.74rem;
+            }
+
+            .map-stage {
+                height: 56vh;
+                min-height: 320px;
+                border-radius: 12px;
             }
 
             .below-map-panel {
@@ -388,13 +389,6 @@
                 padding: 8px 10px;
                 font-size: 0.78rem;
             }
-
-            .bottom-controls-bar {
-                grid-template-columns: 1fr;
-                gap: 6px;
-                padding: 8px 10px;
-                border-radius: 11px;
-            }
         }
     </style>
 </head>
@@ -408,25 +402,41 @@
                 <span class="brand-name">SunClock24</span>
             </div>
 
-            <button type="button" class="menu-toggle-btn" onclick="toggleTopMenu(event)" aria-expanded="false" aria-controls="top-dropdown-menu">
-                <i class="fa-solid fa-bars"></i>
-            </button>
+            <div class="top-right-controls">
+                <button type="button" id="btn-grid" class="layer-btn" onclick="toggleGrid()">Griglia 15°</button>
+                <button type="button" id="btn-bands" class="layer-btn" onclick="toggleBands()">Fasce UTC</button>
+                <button type="button" id="btn-countries" class="layer-btn" onclick="toggleCountries()">Paesi Geo</button>
+                <button type="button" class="layer-btn" onclick="map.setView([20, 0], 2)">Vista Globale</button>
+                <button type="button" class="menu-toggle-btn" onclick="toggleTopMenu(event)" aria-expanded="false" aria-controls="top-dropdown-menu" title="Menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
 
             <nav id="top-dropdown-menu" class="top-dropdown-menu">
-                <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
-                <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank"><i class="fa-solid fa-tv"></i> IPTV</a>
-                <a href="index.html">🏠 Indietro</a>
+                <form class="menu-search-box" onsubmit="event.preventDefault(); searchCity();">
+                    <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
+                    <button type="submit">Cerca</button>
+                </form>
+
+                <div class="menu-utc-box">
+                    <label for="utc-select" class="field-label">Fuso / Scostamento rapido</label>
+                    <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
+                        <option value="">Seleziona un fuso UTC...</option>
+                    </select>
+                </div>
+
+                <div class="menu-divider"></div>
+
+                <div class="menu-links">
+                    <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank"><i class="fa-solid fa-cloud-sun"></i> Meteo</a>
+                    <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank"><i class="fa-solid fa-tv"></i> IPTV</a>
+                    <a href="index.html">🏠 Indietro</a>
+                </div>
             </nav>
         </header>
 
         <main class="map-stage">
             <div id="map"></div>
-            <div class="layer-toolbar">
-                <button type="button" id="btn-grid" class="layer-btn" onclick="toggleGrid()">Griglia 15°</button>
-                <button type="button" id="btn-bands" class="layer-btn" onclick="toggleBands()">Fasce UTC</button>
-                <button type="button" id="btn-countries" class="layer-btn" onclick="toggleCountries()">Paesi Geo</button>
-                <button type="button" class="layer-btn" onclick="map.setView([20, 0], 2)">Vista Globale</button>
-            </div>
         </main>
 
         <section class="below-map-panel">
@@ -438,20 +448,6 @@
                 <div id="status-msg" class="selected-meta">Tocca o clicca sulla mappa per visualizzare luogo e ora.</div>
             </div>
             <button type="button" class="cta-btn" onclick="openSelectedInPosition()">☀️ Apri in Orologio Posizione</button>
-        </section>
-
-        <section class="bottom-controls-bar">
-            <form class="search-box" onsubmit="event.preventDefault(); searchCity();">
-                <input id="city-input" type="text" placeholder="Cerca città (es. Tokyo, New York)..." />
-                <button type="submit">Cerca</button>
-            </form>
-
-            <div class="utc-group">
-                <label for="utc-select" class="field-label">Fuso UTC:</label>
-                <select id="utc-select" class="utc-select" onchange="selectQuickOffset(this.value)">
-                    <option value="">Seleziona un fuso UTC...</option>
-                </select>
-            </div>
         </section>
     </div>
 
@@ -867,6 +863,7 @@
                     const lon = parseFloat(list[0].lon);
                     map.setView([lat, lon], 6);
                     handleMapClick(lat, lon, false);
+                    document.getElementById('top-dropdown-menu').classList.remove('open');
                 }
             } catch (e) {}
         }
@@ -938,6 +935,7 @@
             const item = quickOffsets[idx];
             map.setView([item.lat, item.lon], 4);
             handleMapClick(item.lat, item.lon, false);
+            document.getElementById('top-dropdown-menu').classList.remove('open');
         }
 
         handleMapClick(currentLat, currentLon, false);
