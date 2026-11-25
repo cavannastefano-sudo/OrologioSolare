@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.webkit.GeolocationPermissions;
 import android.webkit.JavascriptInterface;
@@ -54,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
         wv.getSettings().setTextZoom(100);
         wv.getSettings().setUseWideViewPort(true);
 
-        final View layoutPadre = binding.getRoot();
         final View contentRoot = getWindow().getDecorView().findViewById(android.R.id.content);
         final int[] topBarPx = new int[]{0};
         final int[] navBarPx = new int[]{0};
@@ -70,11 +70,9 @@ public class MainActivity extends AppCompatActivity {
         if (contentRoot != null) {
             contentRoot.setBackgroundColor(defaultSolidColor);
         }
-        if (layoutPadre != null) {
-            layoutPadre.setBackgroundColor(defaultSolidColor);
-        }
 
-        ViewCompat.setOnApplyWindowInsetsListener(layoutPadre, new OnApplyWindowInsetsListener() {
+        // Applica i margini reali alla WebView (funziona anche quando la WebView è l'unico elemento in activity_main.xml)
+        ViewCompat.setOnApplyWindowInsetsListener(wv, new OnApplyWindowInsetsListener() {
             @Override
             public WindowInsetsCompat onApplyWindowInsets(View v, WindowInsetsCompat insets) {
                 Insets sysBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
@@ -82,19 +80,26 @@ public class MainActivity extends AppCompatActivity {
                 Insets navInsets = insets.getInsets(WindowInsetsCompat.Type.navigationBars());
                 Insets imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime());
 
-                int topPad = Math.max(statusInsets.top, sysBars.top);
-                int bottomPad = Math.max(Math.max(navInsets.bottom, sysBars.bottom), imeInsets.bottom);
+                int topMargin = Math.max(statusInsets.top, sysBars.top);
+                int bottomMargin = Math.max(Math.max(navInsets.bottom, sysBars.bottom), imeInsets.bottom);
 
-                topBarPx[0] = topPad;
-                navBarPx[0] = bottomPad;
+                topBarPx[0] = topMargin;
+                navBarPx[0] = bottomMargin;
 
-                v.setPadding(0, topPad, 0, bottomPad);
-                wv.setPadding(0, 0, 0, 0);
-                return WindowInsetsCompat.CONSUMED;
+                ViewGroup.LayoutParams lp = v.getLayoutParams();
+                if (lp instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams mlp = (ViewGroup.MarginLayoutParams) lp;
+                    if (mlp.topMargin != topMargin || mlp.bottomMargin != bottomMargin) {
+                        mlp.topMargin = topMargin;
+                        mlp.bottomMargin = bottomMargin;
+                        v.setLayoutParams(mlp);
+                    }
+                }
+                return insets;
             }
         });
 
-        ViewCompat.requestApplyInsets(layoutPadre);
+        ViewCompat.requestApplyInsets(wv);
 
         wv.addJavascriptInterface(new Object() {
             @JavascriptInterface
@@ -126,9 +131,6 @@ public class MainActivity extends AppCompatActivity {
 
                             if (contentRoot != null) {
                                 contentRoot.setBackgroundColor(solidColor);
-                            }
-                            if (layoutPadre != null) {
-                                layoutPadre.setBackgroundColor(solidColor);
                             }
 
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -246,28 +248,9 @@ public class MainActivity extends AppCompatActivity {
                     "  if (count === 0) return null; " +
                     "  return '#' + toHex(sumR / count) + toHex(sumG / count) + toHex(sumB / count); " +
                     "} " +
-                    "function ensureSafeSpaces() { " +
-                    "  var padBottom = (window.AndroidInterface && AndroidInterface.getBottomInsetPx) ? AndroidInterface.getBottomInsetPx() : 0; " +
-                    "  var safeBottom = Math.max(padBottom + 16, 48); " +
-                    "  if (document.body) { " +
-                    "    document.body.style.setProperty('padding-bottom', safeBottom + 'px', 'important'); " +
-                    "  } " +
-                    "  var nodes = document.querySelectorAll('div, section, aside, footer, form, nav, header'); " +
-                    "  for (var i = 0; i < nodes.length; i++) { " +
-                    "    var el = nodes[i]; " +
-                    "    var cs = window.getComputedStyle(el); " +
-                    "    if (cs.position === 'fixed' || cs.position === 'sticky') { " +
-                    "      var r = el.getBoundingClientRect(); " +
-                    "      if (r.bottom >= window.innerHeight - 30) { " +
-                    "        el.style.setProperty('margin-bottom', safeBottom + 'px', 'important'); " +
-                    "      } " +
-                    "    } " +
-                    "  } " +
-                    "} " +
                     "function scan() { " +
                     "  var ads = document.querySelectorAll('.adsbygoogle, [id^=google_ads]'); " +
                     "  for(var i=0; i<ads.length; i++) ads[i].remove(); " +
-                    "  ensureSafeSpaces(); " +
                     "  var href = (window.location && window.location.href) ? window.location.href.toLowerCase() : ''; " +
                     "  if (href.indexOf('cavanweb.com') !== -1 || href.indexOf('cavanweb') !== -1) { " +
                     "    AndroidInterface.updateColors('#76858C'); " +
