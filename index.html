@@ -43,7 +43,6 @@
             user-select: none;
         }
         
-        /* Stile per il logo di CavanWeb nell'angolo sinistro */
         .logo-link {
             display: inline-block;
             width: 38px;
@@ -100,7 +99,6 @@
             background: rgba(0,0,0,0.5);
         }
 
-        /* Stile per i pulsanti freccia < > */
         .step-btn {
             background: rgba(0,0,0,0.3);
             color: #facc15;
@@ -372,7 +370,6 @@
             cursor: pointer;
         }
 
-        /* Striscia Annuale con Cursore Centrale Fisso e Selettore Anno */
         #panel-strip-body {
             display: none;
             flex-direction: column;
@@ -587,15 +584,13 @@
         }
         .close-btn { background: none; border: none; color: #f8fafc; font-size: 1.2rem; cursor: pointer; }
 
-        /* Tabella compatta senza intestazione Evento/Tempo */
         table.times-table { width: 100%; border-collapse: collapse; font-size: 0.80rem; }
         table.times-table td { padding: 4px 7px; border-bottom: 1px solid #334155; text-align: left; line-height: 1.2; }
 
-        /* Pulsanti compatti affiancati (sia in alto che nella sezione ora legale) */
         .compact-top-actions {
-            background: #0f172a;
+            background: #1e293b;
             padding: 6px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #475569;
             display: flex;
             gap: 6px;
@@ -605,12 +600,13 @@
             flex: 1;
             min-width: 0;
             text-align: center;
-            background: #334155;
+            background: #0f172a;
             color: #f8fafc;
             text-decoration: none;
-            padding: 5px 6px;
-            border-radius: 5px;
-            font-size: 0.76rem;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #475569;
+            font-size: 0.78rem;
             font-weight: bold;
             line-height: 1.15;
             white-space: nowrap;
@@ -619,7 +615,7 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 5px;
             box-sizing: border-box;
         }
         .compact-dst-row {
@@ -630,10 +626,12 @@
         .compact-dst-btn {
             flex: 1;
             min-width: 0;
-            padding: 5px 6px;
+            padding: 6px 8px;
             background: #1e293b;
-            border-radius: 5px;
-            font-size: 0.74rem;
+            color: #f8fafc;
+            border: 1px solid #475569;
+            border-radius: 6px;
+            font-size: 0.76rem;
             font-weight: bold;
             line-height: 1.15;
             white-space: nowrap;
@@ -651,7 +649,6 @@
             font-size: 0.85rem;
         }
 
-        /* Mappa Fusi Orari grande e con zoom */
         .tz-map-stage {
             padding: 12px;
             overflow: auto;
@@ -690,14 +687,12 @@
 <body>
 
     <header>
-        <!-- Logo CavanWeb nell'angolo sinistro -->
         <a href="https://www.cavanweb.com/" class="logo-link" title="Visita CavanWeb">
             <img src="SfondoN-512.png" alt="CavanWeb Logo">
         </a>
 
         <h1>SunClock24</h1>
 
-        <!-- Controllo Ora con frecce < > -->
         <div style="display: flex; align-items: center; gap: 3px;">
             <button class="step-btn" onclick="changeHour(-1)" title="Un'ora indietro">&lt;</button>
             <input type="time" id="input-time" style="display:none;" onchange="onTimeChanged(this.value)">
@@ -705,7 +700,6 @@
             <button class="step-btn" onclick="changeHour(1)" title="Un'ora in avanti">&gt;</button>
         </div>
 
-        <!-- Controllo Data con frecce < > -->
         <div class="header-box">
             <button class="step-btn" onclick="changeDate(-1)" title="Un giorno indietro">&lt;</button>
             <input type="date" id="input-date" style="display:none;" onchange="onDateChanged(this.value)">
@@ -736,7 +730,6 @@
 
     <div id="bottom-panels-container">
         <div class="info-panel-box">
-            <!-- Riga Superiore: micro-luna apre gli orari, il testo della fase apre la tendina della Luna, il tasto commuta la striscia annuale -->
             <div class="panel-top-bar">
                 <div class="panel-moon-trigger">
                     <canvas id="moon-canvas" width="24" height="24" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari"></canvas>
@@ -745,7 +738,6 @@
                 <button id="btn-toggle-year-strip" class="switch-strip-btn" onclick="toggleYearStrip()">⏱️ Striscia</button>
             </div>
 
-            <!-- Parte inferiore Standard: Cliccando qui si apre la tendina degli orari completi -->
             <div id="panel-standard-body" onclick="toggleTimesModal(true)" title="Clicca per aprire tutti i tempi solari e lunari">
                 <div id="location-text">Ricerca posizione in corso...</div>
                 <div class="info-grid">
@@ -756,7 +748,6 @@
                 </div>
             </div>
 
-            <!-- Parte inferiore Striscia Annuale con Cursore Centrale Fisso, Cursori Laterali e Selettore Anno -->
             <div id="panel-strip-body">
                 <div class="timeline-wrapper">
                     <button type="button" id="strip-cursor-left" class="strip-side-cursor left" aria-label="Scorri a sinistra" title="Scorri a sinistra (tieni premuto per scorrimento veloce)">◀</button>
@@ -779,16 +770,14 @@
         </div>
     </div>
 
-    <!-- Modale Dettaglio Fase Lunare (Tendina con le freccine) -->
+    <!-- Modale Dettaglio Fase Lunare -->
     <div id="modal-moon" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 16px;" onclick="if(event.target === this) toggleMoonModal(false);">
         <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 20px; width: 100%; max-width: 340px; text-align: center; color: #f8fafc; box-shadow: 0 10px 25px rgba(0,0,0,0.6);">
-            
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <h3 style="margin: 0; font-size: 1.15rem; color: #facc15;">🌙 Dettaglio Lunare</h3>
                 <button onclick="toggleMoonModal(false)" style="background: #ef4444; color: white; border: none; border-radius: 8px; padding: 4px 10px; font-weight: bold; cursor: pointer;">✕</button>
             </div>
 
-            <!-- Grande Canvas per la Luna -->
             <div style="margin: 12px auto; display: flex; justify-content: center;">
                 <canvas id="big-moon-canvas" width="180" height="180" style="border-radius: 50%; box-shadow: 0 0 25px rgba(255,255,255,0.18);"></canvas>
             </div>
@@ -796,7 +785,6 @@
             <div id="big-moon-phase-title" style="font-size: 1.2rem; font-weight: bold; margin-bottom: 4px;">--</div>
             <div id="big-moon-date-display" style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">--/--/---- --:--</div>
 
-            <!-- Controlli Giorni e Ore con Freccine -->
             <div style="background: #1e293b; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <button onclick="changeDate(-1)" style="background: #334155; color: white; border: none; border-radius: 8px; padding: 6px 14px; font-size: 1rem; cursor: pointer;">◀ -1g</button>
@@ -810,7 +798,6 @@
                 </div>
             </div>
 
-            <!-- Barra Sorge / Tramonta Luna -->
             <div id="moon-modal-riseset-strip" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; padding: 8px 10px; border-radius: 10px; background: #1e293b; border: 1px solid #334155; font-size: 0.85rem; font-weight: bold; color: #e2e8f0; line-height: 1.25;">
                 <div>🌙 Sorge (luna):<br><span id="modal-moon-rise" style="color: #ffffff; font-size: 0.96rem; font-weight: bold;">--:--</span></div>
                 <div>🌘 Tramonta (luna):<br><span id="modal-moon-set" style="color: #ffffff; font-size: 0.96rem; font-weight: bold;">--:--</span></div>
@@ -820,7 +807,7 @@
         </div>
     </div>
 
-    <!-- Modale Tabella Tutti i Tempi (senza intestazione Evento/Tempo) -->
+    <!-- Modale Tabella Tutti i Tempi -->
     <div id="modal-times" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -844,42 +831,42 @@
             <!-- Tasti in alto compatti affiancati -->
             <div class="compact-top-actions">
                 <a href="https://cavannastefano-sudo.github.io/OpenMeteo/openwmap2.html" target="_blank" class="compact-top-btn">
-                    <i class="fa-solid fa-cloud-sun text-amber-400"></i> MeteoCWEB
+                    <i class="fa-solid fa-cloud-sun"></i> MeteoCWEB
                 </a>
                 <a href="https://cavannastefano-sudo.github.io/lista.m3u/" target="_blank" class="compact-top-btn">
-                    <i class="fa-solid fa-tv text-blue-400"></i> IPTV
+                    <i class="fa-solid fa-tv"></i> IPTV
                 </a>
             </div>
 
-            <!-- Pulsante compatto e tendina a comparsa per Posizione Primaria + tasto GPS -->
+            <!-- Pulsante compatto e tendina a comparsa per Posizione Primaria -->
             <div id="primary-location-box" style="margin: 0 0 8px 0;">
-                <button type="button" id="btn-toggle-primary-place" onclick="togglePrimaryPlaceDrawer()" style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; font-size: 0.82rem; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+                <button type="button" id="btn-toggle-primary-place" onclick="togglePrimaryPlaceDrawer()" style="width: 100%; padding: 7px 10px; border-radius: 8px; background: #1e293b; color: #f8fafc; border: 1px solid #475569; font-size: 0.82rem; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
                     <span>📍 Posizione primaria</span>
-                    <span id="primary-place-arrow">▼</span>
+                    <span id="primary-place-arrow" style="color: #94a3b8;">▼</span>
                 </button>
 
-                <div id="primary-place-drawer" style="display: none; margin-top: 6px; padding: 8px; border-radius: 6px; background: #0f172a; border: 1px solid #475569; box-sizing: border-box;">
+                <div id="primary-place-drawer" style="display: none; margin-top: 6px; padding: 8px; border-radius: 8px; background: #1e293b; border: 1px solid #475569; box-sizing: border-box;">
                     <div id="primary-place-status" style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 7px; line-height: 1.3;"></div>
 
                     <div style="display: flex; gap: 5px; margin-bottom: 6px;">
-                        <input type="text" id="primary-city-input" placeholder="Cerca città (es. Roma)..." style="flex: 1; min-width: 0; padding: 6px 8px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.8rem; box-sizing: border-box;">
-                        <button type="button" onclick="searchAndSetPrimaryCity()" style="padding: 6px 9px; border-radius: 5px; border: 1px solid #38bdf8; background: #0284c7; color: #ffffff; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Cerca</button>
+                        <input type="text" id="primary-city-input" placeholder="Cerca città (es. Roma)..." style="flex: 1; min-width: 0; padding: 6px 8px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.8rem; box-sizing: border-box;">
+                        <button type="button" onclick="searchAndSetPrimaryCity()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Cerca</button>
                     </div>
 
                     <div style="display: flex; gap: 5px; margin-bottom: 6px;">
-                        <input type="number" step="any" id="primary-lat-input" placeholder="Lat" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
-                        <input type="number" step="any" id="primary-lon-input" placeholder="Lon" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
-                        <button type="button" onclick="saveManualPrimaryCoords()" style="padding: 6px 9px; border-radius: 5px; border: 1px solid #22c55e; background: #15803d; color: #ffffff; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Salva</button>
+                        <input type="number" step="any" id="primary-lat-input" placeholder="Lat" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
+                        <input type="number" step="any" id="primary-lon-input" placeholder="Lon" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
+                        <button type="button" onclick="saveManualPrimaryCoords()" style="padding: 6px 10px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Salva</button>
                     </div>
 
-                    <button type="button" onclick="restoreGpsPrimaryLocation()" style="width: 100%; padding: 6px 9px; border-radius: 5px; border: 1px solid #facc15; background: #1e293b; color: #fef08a; font-size: 0.8rem; font-weight: bold; cursor: pointer; box-sizing: border-box;">
+                    <button type="button" onclick="restoreGpsPrimaryLocation()" style="width: 100%; padding: 6px 9px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #f8fafc; font-size: 0.8rem; font-weight: bold; cursor: pointer; box-sizing: border-box;">
                         📡 GPS
                     </button>
                 </div>
             </div>
 
-            <!-- Indicatore visivo stato posizione con pallino verde / rosso -->
-            <div id="gps-status-banner" style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; padding: 6px 8px; border-radius: 6px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-size: 0.78rem; font-weight: bold; text-align: center;">
+            <!-- Indicatore stato posizione stile coordinate -->
+            <div id="gps-status-banner" style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; padding: 7px 10px; border-radius: 8px; background: #1e293b; border: 1px solid #475569; color: #f8fafc; font-size: 0.80rem; font-weight: bold; text-align: center;">
                 <span id="gps-status-dot">🟢</span>
                 <span id="gps-status-text">Posizione attiva</span>
             </div>
@@ -917,22 +904,21 @@
                 </select>
             </div>
 
-            <div class="form-group" style="background: #0f172a; padding: 8px 10px; border-radius: 6px; border: 1px solid #475569;">
-                <label style="display: flex; align-items: center; gap: 8px; color: #facc15; cursor: pointer; font-size: 0.86rem; margin-bottom: 6px; font-weight: bold;">
+            <div class="form-group" style="background: #0f172a; padding: 8px 10px; border-radius: 8px; border: 1px solid #475569;">
+                <label style="display: flex; align-items: center; gap: 8px; color: #f8fafc; cursor: pointer; font-size: 0.85rem; margin-bottom: 6px; font-weight: bold;">
                     <input type="checkbox" id="auto-dst-toggle" onchange="toggleAutoDST(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
                     🤖 Ora Legale Automatica (Mondo)
                 </label>
                 <div id="manual-dst-box" style="display: flex; align-items: center; gap: 8px; margin-left: 4px; transition: opacity 0.3s ease;">
                     <input type="checkbox" id="manual-dst-toggle" onchange="toggleManualDST(this.checked)" style="width: 16px; height: 16px; cursor: pointer;">
-                    <label for="manual-dst-toggle" style="margin: 0; color: #f8fafc; cursor: pointer; font-size: 0.82rem;">☀️ Attiva Ora Legale (+1h) Manuale</label>
+                    <label for="manual-dst-toggle" style="margin: 0; color: #cbd5e1; cursor: pointer; font-size: 0.82rem;">☀️ Attiva Ora Legale (+1h) Manuale</label>
                 </div>
 
-                <!-- Tasti ora legale affiancati orizzontalmente e più piccoli -->
                 <div class="compact-dst-row">
-                    <button type="button" onclick="toggleDstRulesModal(true)" class="compact-dst-btn" style="color: #38bdf8; border: 1px solid #38bdf8;">
+                    <button type="button" onclick="toggleDstRulesModal(true)" class="compact-dst-btn">
                         🌍 Regole fuso
                     </button>
-                    <button type="button" id="btn-open-tz-map" onclick="openWorldMapPage()" class="compact-dst-btn" style="color: #facc15; border: 1px solid #facc15;">
+                    <button type="button" id="btn-open-tz-map" onclick="openWorldMapPage()" class="compact-dst-btn">
                         🗺️ Mappa
                     </button>
                 </div>
@@ -942,9 +928,9 @@
                 <label>Cerca Località (es. Piacenza, Roma, Tokyo):</label>
                 <div style="display: flex; gap: 6px;">
                     <input type="text" id="input-city" placeholder="Nome città...">
-                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px;">Cerca</button>
+                    <button class="action-btn" onclick="searchCity()" style="padding: 6px 10px; background: #1e293b; color: #f8fafc; border: 1px solid #475569; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer;">Cerca</button>
                 </div>
-                <div id="search-status" style="font-size: 0.78rem; color: #38bdf8; margin-top: 6px; line-height: 1.3;"></div>
+                <div id="search-status" style="font-size: 0.78rem; color: #cbd5e1; margin-top: 6px; line-height: 1.3;"></div>
             </div>
 
             <hr style="border: 0; border-top: 1px solid #334155; margin: 10px 0;">
@@ -967,7 +953,7 @@
             </div>
             
             <div style="margin-top: 10px;">
-                <button class="action-btn" style="width: 100%; background: #334155; color: #f8fafc; padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid #475569; font-weight: bold; cursor: pointer;" onclick="useGPSLocation()">Usa GPS (Posizione Attuale)</button>
+                <button class="action-btn" style="width: 100%; background: #1e293b; color: #f8fafc; padding: 7px 10px; font-size: 0.85rem; border-radius: 8px; border: 1px solid #475569; font-weight: bold; cursor: pointer;" onclick="useGPSLocation()">Usa GPS (Posizione Attuale)</button>
             </div>
         </div>
     </div>
@@ -1008,10 +994,8 @@
         </div>
     </div>
 
-    <!-- Collegamento al file JavaScript esterno -->
     <script src="script.js"></script>
 
-    <!-- Scorrimento a pressione continua per i cursori laterali ◀ e ▶ della striscia -->
     <script>
         (function setupMainStripSideCursors() {
             const viewport = document.getElementById('timeline-viewport');
