@@ -526,6 +526,40 @@ function syncManualDstCheckbox(isDst) {
     updateSettingsDstNotice();
 }
 
+function syncDstWithLocation(lat = cachedLat, lon = cachedLon, refDate = null) {
+    if (urlParams.has('dst')) {
+        urlParams.delete('dst');
+    }
+
+    const wasAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
+    localStorage.setItem('sunclock_auto_dst', 'true');
+    dstOverrideState = null;
+
+    const rule = getDstRuleForLocation(lat, lon);
+    const d = refDate || new Date();
+    const isDstNow = evaluateDstByRule(
+        rule,
+        d.getUTCFullYear(),
+        d.getUTCMonth(),
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes(),
+        d.getUTCSeconds()
+    );
+
+    localStorage.setItem('sunclock_dst', isDstNow ? 'true' : 'false');
+
+    const autoToggle = document.getElementById('auto-dst-toggle');
+    if (autoToggle) {
+        autoToggle.checked = true;
+    }
+
+    updateDstUI(true);
+    syncManualDstCheckbox(isDstNow);
+    updateSettingsDstNotice();
+    return { isDstNow, wasAuto };
+}
+
 function getPreciseStandardTimezone(lat, lon) {
     if (lat >= 65.4 && lat <= 66.2 && lon >= -169.5 && lon <= -168.3) {
         if (lon < -168.9) {
@@ -1807,7 +1841,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
     isTimezoneOnlyMode = false;
-    dstOverrideState = null;
+    syncDstWithLocation(cachedLat, cachedLon, new Date());
 
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1858,9 +1892,9 @@ function resetToNow() {
     isCustomTime = false;
     isTimezoneOnlyMode = false;
     customTimeOffsetMs = 0;
-    dstOverrideState = null;
     lastUpdateMs = performance.now();
 
+    syncDstWithLocation(cachedLat, cachedLon, new Date());
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     updateTimeForLocation();
