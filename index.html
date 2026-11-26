@@ -852,7 +852,7 @@
             </div>
 
             <!-- Pulsante compatto e tendina a comparsa per Posizione Primaria + tasto GPS -->
-            <div id="primary-location-box" style="margin: 0 0 10px 0;">
+            <div id="primary-location-box" style="margin: 0 0 8px 0;">
                 <button type="button" id="btn-toggle-primary-place" onclick="togglePrimaryPlaceDrawer()" style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; font-size: 0.82rem; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
                     <span>📍 Posizione primaria</span>
                     <span id="primary-place-arrow">▼</span>
@@ -876,6 +876,12 @@
                         📡 GPS
                     </button>
                 </div>
+            </div>
+
+            <!-- Indicatore visivo stato posizione con pallino verde / rosso -->
+            <div id="gps-status-banner" style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; padding: 6px 8px; border-radius: 6px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-size: 0.78rem; font-weight: bold; text-align: center;">
+                <span id="gps-status-dot">🟢</span>
+                <span id="gps-status-text">Posizione attiva</span>
             </div>
 
             <div class="form-group">
