@@ -96,6 +96,40 @@ function getSharedPlaceFromStorage() {
     return null;
 }
 
+function updateGpsStatusBanner(state) {
+    const banner = document.getElementById('gps-status-banner');
+    const dot = document.getElementById('gps-status-dot');
+    const text = document.getElementById('gps-status-text');
+    if (!banner || !dot || !text) return;
+
+    if (state === 'active') {
+        dot.textContent = '🟢';
+        text.textContent = 'Posizione attiva';
+        banner.style.borderColor = '#22c55e';
+        banner.style.color = '#86efac';
+    } else if (state === 'manual') {
+        dot.textContent = '🔴';
+        text.textContent = 'Posizione disattivata (località manuale)';
+        banner.style.borderColor = '#ef4444';
+        banner.style.color = '#fca5a5';
+    } else {
+        dot.textContent = '🔴';
+        text.textContent = 'Posizione disattivata';
+        banner.style.borderColor = '#ef4444';
+        banner.style.color = '#fca5a5';
+    }
+}
+
+function syncGpsStatusBannerWithCurrentState() {
+    if (getPrimaryLocationMode() === 'manual') {
+        updateGpsStatusBanner('manual');
+    } else if (currentPlaceDisplayName === 'Posizione Corrente') {
+        updateGpsStatusBanner('active');
+    } else {
+        updateGpsStatusBanner('off');
+    }
+}
+
 function updatePrimaryPlaceUI() {
     const statusEl = document.getElementById('primary-place-status');
     const latInput = document.getElementById('primary-lat-input');
@@ -109,6 +143,8 @@ function updatePrimaryPlaceUI() {
     if (lonInput && !lonInput.value && typeof cachedLon === 'number') {
         lonInput.value = cachedLon.toFixed(4);
     }
+
+    syncGpsStatusBannerWithCurrentState();
 
     if (!statusEl) return;
 
@@ -152,6 +188,9 @@ async function applyPrimaryLocationNow(lat, lon, placeName, mode = 'manual') {
 
     if (mode === 'manual') {
         saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+        updateGpsStatusBanner('manual');
+    } else {
+        updateGpsStatusBanner('active');
     }
 
     const latInput = document.getElementById('primary-lat-input');
@@ -228,6 +267,7 @@ function restoreGpsPrimaryLocation() {
     if (statusEl) statusEl.innerHTML = `<span style="color:#38bdf8;">Acquisizione posizione GPS...</span>`;
 
     if (!navigator.geolocation) {
+        updateGpsStatusBanner('off');
         updatePrimaryPlaceUI();
         return;
     }
@@ -259,6 +299,7 @@ function restoreGpsPrimaryLocation() {
             await applyPrimaryLocationNow(lat, lon, placeName, 'gps');
         },
         () => {
+            updateGpsStatusBanner('off');
             updatePrimaryPlaceUI();
         },
         { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
@@ -1699,6 +1740,7 @@ async function initClock() {
         cachedLat = parseFloat(urlParams.get('lat'));
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
+        updateGpsStatusBanner('off');
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1721,6 +1763,7 @@ async function initClock() {
         cachedLat = savedPlace.lat;
         cachedLon = savedPlace.lon;
         currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione Primaria";
+        updateGpsStatusBanner('manual');
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1741,6 +1784,7 @@ async function initClock() {
         cachedLat = 45.05;
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
+        updateGpsStatusBanner('off');
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -2042,6 +2086,9 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     currentPlaceDisplayName = placeName;
     if (getPrimaryLocationMode() !== 'manual') {
         saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+        updateGpsStatusBanner('active');
+    } else {
+        updateGpsStatusBanner('manual');
     }
 
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
@@ -2070,10 +2117,27 @@ function resetToNow() {
 
     const primaryMode = getPrimaryLocationMode();
     const savedPlace = getSharedPlaceFromStorage();
+
     if (primaryMode === 'manual' && savedPlace) {
         cachedLat = savedPlace.lat;
         cachedLon = savedPlace.lon;
         currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione Primaria";
+        updateGpsStatusBanner('manual');
+
+        syncDstWithLocation(cachedLat, cachedLon, new Date());
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
+
+        updateTimeForLocation();
+        syncManualDstCheckbox(getCurrentDstState());
+        updateInputsVal();
+        updateSunClock(cachedLat, cachedLon);
+
+        if (isStripOpen) {
+            ensureYearStripBuilt(selectedDate.getUTCFullYear());
+            syncStripToSelectedDate(false);
+        }
+        adaptBottomPanelHeight(true);
+        return;
     }
 
     syncDstWithLocation(cachedLat, cachedLon, new Date());
@@ -2090,14 +2154,19 @@ function resetToNow() {
     }
     adaptBottomPanelHeight(true);
 
-    if (primaryMode !== 'manual' && navigator.geolocation) {
+    if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
+                if (getPrimaryLocationMode() === 'manual') return;
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
-            () => {},
+            () => {
+                updateGpsStatusBanner('off');
+            },
             { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
         );
+    } else {
+        updateGpsStatusBanner('off');
     }
 }
 
