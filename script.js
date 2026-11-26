@@ -34,6 +34,19 @@ let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
 let isGpsActiveConfirmed = false;
 
+// Mappa politica per scelta posizione primaria
+let pickerMap = null;
+let pickerMarker = null;
+let pickerCountriesLayer = null;
+
+const PICKER_COUNTRY_COLORS = [
+    '#ef4444', '#2563eb', '#16a34a', '#eab308', '#9333ea',
+    '#f97316', '#06b6d4', '#ec4899', '#84cc16', '#4f46e5',
+    '#14b8a6', '#dc2626', '#0ea5e9', '#22c55e', '#d946ef',
+    '#f59e0b', '#7c3aed', '#10b981', '#e11d48', '#3b82f6',
+    '#65a30d', '#a855f7', '#0284c7', '#ea580c', '#c026d3'
+];
+
 // Stato zoom e pan della mappa dei fusi orari
 let mapZoomScale = 1;
 let mapPanX = 0;
@@ -313,6 +326,143 @@ function restoreGpsPrimaryLocation() {
         },
         { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
     );
+}
+
+function getPickerCountryColor(name) {
+    let hash = 0;
+    const str = String(name || 'stato');
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash * 37) + str.charCodeAt(i)) >>> 0;
+    }
+    return PICKER_COUNTRY_COLORS[(hash * 11) % PICKER_COUNTRY_COLORS.length];
+}
+
+function openPoliticalPickerModal() {
+    const modal = document.getElementById('modal-political-picker');
+    const mapEl = document.getElementById('political-picker-map');
+    if (!modal || !mapEl || typeof L === 'undefined') return;
+
+    modal.style.display = 'flex';
+
+    setTimeout(() => {
+        if (!pickerMap) {
+            pickerMap = L.map('political-picker-map', {
+                center: [cachedLat, cachedLon],
+                zoom: 5,
+                minZoom: 2,
+                maxZoom: 18
+            });
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors',
+                maxZoom: 19
+            }).addTo(pickerMap);
+
+            if (!pickerMap.getPane('countriesPane')) {
+                const pane = pickerMap.createPane('countriesPane');
+                pane.style.zIndex = '350';
+                pane.style.mixBlendMode = 'multiply';
+            }
+
+            fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+                .then(res => res.json())
+                .then(data => {
+                    if (pickerCountriesLayer) {
+                        pickerMap.removeLayer(pickerCountriesLayer);
+                    }
+                    pickerCountriesLayer = L.geoJSON(data, {
+                        pane: 'countriesPane',
+                        style: (feature) => {
+                            const props = feature.properties || {};
+                            const stateName = props.ADMIN || props.name || props.SOVEREIGNT || 'Stato';
+                            return {
+                                color: '#1e293b',
+                                weight: 1.2,
+                                opacity: 0.75,
+                                fillColor: getPickerCountryColor(stateName),
+                                fillOpacity: 0.28
+                            };
+                        },
+                        onEachFeature: (feature, layer) => {
+                            layer.on('mouseover', () => {
+                                layer.setStyle({ fillOpacity: 0.42, weight: 2 });
+                            });
+                            layer.on('mouseout', () => {
+                                layer.setStyle({ fillOpacity: 0.28, weight: 1.2 });
+                            });
+                            layer.on('click', (e) => {
+                                L.DomEvent.stopPropagation(e);
+                                pickLocationFromPoliticalMap(e.latlng.lat, e.latlng.lng);
+                            });
+                        }
+                    }).addTo(pickerMap);
+                })
+                .catch(() => {});
+
+            pickerMap.on('click', (e) => {
+                pickLocationFromPoliticalMap(e.latlng.lat, e.latlng.lng);
+            });
+        } else {
+            pickerMap.setView([cachedLat, cachedLon], Math.max(pickerMap.getZoom(), 5));
+        }
+
+        if (!pickerMarker) {
+            pickerMarker = L.circleMarker([cachedLat, cachedLon], {
+                radius: 7,
+                color: '#ffffff',
+                weight: 2,
+                fillColor: '#ff007f',
+                fillOpacity: 1
+            }).addTo(pickerMap);
+        } else {
+            pickerMarker.setLatLng([cachedLat, cachedLon]);
+        }
+
+        pickerMap.invalidateSize();
+    }, 80);
+}
+
+function closePoliticalPickerModal() {
+    const modal = document.getElementById('modal-political-picker');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+async function pickLocationFromPoliticalMap(lat, lon) {
+    const hintEl = document.getElementById('political-picker-hint');
+    if (pickerMarker) {
+        pickerMarker.setLatLng([lat, lon]);
+    }
+    if (hintEl) {
+        hintEl.innerHTML = `<span style="color:#38bdf8;">Rilevamento località (${lat.toFixed(2)}, ${lon.toFixed(2)})...</span>`;
+    }
+
+    let placeName = `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+        const geoData = await res.json();
+        if (geoData && geoData.address) {
+            const country = geoData.address.country || '';
+            const specificLocality = geoData.address.city ||
+                                     geoData.address.town ||
+                                     geoData.address.village ||
+                                     geoData.address.municipality ||
+                                     geoData.address.county ||
+                                     geoData.address.state || '';
+            if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                placeName = `${country} - ${specificLocality}`;
+            } else {
+                placeName = specificLocality || country || placeName;
+            }
+        }
+    } catch (e) {}
+
+    const cityInput = document.getElementById('primary-city-input');
+    if (cityInput) cityInput.value = placeName;
+
+    await applyPrimaryLocationNow(lat, lon, placeName, 'manual');
+    closePoliticalPickerModal();
 }
 
 function openWorldMapPage() {
@@ -3064,6 +3214,10 @@ document.addEventListener('keydown', function(e) {
         const tzMapModal = document.getElementById('modal-tz-map');
         if (tzMapModal && tzMapModal.style.display === 'flex') {
             toggleTimeZoneMapModal(false);
+        }
+        const pickerModal = document.getElementById('modal-political-picker');
+        if (pickerModal && pickerModal.style.display === 'flex') {
+            closePoliticalPickerModal();
         }
     }
 });
