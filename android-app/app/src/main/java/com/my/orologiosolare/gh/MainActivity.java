@@ -33,13 +33,16 @@ import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.my.orologiosolare.gh.databinding.ActivityMainBinding;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private GeolocationPermissions.Callback pendingGeoCallback;
     private String pendingGeoOrigin;
 
-    private final ActivityResultLauncher<String[]> locationPermissionLauncher =
+    private final ActivityResultLauncher<String[]> runtimePermissionsLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
                 Boolean fineGranted = result.get(Manifest.permission.ACCESS_FINE_LOCATION);
                 Boolean coarseGranted = result.get(Manifest.permission.ACCESS_COARSE_LOCATION);
@@ -57,12 +60,21 @@ public class MainActivity extends AppCompatActivity {
                 || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
-    private void requestLocationPermissionIfNeeded() {
+    private void requestAppPermissionsIfNeeded() {
+        List<String> toRequest = new ArrayList<>();
+
         if (!hasLocationPermission()) {
-            locationPermissionLauncher.launch(new String[]{
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
-            });
+            toRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+            toRequest.add(Manifest.permission.ACCESS_COARSE_LOCATION);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            toRequest.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
+
+        if (!toRequest.isEmpty()) {
+            runtimePermissionsLauncher.launch(toRequest.toArray(new String[0]));
         }
     }
 
@@ -316,12 +328,12 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     pendingGeoOrigin = origin;
                     pendingGeoCallback = callback;
-                    requestLocationPermissionIfNeeded();
+                    requestAppPermissionsIfNeeded();
                 }
             }
         });
 
-        requestLocationPermissionIfNeeded();
+        requestAppPermissionsIfNeeded();
         wv.loadUrl("https://cavannastefano-sudo.github.io/OrologioSolare");
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
