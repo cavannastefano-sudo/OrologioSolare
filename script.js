@@ -60,6 +60,14 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+function getPrimaryLocationMode() {
+    return localStorage.getItem('sunclock_primary_mode') === 'manual' ? 'manual' : 'gps';
+}
+
+function setPrimaryLocationMode(mode) {
+    localStorage.setItem('sunclock_primary_mode', mode === 'manual' ? 'manual' : 'gps');
+}
+
 function saveSharedPlaceToStorage(lat, lon, name) {
     if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) return;
     try {
@@ -86,6 +94,175 @@ function getSharedPlaceFromStorage() {
         }
     } catch (e) {}
     return null;
+}
+
+function updatePrimaryPlaceUI() {
+    const statusEl = document.getElementById('primary-place-status');
+    const latInput = document.getElementById('primary-lat-input');
+    const lonInput = document.getElementById('primary-lon-input');
+    const saved = getSharedPlaceFromStorage();
+    const mode = getPrimaryLocationMode();
+
+    if (latInput && !latInput.value && typeof cachedLat === 'number') {
+        latInput.value = cachedLat.toFixed(4);
+    }
+    if (lonInput && !lonInput.value && typeof cachedLon === 'number') {
+        lonInput.value = cachedLon.toFixed(4);
+    }
+
+    if (!statusEl) return;
+
+    if (mode === 'manual' && saved) {
+        statusEl.innerHTML = `Modalità: <strong style="color:#4ade80;">Posizione primaria fissa</strong><br>Attuale: <strong style="color:#f8fafc;">${saved.name}</strong> (${saved.lat.toFixed(2)}, ${saved.lon.toFixed(2)})`;
+    } else {
+        statusEl.innerHTML = `Modalità: <strong style="color:#38bdf8;">GPS</strong><br>Attuale: <strong style="color:#f8fafc;">${currentPlaceDisplayName}</strong> (${cachedLat.toFixed(2)}, ${cachedLon.toFixed(2)})`;
+    }
+}
+
+function togglePrimaryPlaceDrawer(forceState = null) {
+    const drawer = document.getElementById('primary-place-drawer');
+    const arrow = document.getElementById('primary-place-arrow');
+    if (!drawer) return;
+
+    const shouldOpen = typeof forceState === 'boolean'
+        ? forceState
+        : (drawer.style.display !== 'block');
+
+    drawer.style.display = shouldOpen ? 'block' : 'none';
+    if (arrow) {
+        arrow.innerText = shouldOpen ? '▲' : '▼';
+    }
+    if (shouldOpen) {
+        updatePrimaryPlaceUI();
+    }
+}
+
+async function applyPrimaryLocationNow(lat, lon, placeName, mode = 'manual') {
+    const numLat = parseFloat(lat);
+    const numLon = parseFloat(lon);
+    if (isNaN(numLat) || isNaN(numLon) || numLat < -90 || numLat > 90 || numLon < -180 || numLon > 180) {
+        return false;
+    }
+
+    setPrimaryLocationMode(mode);
+    cachedLat = numLat;
+    cachedLon = numLon;
+    currentPlaceDisplayName = (placeName && String(placeName).trim()) || (mode === 'manual' ? 'Posizione Primaria' : 'Posizione Corrente');
+    isTimezoneOnlyMode = false;
+
+    if (mode === 'manual') {
+        saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+    }
+
+    const latInput = document.getElementById('primary-lat-input');
+    const lonInput = document.getElementById('primary-lon-input');
+    if (latInput) latInput.value = cachedLat.toFixed(4);
+    if (lonInput) lonInput.value = cachedLon.toFixed(4);
+
+    isCustomTime = false;
+    customTimeOffsetMs = 0;
+    lastUpdateMs = performance.now();
+
+    syncDstWithLocation(cachedLat, cachedLon, new Date());
+    syncSettingsCoordsDisplay(cachedLat, cachedLon);
+    updateTimeForLocation();
+    updateInputsVal();
+    updateSunClock(cachedLat, cachedLon);
+
+    if (isStripOpen) {
+        ensureYearStripBuilt(selectedDate.getUTCFullYear());
+        syncStripToSelectedDate(false);
+    }
+    adaptBottomPanelHeight(true);
+    updatePrimaryPlaceUI();
+    return true;
+}
+
+async function searchAndSetPrimaryCity() {
+    const input = document.getElementById('primary-city-input');
+    const statusEl = document.getElementById('primary-place-status');
+    const query = input ? input.value.trim() : '';
+    if (!query) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Inserisci una città o inserisci Lat e Lon.</span>`;
+        return;
+    }
+
+    if (statusEl) statusEl.innerHTML = `<span style="color:#38bdf8;">Ricerca località in corso...</span>`;
+
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}&accept-language=it`);
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+            const lat = parseFloat(data[0].lat);
+            const lon = parseFloat(data[0].lon);
+            const shortName = (data[0].display_name || query).split(',')[0].trim();
+            await applyPrimaryLocationNow(lat, lon, shortName, 'manual');
+        } else if (statusEl) {
+            statusEl.innerHTML = `<span style="color:#f87171;">Località non trovata.</span>`;
+        }
+    } catch (e) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Errore durante la ricerca.</span>`;
+    }
+}
+
+function saveManualPrimaryCoords() {
+    const latInput = document.getElementById('primary-lat-input');
+    const lonInput = document.getElementById('primary-lon-input');
+    const cityInput = document.getElementById('primary-city-input');
+    const statusEl = document.getElementById('primary-place-status');
+
+    const lat = parseFloat(latInput ? latInput.value : '');
+    const lon = parseFloat(lonInput ? lonInput.value : '');
+    if (isNaN(lat) || isNaN(lon)) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Inserisci valori validi per Lat e Lon.</span>`;
+        return;
+    }
+
+    const label = (cityInput && cityInput.value.trim()) ? cityInput.value.trim() : `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+    applyPrimaryLocationNow(lat, lon, label, 'manual');
+}
+
+function restoreGpsPrimaryLocation() {
+    const statusEl = document.getElementById('primary-place-status');
+    setPrimaryLocationMode('gps');
+    if (statusEl) statusEl.innerHTML = `<span style="color:#38bdf8;">Acquisizione posizione GPS...</span>`;
+
+    if (!navigator.geolocation) {
+        updatePrimaryPlaceUI();
+        return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+            let placeName = "Posizione Corrente";
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
+                const geoData = await res.json();
+                if (geoData && geoData.address) {
+                    const country = geoData.address.country || '';
+                    const specificLocality = geoData.address.city ||
+                                             geoData.address.town ||
+                                             geoData.address.village ||
+                                             geoData.address.municipality ||
+                                             geoData.address.county ||
+                                             geoData.address.state || '';
+                    if (country && specificLocality && specificLocality.toLowerCase() !== country.toLowerCase()) {
+                        placeName = `${country} - ${specificLocality}`;
+                    } else {
+                        placeName = specificLocality || country || "Posizione Corrente";
+                    }
+                }
+            } catch (e) {}
+
+            await applyPrimaryLocationNow(lat, lon, placeName, 'gps');
+        },
+        () => {
+            updatePrimaryPlaceUI();
+        },
+        { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
+    );
 }
 
 function openWorldMapPage() {
@@ -116,7 +293,6 @@ function formatOffsetLabel(offsetHours) {
     return `UTC ${sign}${whole}:${String(mins).padStart(2, '0')}`;
 }
 
-// Aggiorna la tendina #timezone-preset con il fuso del luogo (senza far partire la modalità lineette)
 function syncTimezoneDropdownToLocation(lat = cachedLat, lon = cachedLon) {
     const preciseTz = getPreciseStandardTimezone(lat, lon);
     const selectEl = document.getElementById('timezone-preset');
@@ -246,16 +422,17 @@ function syncSettingsCoordsDisplay(lat = cachedLat, lon = cachedLon) {
     }
 
     updateSettingsDstNotice();
+    updatePrimaryPlaceUI();
 }
 
 function getLastSundayOfMonth(year, month) {
     const lastDay = new Date(Date.UTC(year, month + 1, 0, 12, 0, 0));
-    const dayOfWeek = lastDay.getUTCDay(); // 0 = Domenica
+    const dayOfWeek = lastDay.getUTCDay();
     return lastDay.getUTCDate() - dayOfWeek;
 }
 
 function getNthSundayOfMonth(year, month, nth) {
-    const firstDow = new Date(Date.UTC(year, month, 1, 12, 0, 0)).getUTCDay(); // 0 = Domenica
+    const firstDow = new Date(Date.UTC(year, month, 1, 12, 0, 0)).getUTCDay();
     const firstSunday = 1 + ((7 - firstDow) % 7);
     return firstSunday + ((nth - 1) * 7);
 }
@@ -335,8 +512,8 @@ function evaluateDstByRule(rule, year, month, day, hour = 12, minute = 0, second
     if (rule === 'none') return false;
 
     if (rule === 'eu') {
-        const marchLast = getLastSundayOfMonth(year, 2); // Marzo
-        const octLast = getLastSundayOfMonth(year, 9);   // Ottobre
+        const marchLast = getLastSundayOfMonth(year, 2);
+        const octLast = getLastSundayOfMonth(year, 9);
         if (month < 2 || month > 9) return false;
         if (month > 2 && month < 9) return true;
         if (month === 2) {
@@ -353,8 +530,8 @@ function evaluateDstByRule(rule, year, month, day, hour = 12, minute = 0, second
     }
 
     if (rule === 'us') {
-        const marchSecond = getNthSundayOfMonth(year, 2, 2); // 2ª domenica di marzo
-        const novFirst = getNthSundayOfMonth(year, 10, 1);  // 1ª domenica di novembre
+        const marchSecond = getNthSundayOfMonth(year, 2, 2);
+        const novFirst = getNthSundayOfMonth(year, 10, 1);
         if (month < 2 || month > 10) return false;
         if (month > 2 && month < 10) return true;
         if (month === 2) {
@@ -1122,7 +1299,6 @@ function setActiveTickElement(newTick) {
     }
 }
 
-// Costruisce tutti i giorni dell'anno selezionato (01 gen -> 31 dic)
 function ensureYearStripBuilt(year) {
     ensureYearAndMonthSelectors(year, selectedDate.getUTCMonth());
     if (builtYear === year) return;
@@ -1303,7 +1479,6 @@ if (stripViewportEl) {
     }, { passive: true });
 }
 
-// 1. Supporto Mouse: Rotella + Trascinamento Drag + Cursore Centrale Non Bloccante
 (function enableMouseStripNavigation() {
     const viewport = document.getElementById('timeline-viewport');
     if (!viewport) return;
@@ -1366,7 +1541,6 @@ if (stripViewportEl) {
     }, true);
 })();
 
-// 2. Cursori Sinistro (◀) e Destro (▶) per Scorrimento Veloce sulla Striscia
 (function setupSideStripCursors() {
     const viewport = document.getElementById('timeline-viewport');
     if (!viewport) return;
@@ -1525,7 +1699,6 @@ async function initClock() {
         cachedLat = parseFloat(urlParams.get('lat'));
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
-        saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1541,12 +1714,13 @@ async function initClock() {
         return;
     }
 
+    const primaryMode = getPrimaryLocationMode();
     const savedPlace = getSharedPlaceFromStorage();
-    if (savedPlace) {
+    if (primaryMode === 'manual' && savedPlace) {
         isTimezoneOnlyMode = false;
         cachedLat = savedPlace.lat;
         cachedLon = savedPlace.lon;
-        currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione segnata";
+        currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione Primaria";
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1690,7 +1864,6 @@ function updateDstUI(isAuto) {
     updateSettingsDstNotice();
 }
 
-// Attivata SOLO quando si cambia manualmente la tendina #timezone-preset -> mostra le lineette
 function applyTimezonePreset() {
     const tzVal = document.getElementById('timezone-preset').value;
     isTimezoneOnlyMode = true;
@@ -1836,7 +2009,6 @@ function changeHour(hours) {
     }
 }
 
-// Quando cambi posizione / viaggi: aggiorna tutti e 3 i punti fuso nelle impostazioni e mostra sempre i dati completi
 async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     cachedLat = lat;
     cachedLon = lon;
@@ -1868,7 +2040,9 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     }
 
     currentPlaceDisplayName = placeName;
-    saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+    if (getPrimaryLocationMode() !== 'manual') {
+        saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+    }
 
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1894,6 +2068,14 @@ function resetToNow() {
     customTimeOffsetMs = 0;
     lastUpdateMs = performance.now();
 
+    const primaryMode = getPrimaryLocationMode();
+    const savedPlace = getSharedPlaceFromStorage();
+    if (primaryMode === 'manual' && savedPlace) {
+        cachedLat = savedPlace.lat;
+        cachedLon = savedPlace.lon;
+        currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione Primaria";
+    }
+
     syncDstWithLocation(cachedLat, cachedLon, new Date());
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1908,15 +2090,12 @@ function resetToNow() {
     }
     adaptBottomPanelHeight(true);
 
-    // Aggiorna anche la posizione attuale tramite GPS (mantenendo quella corrente se il GPS non risponde o è disattivato)
-    if (navigator.geolocation) {
+    if (primaryMode !== 'manual' && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
-            () => {
-                // Se il GPS è spento o negato mantiene l'ultima posizione senza bloccare nulla
-            },
+            () => {},
             { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
         );
     }
@@ -1929,23 +2108,7 @@ function updateTimeForLocation() {
 }
 
 function useGPSLocation() {
-    isTimezoneOnlyMode = false;
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "GPS");
-                toggleSettingsModal(false);
-            },
-            (error) => {
-                updateTimeForLocation();
-                updateSunClock(cachedLat, cachedLon);
-                document.getElementById('location-text').innerText = "GPS disattivato.";
-            }
-        );
-    } else {
-        updateTimeForLocation();
-        updateSunClock(cachedLat, cachedLon);
-    }
+    restoreGpsPrimaryLocation();
 }
 
 async function searchCity() {
