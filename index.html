@@ -18,6 +18,10 @@
     <script src="https://unpkg.com/tz-lookup@6.1.25/tz.js"></script>
     <script src="timezone-manager.js"></script>
 
+    <!-- Leaflet per la scelta posizione su Mappa Politica -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
         :root { 
             --bg-color: #000000; 
@@ -861,6 +865,10 @@
                     <button type="button" onclick="restoreGpsPrimaryLocation()" style="width: 100%; padding: 6px 9px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #fef08a; font-size: 0.8rem; font-weight: bold; cursor: pointer; box-sizing: border-box;">
                         📡 GPS
                     </button>
+
+                    <button type="button" onclick="openPoliticalPickerModal()" style="width: 100%; margin-top: 6px; padding: 6px 9px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #38bdf8; font-size: 0.8rem; font-weight: bold; cursor: pointer; box-sizing: border-box;">
+                        🗺️ Mappa politica
+                    </button>
                 </div>
             </div>
 
@@ -953,6 +961,20 @@
             <div style="margin-top: 10px;">
                 <button class="action-btn" style="width: 100%; background: #334155; color: #f8fafc; padding: 7px 10px; font-size: 0.85rem; border-radius: 6px; border: 1px solid #475569; font-weight: bold; cursor: pointer;" onclick="useGPSLocation()">Usa GPS (Posizione Attuale)</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modale Mappa Politica per scelta posizione primaria -->
+    <div id="modal-political-picker" class="modal" style="z-index: 1200; padding: 10px; box-sizing: border-box;" onclick="if(event.target === this) closePoliticalPickerModal();">
+        <div style="background: #0f172a; border: 1px solid #475569; border-radius: 12px; width: 96vw; max-width: 760px; height: 82vh; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 12px 32px rgba(0,0,0,0.85); color: #f8fafc;">
+            <div class="modal-header" style="padding: 10px 14px; margin-bottom: 0; background: #020617;">
+                <strong style="color: #facc15; font-size: 0.98rem;">🗺️ Scegli posizione su Mappa Politica</strong>
+                <button type="button" class="close-btn" onclick="closePoliticalPickerModal()">✕</button>
+            </div>
+            <div id="political-picker-hint" style="padding: 6px 12px; font-size: 0.78rem; color: #cbd5e1; background: #151e32; border-bottom: 1px solid #334155;">
+                Tocca o clicca un punto sulla mappa politica per impostare la posizione primaria.
+            </div>
+            <div id="political-picker-map" style="flex: 1; width: 100%; min-height: 260px; background: #111827;"></div>
         </div>
     </div>
 
