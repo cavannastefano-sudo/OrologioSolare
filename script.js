@@ -32,6 +32,7 @@ let marker = null;
 let currentPlaceDisplayName = "Ricerca in corso...";
 let isTimezoneOnlyMode = false;
 let lastHighlightedEventIndex = -1;
+let isGpsActiveConfirmed = false;
 
 // Stato zoom e pan della mappa dei fusi orari
 let mapZoomScale = 1;
@@ -103,16 +104,19 @@ function updateGpsStatusBanner(state) {
     if (!banner || !dot || !text) return;
 
     if (state === 'active') {
+        isGpsActiveConfirmed = true;
         dot.textContent = '🟢';
         text.textContent = 'Posizione attiva';
         banner.style.borderColor = '#22c55e';
         banner.style.color = '#86efac';
     } else if (state === 'manual') {
+        isGpsActiveConfirmed = false;
         dot.textContent = '🔴';
         text.textContent = 'Posizione disattivata (località manuale)';
         banner.style.borderColor = '#ef4444';
         banner.style.color = '#fca5a5';
     } else {
+        isGpsActiveConfirmed = false;
         dot.textContent = '🔴';
         text.textContent = 'Posizione disattivata';
         banner.style.borderColor = '#ef4444';
@@ -123,7 +127,7 @@ function updateGpsStatusBanner(state) {
 function syncGpsStatusBannerWithCurrentState() {
     if (getPrimaryLocationMode() === 'manual') {
         updateGpsStatusBanner('manual');
-    } else if (currentPlaceDisplayName === 'Posizione Corrente') {
+    } else if (isGpsActiveConfirmed) {
         updateGpsStatusBanner('active');
     } else {
         updateGpsStatusBanner('off');
@@ -276,6 +280,9 @@ function restoreGpsPrimaryLocation() {
         async (position) => {
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
+            isGpsActiveConfirmed = true;
+            updateGpsStatusBanner('active');
+
             let placeName = "Posizione Corrente";
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`);
@@ -1784,7 +1791,7 @@ async function initClock() {
         cachedLat = 45.05;
         cachedLon = 9.69;
         currentPlaceDisplayName = "Piacenza - Italia";
-        updateGpsStatusBanner('off');
+        syncGpsStatusBannerWithCurrentState();
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1814,12 +1821,15 @@ async function initClock() {
                 if (gpsFinished) return;
                 gpsFinished = true;
                 clearTimeout(gpsTimeout);
+                isGpsActiveConfirmed = true;
+                updateGpsStatusBanner('active');
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
             (error) => {
                 if (gpsFinished) return;
                 gpsFinished = true;
                 clearTimeout(gpsTimeout);
+                isGpsActiveConfirmed = false;
                 loadDefaultLocation();
             },
             { timeout: 2500, enableHighAccuracy: false, maximumAge: 60000 }
@@ -2059,6 +2069,13 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     isTimezoneOnlyMode = false;
     syncDstWithLocation(cachedLat, cachedLon, new Date());
 
+    if (getPrimaryLocationMode() !== 'manual') {
+        isGpsActiveConfirmed = true;
+        updateGpsStatusBanner('active');
+    } else {
+        updateGpsStatusBanner('manual');
+    }
+
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
     let placeName = fallbackName;
@@ -2086,6 +2103,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     currentPlaceDisplayName = placeName;
     if (getPrimaryLocationMode() !== 'manual') {
         saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+        isGpsActiveConfirmed = true;
         updateGpsStatusBanner('active');
     } else {
         updateGpsStatusBanner('manual');
@@ -2158,14 +2176,18 @@ function resetToNow() {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 if (getPrimaryLocationMode() === 'manual') return;
+                isGpsActiveConfirmed = true;
+                updateGpsStatusBanner('active');
                 fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
             },
             () => {
+                isGpsActiveConfirmed = false;
                 updateGpsStatusBanner('off');
             },
             { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
         );
     } else {
+        isGpsActiveConfirmed = false;
         updateGpsStatusBanner('off');
     }
 }
