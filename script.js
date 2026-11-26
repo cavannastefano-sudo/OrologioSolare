@@ -103,24 +103,22 @@ function updateGpsStatusBanner(state) {
     const text = document.getElementById('gps-status-text');
     if (!banner || !dot || !text) return;
 
+    banner.style.backgroundColor = '#1e293b';
+    banner.style.borderColor = '#475569';
+    banner.style.color = '#f8fafc';
+
     if (state === 'active') {
         isGpsActiveConfirmed = true;
         dot.textContent = '🟢';
         text.textContent = 'Posizione attiva';
-        banner.style.borderColor = '#22c55e';
-        banner.style.color = '#86efac';
     } else if (state === 'manual') {
         isGpsActiveConfirmed = false;
         dot.textContent = '🔴';
         text.textContent = 'Posizione disattivata (località manuale)';
-        banner.style.borderColor = '#ef4444';
-        banner.style.color = '#fca5a5';
     } else {
         isGpsActiveConfirmed = false;
         dot.textContent = '🔴';
         text.textContent = 'Posizione disattivata';
-        banner.style.borderColor = '#ef4444';
-        banner.style.color = '#fca5a5';
     }
 }
 
@@ -153,9 +151,9 @@ function updatePrimaryPlaceUI() {
     if (!statusEl) return;
 
     if (mode === 'manual' && saved) {
-        statusEl.innerHTML = `Modalità: <strong style="color:#4ade80;">Posizione primaria fissa</strong><br>Attuale: <strong style="color:#f8fafc;">${saved.name}</strong> (${saved.lat.toFixed(2)}, ${saved.lon.toFixed(2)})`;
+        statusEl.innerHTML = `Modalità: <strong style="color:#f8fafc;">Posizione primaria fissa</strong><br>Attuale: <strong style="color:#f8fafc;">${saved.name}</strong> (${saved.lat.toFixed(2)}, ${saved.lon.toFixed(2)})`;
     } else {
-        statusEl.innerHTML = `Modalità: <strong style="color:#38bdf8;">GPS</strong><br>Attuale: <strong style="color:#f8fafc;">${currentPlaceDisplayName}</strong> (${cachedLat.toFixed(2)}, ${cachedLon.toFixed(2)})`;
+        statusEl.innerHTML = `Modalità: <strong style="color:#f8fafc;">GPS</strong><br>Attuale: <strong style="color:#f8fafc;">${currentPlaceDisplayName}</strong> (${cachedLat.toFixed(2)}, ${cachedLon.toFixed(2)})`;
     }
 }
 
@@ -226,11 +224,11 @@ async function searchAndSetPrimaryCity() {
     const statusEl = document.getElementById('primary-place-status');
     const query = input ? input.value.trim() : '';
     if (!query) {
-        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Inserisci una città o inserisci Lat e Lon.</span>`;
+        if (statusEl) statusEl.innerHTML = `<span style="color:#cbd5e1;">Inserisci una città o inserisci Lat e Lon.</span>`;
         return;
     }
 
-    if (statusEl) statusEl.innerHTML = `<span style="color:#38bdf8;">Ricerca località in corso...</span>`;
+    if (statusEl) statusEl.innerHTML = `<span style="color:#cbd5e1;">Ricerca località in corso...</span>`;
 
     try {
         const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}&accept-language=it`);
@@ -241,10 +239,10 @@ async function searchAndSetPrimaryCity() {
             const shortName = (data[0].display_name || query).split(',')[0].trim();
             await applyPrimaryLocationNow(lat, lon, shortName, 'manual');
         } else if (statusEl) {
-            statusEl.innerHTML = `<span style="color:#f87171;">Località non trovata.</span>`;
+            statusEl.innerHTML = `<span style="color:#cbd5e1;">Località non trovata.</span>`;
         }
     } catch (e) {
-        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Errore durante la ricerca.</span>`;
+        if (statusEl) statusEl.innerHTML = `<span style="color:#cbd5e1;">Errore durante la ricerca.</span>`;
     }
 }
 
@@ -257,7 +255,7 @@ function saveManualPrimaryCoords() {
     const lat = parseFloat(latInput ? latInput.value : '');
     const lon = parseFloat(lonInput ? lonInput.value : '');
     if (isNaN(lat) || isNaN(lon)) {
-        if (statusEl) statusEl.innerHTML = `<span style="color:#f87171;">Inserisci valori validi per Lat e Lon.</span>`;
+        if (statusEl) statusEl.innerHTML = `<span style="color:#cbd5e1;">Inserisci valori validi per Lat e Lon.</span>`;
         return;
     }
 
@@ -268,7 +266,7 @@ function saveManualPrimaryCoords() {
 function restoreGpsPrimaryLocation() {
     const statusEl = document.getElementById('primary-place-status');
     setPrimaryLocationMode('gps');
-    if (statusEl) statusEl.innerHTML = `<span style="color:#38bdf8;">Acquisizione posizione GPS...</span>`;
+    if (statusEl) statusEl.innerHTML = `<span style="color:#cbd5e1;">Acquisizione posizione GPS...</span>`;
 
     if (!navigator.geolocation) {
         updateGpsStatusBanner('off');
@@ -407,7 +405,7 @@ function updateSettingsDstNotice() {
         noticeEl.style.marginBottom = '8px';
         noticeEl.style.padding = '7px 10px';
         noticeEl.style.borderRadius = '8px';
-        noticeEl.style.fontSize = '0.88rem';
+        noticeEl.style.fontSize = '0.84rem';
         noticeEl.style.fontWeight = 'bold';
         noticeEl.style.lineHeight = '1.35';
         noticeEl.style.textShadow = 'none';
@@ -420,15 +418,13 @@ function updateSettingsDstNotice() {
         }
     }
 
+    noticeEl.style.backgroundColor = '#1e293b';
+    noticeEl.style.border = '1px solid #475569';
+    noticeEl.style.color = '#f8fafc';
+
     if (isDstNowActive) {
-        noticeEl.style.backgroundColor = 'rgba(234, 179, 8, 0.16)';
-        noticeEl.style.border = '1px solid #facc15';
-        noticeEl.style.color = '#fef08a';
         noticeEl.innerHTML = `☀️ Ora legale attiva • Fuso solare: ${baseLabel} → Ora legale: ${dstLabel}`;
     } else {
-        noticeEl.style.backgroundColor = 'rgba(15, 23, 42, 0.85)';
-        noticeEl.style.border = '1px solid #38bdf8';
-        noticeEl.style.color = '#bae6fd';
         noticeEl.innerHTML = `🕒 Ora solare attiva • Fuso: ${baseLabel}`;
     }
 }
