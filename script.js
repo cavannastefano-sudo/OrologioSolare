@@ -60,6 +60,34 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+function saveSharedPlaceToStorage(lat, lon, name) {
+    if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) return;
+    try {
+        localStorage.setItem('sunclock_selected_place', JSON.stringify({
+            lat: lat,
+            lon: lon,
+            name: (name && String(name).trim()) || 'Posizione',
+            updatedAt: Date.now()
+        }));
+    } catch (e) {}
+}
+
+function getSharedPlaceFromStorage() {
+    try {
+        const raw = localStorage.getItem('sunclock_selected_place');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (
+            parsed &&
+            typeof parsed.lat === 'number' && !isNaN(parsed.lat) &&
+            typeof parsed.lon === 'number' && !isNaN(parsed.lon)
+        ) {
+            return parsed;
+        }
+    } catch (e) {}
+    return null;
+}
+
 function openWorldMapPage() {
     const qs = new URLSearchParams();
     if (typeof cachedLat === 'number' && !Number.isNaN(cachedLat)) {
@@ -1463,6 +1491,28 @@ async function initClock() {
         cachedLat = parseFloat(urlParams.get('lat'));
         cachedLon = parseFloat(urlParams.get('lon'));
         currentPlaceDisplayName = urlParams.get('city') ? decodeURIComponent(urlParams.get('city')) : "Località";
+        saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
+
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
+
+        lastUpdateMs = performance.now();
+        updateTimeForLocation();
+        updateInputsVal();
+        updateSunClock(cachedLat, cachedLon);
+        if (isStripOpen) {
+            ensureYearStripBuilt(selectedDate.getUTCFullYear());
+            syncStripToSelectedDate(false);
+        }
+        adaptBottomPanelHeight(true);
+        return;
+    }
+
+    const savedPlace = getSharedPlaceFromStorage();
+    if (savedPlace) {
+        isTimezoneOnlyMode = false;
+        cachedLat = savedPlace.lat;
+        cachedLon = savedPlace.lon;
+        currentPlaceDisplayName = (savedPlace.name && savedPlace.name.trim()) || "Posizione segnata";
 
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
@@ -1784,6 +1834,7 @@ async function fetchAndUpdateLocation(lat, lon, fallbackName = "Posizione") {
     }
 
     currentPlaceDisplayName = placeName;
+    saveSharedPlaceToStorage(cachedLat, cachedLon, currentPlaceDisplayName);
 
     syncSettingsCoordsDisplay(cachedLat, cachedLon);
 
