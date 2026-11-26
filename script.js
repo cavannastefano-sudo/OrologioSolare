@@ -74,6 +74,124 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
+// --- PULSANTI '✕' PER SVUOTARE TUTTI I CAMPI OVUNQUE ---
+function isClearableFieldInput(el) {
+    if (!el || el.tagName !== 'INPUT') return false;
+    if (el.dataset.noClear === 'true') return false;
+    const type = (el.type || 'text').toLowerCase();
+    // Esclude solo date/time/checkbox/radio/hidden/file/range/color/button/submit/reset
+    const excluded = ['date', 'time', 'datetime-local', 'month', 'week', 'checkbox', 'radio', 'hidden', 'file', 'range', 'color', 'button', 'submit', 'reset'];
+    return !excluded.includes(type);
+}
+
+function attachClearButtonsToAllInputs(root = document) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    const inputs = root.querySelectorAll('input');
+    inputs.forEach((input) => {
+        if (!isClearableFieldInput(input)) return;
+        if (input.dataset.clearAttached === 'true') {
+            syncClearButtonVisibility(input);
+            return;
+        }
+        input.dataset.clearAttached = 'true';
+
+        // Evita di avvolgere due volte
+        let wrapper = input.parentElement;
+        const alreadyWrapped = wrapper && wrapper.classList && wrapper.classList.contains('clearable-input-wrap');
+
+        if (!alreadyWrapped) {
+            wrapper = document.createElement('span');
+            wrapper.className = 'clearable-input-wrap';
+            const computedDisplay = getComputedStyle(input).display;
+            const isBlock = computedDisplay === 'block' || input.style.width === '100%';
+            wrapper.style.display = isBlock ? 'flex' : 'inline-flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.gap = '4px';
+            wrapper.style.position = 'relative';
+            wrapper.style.verticalAlign = 'middle';
+            if (isBlock) {
+                wrapper.style.width = '100%';
+                wrapper.style.boxSizing = 'border-box';
+            }
+
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+
+            if (isBlock) {
+                input.style.flex = '1 1 auto';
+                input.style.minWidth = '0';
+            }
+        }
+
+        let clearBtn = wrapper.querySelector('.field-clear-x-btn');
+        if (!clearBtn) {
+            clearBtn = document.createElement('button');
+            clearBtn.type = 'button';
+            clearBtn.className = 'field-clear-x-btn';
+            clearBtn.innerText = '✕';
+            clearBtn.title = 'Svuota campo';
+            clearBtn.setAttribute('aria-label', 'Svuota campo');
+            clearBtn.style.flex = '0 0 auto';
+            clearBtn.style.width = '22px';
+            clearBtn.style.height = '22px';
+            clearBtn.style.padding = '0';
+            clearBtn.style.margin = '0';
+            clearBtn.style.borderRadius = '50%';
+            clearBtn.style.border = '1px solid #475569';
+            clearBtn.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+            clearBtn.style.color = '#f87171';
+            clearBtn.style.fontSize = '11px';
+            clearBtn.style.fontWeight = 'bold';
+            clearBtn.style.lineHeight = '1';
+            clearBtn.style.cursor = 'pointer';
+            clearBtn.style.display = 'inline-flex';
+            clearBtn.style.alignItems = 'center';
+            clearBtn.style.justifyContent = 'center';
+            clearBtn.style.textShadow = 'none';
+            clearBtn.style.webkitTextStroke = '0px transparent';
+
+            clearBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                input.value = '';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                input.focus();
+                syncClearButtonVisibility(input);
+            });
+
+            wrapper.appendChild(clearBtn);
+        }
+
+        const onFieldChange = () => syncClearButtonVisibility(input);
+        input.addEventListener('input', onFieldChange);
+        input.addEventListener('change', onFieldChange);
+        syncClearButtonVisibility(input);
+    });
+}
+
+function syncClearButtonVisibility(input) {
+    if (!input || !input.parentElement) return;
+    const btn = input.parentElement.querySelector('.field-clear-x-btn');
+    if (!btn) return;
+    btn.style.opacity = (input.value && String(input.value).length > 0) ? '1' : '0.45';
+}
+
+function initGlobalClearButtonsObserver() {
+    attachClearButtonsToAllInputs(document);
+    if (typeof MutationObserver !== 'undefined' && document.body) {
+        const obs = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+                if (m.addedNodes && m.addedNodes.length > 0) {
+                    attachClearButtonsToAllInputs(document);
+                    break;
+                }
+            }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+    }
+}
+
 function getPrimaryLocationMode() {
     return localStorage.getItem('sunclock_primary_mode') === 'manual' ? 'manual' : 'gps';
 }
@@ -158,9 +276,11 @@ function updatePrimaryPlaceUI() {
 
     if (latInput && !latInput.value && typeof cachedLat === 'number') {
         latInput.value = cachedLat.toFixed(4);
+        syncClearButtonVisibility(latInput);
     }
     if (lonInput && !lonInput.value && typeof cachedLon === 'number') {
         lonInput.value = cachedLon.toFixed(4);
+        syncClearButtonVisibility(lonInput);
     }
 
     syncGpsStatusBannerWithCurrentState();
@@ -188,6 +308,7 @@ function togglePrimaryPlaceDrawer(forceState = null) {
         arrow.innerText = shouldOpen ? '▲' : '▼';
     }
     if (shouldOpen) {
+        attachClearButtonsToAllInputs(drawer);
         updatePrimaryPlaceUI();
     }
 }
@@ -214,8 +335,14 @@ async function applyPrimaryLocationNow(lat, lon, placeName, mode = 'manual') {
 
     const latInput = document.getElementById('primary-lat-input');
     const lonInput = document.getElementById('primary-lon-input');
-    if (latInput) latInput.value = cachedLat.toFixed(4);
-    if (lonInput) lonInput.value = cachedLon.toFixed(4);
+    if (latInput) {
+        latInput.value = cachedLat.toFixed(4);
+        syncClearButtonVisibility(latInput);
+    }
+    if (lonInput) {
+        lonInput.value = cachedLon.toFixed(4);
+        syncClearButtonVisibility(lonInput);
+    }
 
     isCustomTime = false;
     customTimeOffsetMs = 0;
@@ -343,6 +470,7 @@ function openPoliticalPickerModal() {
     if (!modal || !mapEl || typeof L === 'undefined') return;
 
     modal.style.display = 'flex';
+    attachClearButtonsToAllInputs(modal);
 
     setTimeout(() => {
         if (!pickerMap) {
@@ -459,7 +587,10 @@ async function pickLocationFromPoliticalMap(lat, lon) {
     } catch (e) {}
 
     const cityInput = document.getElementById('primary-city-input');
-    if (cityInput) cityInput.value = placeName;
+    if (cityInput) {
+        cityInput.value = placeName;
+        syncClearButtonVisibility(cityInput);
+    }
 
     await applyPrimaryLocationNow(lat, lon, placeName, 'manual');
     closePoliticalPickerModal();
@@ -1879,6 +2010,7 @@ if (stripViewportEl) {
 })();
 
 async function initClock() {
+    initGlobalClearButtonsObserver();
     removeTopDateTimeArrows();
     ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
@@ -2919,6 +3051,7 @@ function toggleMoonModal(show) {
     if (modal) {
         modal.style.display = show ? 'flex' : 'none';
         if (show) {
+            attachClearButtonsToAllInputs(modal);
             if (isTimezoneOnlyMode) {
                 updateMoonModalRiseSetStrip(null, true);
             } else if (cachedMoonIllumination && cachedMoonTimes) {
@@ -3088,14 +3221,22 @@ function populateTable(times, moonTimes, illumination) {
 }
 
 function toggleTimesModal(show) {
-    document.getElementById('modal-times').style.display = show ? 'flex' : 'none';
+    const modal = document.getElementById('modal-times');
+    if (modal) {
+        modal.style.display = show ? 'flex' : 'none';
+        if (show) attachClearButtonsToAllInputs(modal);
+    }
 }
 
 function toggleSettingsModal(show) {
+    const modal = document.getElementById('modal-settings');
     if (show) {
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
+        if (modal) attachClearButtonsToAllInputs(modal);
     }
-    document.getElementById('modal-settings').style.display = show ? 'flex' : 'none';
+    if (modal) {
+        modal.style.display = show ? 'flex' : 'none';
+    }
 }
 
 function getTzMapTargetElement(modal) {
@@ -3203,6 +3344,7 @@ function toggleTimeZoneMapModal(show) {
         }
         setupTzMapZoom();
         resetTzMapZoom();
+        attachClearButtonsToAllInputs(modal);
         modal.style.display = 'flex';
     } else {
         modal.style.display = 'none';
@@ -3288,6 +3430,7 @@ function toggleDstRulesModal(show) {
     if (!modal) return;
     if (show) {
         renderDstRulesModalContent();
+        attachClearButtonsToAllInputs(modal);
         modal.style.display = 'flex';
     } else {
         modal.style.display = 'none';
@@ -3388,6 +3531,7 @@ function updateHands() {
 window.addEventListener('pageshow', function (event) {
     if (event.persisted) {
         isTimezoneOnlyMode = false;
+        attachClearButtonsToAllInputs(document);
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
         updateTimeForLocation();
         updateInputsVal();
