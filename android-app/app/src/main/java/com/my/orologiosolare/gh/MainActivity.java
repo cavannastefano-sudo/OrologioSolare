@@ -1,6 +1,8 @@
 package com.my.orologiosolare.gh;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -17,7 +19,10 @@ import android.webkit.WebViewClient;
 import androidx.activity.EdgeToEdge;
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.SystemBarStyle;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
@@ -31,6 +36,35 @@ import com.my.orologiosolare.gh.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
+    private GeolocationPermissions.Callback pendingGeoCallback;
+    private String pendingGeoOrigin;
+
+    private final ActivityResultLauncher<String[]> locationPermissionLauncher =
+            registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), result -> {
+                Boolean fineGranted = result.get(Manifest.permission.ACCESS_FINE_LOCATION);
+                Boolean coarseGranted = result.get(Manifest.permission.ACCESS_COARSE_LOCATION);
+                boolean allowed = Boolean.TRUE.equals(fineGranted) || Boolean.TRUE.equals(coarseGranted);
+
+                if (pendingGeoCallback != null && pendingGeoOrigin != null) {
+                    pendingGeoCallback.invoke(pendingGeoOrigin, allowed, false);
+                    pendingGeoCallback = null;
+                    pendingGeoOrigin = null;
+                }
+            });
+
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestLocationPermissionIfNeeded() {
+        if (!hasLocationPermission()) {
+            locationPermissionLauncher.launch(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            });
+        }
+    }
 
     private boolean isLightBackground(int color) {
         return ColorUtils.calculateLuminance(color) > 0.35;
@@ -96,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
         final WebView wv = binding.webview1;
         wv.getSettings().setJavaScriptEnabled(true);
         wv.getSettings().setDomStorageEnabled(true);
+        wv.getSettings().setGeolocationEnabled(true);
         wv.setOverScrollMode(View.OVER_SCROLL_NEVER);
         wv.setBackgroundColor(defaultSolidColor);
 
@@ -276,10 +311,17 @@ public class MainActivity extends AppCompatActivity {
         wv.setWebChromeClient(new WebChromeClient() {
             @Override
             public void onGeolocationPermissionsShowPrompt(String origin, GeolocationPermissions.Callback callback) {
-                callback.invoke(origin, true, false);
+                if (hasLocationPermission()) {
+                    callback.invoke(origin, true, false);
+                } else {
+                    pendingGeoOrigin = origin;
+                    pendingGeoCallback = callback;
+                    requestLocationPermissionIfNeeded();
+                }
             }
         });
 
+        requestLocationPermissionIfNeeded();
         wv.loadUrl("https://cavannastefano-sudo.github.io/OrologioSolare");
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
