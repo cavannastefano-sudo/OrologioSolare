@@ -736,14 +736,23 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
-        function formatOffsetText(effectiveOffset, dstActive) {
-            const sign = effectiveOffset >= 0 ? '+' : '';
-            const formattedOffset = Number.isInteger(effectiveOffset)
-                ? `${sign}${effectiveOffset}`
-                : `${sign}${String(effectiveOffset).replace('.', ':')}`;
-            return dstActive
-                ? `Scostamento: UTC${formattedOffset} (Ora legale)`
-                : `Scostamento: UTC${formattedOffset}`;
+        function formatUtcOffsetValue(offsetVal) {
+            const sign = offsetVal >= 0 ? '+' : '';
+            return Number.isInteger(offsetVal)
+                ? `${sign}${offsetVal}`
+                : `${sign}${String(offsetVal).replace('.', ':')}`;
+        }
+
+        function formatOffsetText(effectiveOffset, dstActive, stdOffset) {
+            const formattedOffset = formatUtcOffsetValue(effectiveOffset);
+            if (!dstActive) {
+                return `Scostamento: UTC${formattedOffset}`;
+            }
+            const baseOffset = (typeof stdOffset === 'number' && !Number.isNaN(stdOffset))
+                ? stdOffset
+                : (effectiveOffset - 1);
+            const formattedBase = formatUtcOffsetValue(baseOffset);
+            return `Scostamento: UTC${formattedOffset} (Ora legale • Fuso: UTC${formattedBase})`;
         }
 
         function saveSelectedPlaceForIndex(lat, lon, name, tz, dstActive, effectiveOffset) {
@@ -852,7 +861,7 @@
             const stdOffset = getPreciseStandardTimezone(currentLat, currentLon);
             const dstActive = isDstActiveForCoords(currentLat, currentLon);
             const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
-            document.getElementById('selected-offset').textContent = formatOffsetText(effectiveOffset, dstActive);
+            document.getElementById('selected-offset').textContent = formatOffsetText(effectiveOffset, dstActive, stdOffset);
             document.getElementById('selected-coords').textContent = `${currentLat.toFixed(2)}°, ${currentLon.toFixed(2)}° • ${currentTz}`;
         }
 
