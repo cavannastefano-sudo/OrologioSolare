@@ -74,53 +74,156 @@ if (urlParams.has('dst')) {
     localStorage.setItem('sunclock_dst', urlParams.get('dst'));
 }
 
-// --- PULSANTI '✕' PER SVUOTARE TUTTI I CAMPI OVUNQUE ---
+// --- PULSANTI '✕' INTERNI AI CAMPI + PAREGGIO COORDINATE & TASTI AZIONE ---
+function isActionButtonNotInput(el) {
+    if (!el) return false;
+    if (el.tagName === 'BUTTON') return true;
+    const role = (el.getAttribute && el.getAttribute('role')) || '';
+    if (role === 'button') return true;
+    const txt = ((el.innerText || el.textContent || '') + ' ' + (el.id || '') + ' ' + (el.className || '')).toLowerCase();
+    const isInputLike = el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT';
+    if (!isInputLike && (txt.includes('gps') || txt.includes('mappa politica') || txt.includes('political'))) {
+        return true;
+    }
+    return false;
+}
+
+function styleActionButtonsDistinctly(root = document) {
+    if (!root || typeof root.querySelectorAll !== 'function') return;
+    const drawer = document.getElementById('primary-place-drawer') || root;
+    const candidates = drawer.querySelectorAll('button, [role="button"], a, div');
+
+    candidates.forEach((el) => {
+        if (el.classList && el.classList.contains('field-clear-x-btn')) return;
+        const rawText = (el.innerText || el.textContent || '').trim().toLowerCase();
+        const idLower = (el.id || '').toLowerCase();
+        const isGpsAction = rawText === 'gps' || rawText.endsWith(' gps') || (idLower.includes('gps') && (el.tagName === 'BUTTON' || el.getAttribute('onclick')));
+        const isPoliticalMapAction = rawText.includes('mappa politica') || idLower.includes('political');
+
+        if ((isGpsAction || isPoliticalMapAction) && el.children.length <= 2 && rawText.length <= 28) {
+            el.style.backgroundColor = isPoliticalMapAction ? '#172554' : '#1e3a8a';
+            el.style.color = '#e0f2fe';
+            el.style.border = '1px solid #38bdf8';
+            el.style.borderRadius = '8px';
+            el.style.fontWeight = 'bold';
+            el.style.cursor = 'pointer';
+            el.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.12), 0 2px 5px rgba(0,0,0,0.35)';
+            el.style.textShadow = 'none';
+            el.style.webkitTextStroke = '0px transparent';
+        }
+    });
+}
+
 function isClearableFieldInput(el) {
     if (!el || el.tagName !== 'INPUT') return false;
+    if (isActionButtonNotInput(el)) return false;
     if (el.dataset.noClear === 'true') return false;
     const type = (el.type || 'text').toLowerCase();
-    // Esclude solo date/time/checkbox/radio/hidden/file/range/color/button/submit/reset
     const excluded = ['date', 'time', 'datetime-local', 'month', 'week', 'checkbox', 'radio', 'hidden', 'file', 'range', 'color', 'button', 'submit', 'reset'];
     return !excluded.includes(type);
 }
 
+function normalizePairedCoordinateRow(input) {
+    if (!input) return;
+    const idLower = (input.id || '').toLowerCase();
+    const phLower = (input.placeholder || '').toLowerCase();
+    const isCoord = idLower.includes('lat') || idLower.includes('lon') || phLower.includes('lat') || phLower.includes('lon');
+    if (!isCoord) return;
+
+    const wrap = input.closest('.clearable-input-wrap') || input.parentElement;
+    if (!wrap || !wrap.parentElement) return;
+
+    const row = wrap.parentElement;
+    const siblingWraps = Array.from(row.children).filter(c => c !== wrap && c.querySelector && c.querySelector('input'));
+
+    if (siblingWraps.length > 0) {
+        row.style.display = 'flex';
+        row.style.flexDirection = 'row';
+        row.style.alignItems = 'center';
+        row.style.gap = '6px';
+        row.style.width = '100%';
+        row.style.maxWidth = '100%';
+        row.style.minWidth = '0';
+        row.style.boxSizing = 'border-box';
+        row.style.overflow = 'hidden';
+
+        [wrap, ...siblingWraps].forEach((w) => {
+            w.style.flex = '1 1 0';
+            w.style.width = '0';
+            w.style.minWidth = '0';
+            w.style.maxWidth = '100%';
+            w.style.boxSizing = 'border-box';
+            w.style.position = 'relative';
+            w.style.display = 'block';
+
+            const inp = w.querySelector('input');
+            if (inp) {
+                inp.style.width = '100%';
+                inp.style.minWidth = '0';
+                inp.style.maxWidth = '100%';
+                inp.style.boxSizing = 'border-box';
+                inp.style.paddingLeft = '7px';
+                inp.style.paddingRight = '24px';
+                inp.style.fontSize = '0.86rem';
+            }
+
+            const btn = w.querySelector('.field-clear-x-btn');
+            if (btn) {
+                btn.style.position = 'absolute';
+                btn.style.right = '4px';
+                btn.style.top = '50%';
+                btn.style.transform = 'translateY(-50%)';
+                btn.style.width = '18px';
+                btn.style.height = '18px';
+                btn.style.fontSize = '10px';
+            }
+        });
+    }
+}
+
 function attachClearButtonsToAllInputs(root = document) {
     if (!root || typeof root.querySelectorAll !== 'function') return;
+    styleActionButtonsDistinctly(root);
+
     const inputs = root.querySelectorAll('input');
     inputs.forEach((input) => {
         if (!isClearableFieldInput(input)) return;
         if (input.dataset.clearAttached === 'true') {
             syncClearButtonVisibility(input);
+            normalizePairedCoordinateRow(input);
             return;
         }
         input.dataset.clearAttached = 'true';
 
-        // Evita di avvolgere due volte
         let wrapper = input.parentElement;
         const alreadyWrapped = wrapper && wrapper.classList && wrapper.classList.contains('clearable-input-wrap');
 
         if (!alreadyWrapped) {
-            wrapper = document.createElement('span');
+            wrapper = document.createElement('div');
             wrapper.className = 'clearable-input-wrap';
             const computedDisplay = getComputedStyle(input).display;
             const isBlock = computedDisplay === 'block' || input.style.width === '100%';
-            wrapper.style.display = isBlock ? 'flex' : 'inline-flex';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.gap = '4px';
+            wrapper.style.display = isBlock ? 'block' : 'inline-block';
             wrapper.style.position = 'relative';
             wrapper.style.verticalAlign = 'middle';
+            wrapper.style.minWidth = '0';
+            wrapper.style.boxSizing = 'border-box';
             if (isBlock) {
                 wrapper.style.width = '100%';
-                wrapper.style.boxSizing = 'border-box';
             }
 
             input.parentNode.insertBefore(wrapper, input);
             wrapper.appendChild(input);
+        }
 
-            if (isBlock) {
-                input.style.flex = '1 1 auto';
-                input.style.minWidth = '0';
-            }
+        const currentPadRight = parseFloat(getComputedStyle(input).paddingRight) || 8;
+        if (currentPadRight < 26) {
+            input.style.paddingRight = '26px';
+        }
+        input.style.boxSizing = 'border-box';
+        if (getComputedStyle(wrapper).display === 'block') {
+            input.style.width = '100%';
+            input.style.minWidth = '0';
         }
 
         let clearBtn = wrapper.querySelector('.field-clear-x-btn');
@@ -131,16 +234,20 @@ function attachClearButtonsToAllInputs(root = document) {
             clearBtn.innerText = '✕';
             clearBtn.title = 'Svuota campo';
             clearBtn.setAttribute('aria-label', 'Svuota campo');
-            clearBtn.style.flex = '0 0 auto';
-            clearBtn.style.width = '22px';
-            clearBtn.style.height = '22px';
+            clearBtn.style.position = 'absolute';
+            clearBtn.style.right = '5px';
+            clearBtn.style.top = '50%';
+            clearBtn.style.transform = 'translateY(-50%)';
+            clearBtn.style.zIndex = '2';
+            clearBtn.style.width = '18px';
+            clearBtn.style.height = '18px';
             clearBtn.style.padding = '0';
             clearBtn.style.margin = '0';
             clearBtn.style.borderRadius = '50%';
             clearBtn.style.border = '1px solid #475569';
-            clearBtn.style.backgroundColor = 'rgba(15, 23, 42, 0.9)';
+            clearBtn.style.backgroundColor = 'rgba(15, 23, 42, 0.88)';
             clearBtn.style.color = '#f87171';
-            clearBtn.style.fontSize = '11px';
+            clearBtn.style.fontSize = '10px';
             clearBtn.style.fontWeight = 'bold';
             clearBtn.style.lineHeight = '1';
             clearBtn.style.cursor = 'pointer';
@@ -167,6 +274,7 @@ function attachClearButtonsToAllInputs(root = document) {
         input.addEventListener('input', onFieldChange);
         input.addEventListener('change', onFieldChange);
         syncClearButtonVisibility(input);
+        normalizePairedCoordinateRow(input);
     });
 }
 
@@ -294,6 +402,11 @@ function updatePrimaryPlaceUI() {
     }
 }
 
+function closePrimaryPlaceDrawerPersisted() {
+    localStorage.setItem('sunclock_primary_drawer_open', 'false');
+    togglePrimaryPlaceDrawer(false);
+}
+
 function togglePrimaryPlaceDrawer(forceState = null) {
     const drawer = document.getElementById('primary-place-drawer');
     const arrow = document.getElementById('primary-place-arrow');
@@ -304,6 +417,8 @@ function togglePrimaryPlaceDrawer(forceState = null) {
         : (drawer.style.display !== 'block');
 
     drawer.style.display = shouldOpen ? 'block' : 'none';
+    localStorage.setItem('sunclock_primary_drawer_open', shouldOpen ? 'true' : 'false');
+
     if (arrow) {
         arrow.innerText = shouldOpen ? '▲' : '▼';
     }
@@ -381,7 +496,8 @@ async function searchAndSetPrimaryCity() {
             const lat = parseFloat(data[0].lat);
             const lon = parseFloat(data[0].lon);
             const shortName = (data[0].display_name || query).split(',')[0].trim();
-            await applyPrimaryLocationNow(lat, lon, shortName, 'manual');
+            const ok = await applyPrimaryLocationNow(lat, lon, shortName, 'manual');
+            if (ok) closePrimaryPlaceDrawerPersisted();
         } else if (statusEl) {
             statusEl.innerHTML = `<span style="color:#f87171;">Località non trovata.</span>`;
         }
@@ -404,7 +520,9 @@ function saveManualPrimaryCoords() {
     }
 
     const label = (cityInput && cityInput.value.trim()) ? cityInput.value.trim() : `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-    applyPrimaryLocationNow(lat, lon, label, 'manual');
+    applyPrimaryLocationNow(lat, lon, label, 'manual').then((ok) => {
+        if (ok) closePrimaryPlaceDrawerPersisted();
+    });
 }
 
 function restoreGpsPrimaryLocation() {
@@ -415,6 +533,7 @@ function restoreGpsPrimaryLocation() {
     if (!navigator.geolocation) {
         updateGpsStatusBanner('off');
         updatePrimaryPlaceUI();
+        closePrimaryPlaceDrawerPersisted();
         return;
     }
 
@@ -446,10 +565,12 @@ function restoreGpsPrimaryLocation() {
             } catch (e) {}
 
             await applyPrimaryLocationNow(lat, lon, placeName, 'gps');
+            closePrimaryPlaceDrawerPersisted();
         },
         () => {
             updateGpsStatusBanner('off');
             updatePrimaryPlaceUI();
+            closePrimaryPlaceDrawerPersisted();
         },
         { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
     );
@@ -594,6 +715,7 @@ async function pickLocationFromPoliticalMap(lat, lon) {
 
     await applyPrimaryLocationNow(lat, lon, placeName, 'manual');
     closePoliticalPickerModal();
+    closePrimaryPlaceDrawerPersisted();
 }
 
 function openWorldMapPage() {
@@ -2014,6 +2136,7 @@ async function initClock() {
     removeTopDateTimeArrows();
     ensureYearAndMonthSelectors(selectedDate.getUTCFullYear(), selectedDate.getUTCMonth());
     styleStripButtonVisibility(document.getElementById('btn-toggle-year-strip'), isStripOpen);
+    togglePrimaryPlaceDrawer(false);
 
     const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
     const isManualDst = getCurrentDstState();
@@ -3231,6 +3354,7 @@ function toggleTimesModal(show) {
 function toggleSettingsModal(show) {
     const modal = document.getElementById('modal-settings');
     if (show) {
+        togglePrimaryPlaceDrawer(false);
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
         if (modal) attachClearButtonsToAllInputs(modal);
     }
@@ -3531,6 +3655,7 @@ function updateHands() {
 window.addEventListener('pageshow', function (event) {
     if (event.persisted) {
         isTimezoneOnlyMode = false;
+        togglePrimaryPlaceDrawer(false);
         attachClearButtonsToAllInputs(document);
         syncSettingsCoordsDisplay(cachedLat, cachedLon);
         updateTimeForLocation();
