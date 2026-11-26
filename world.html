@@ -460,6 +460,26 @@
     </div>
 
     <script>
+        function getPrimaryLocationMode() {
+            return localStorage.getItem('sunclock_primary_mode') === 'manual' ? 'manual' : 'gps';
+        }
+
+        function getSavedPrimaryPlace() {
+            try {
+                const raw = localStorage.getItem('sunclock_home_place');
+                if (!raw) return null;
+                const p = JSON.parse(raw);
+                if (
+                    p &&
+                    typeof p.lat === 'number' && !Number.isNaN(p.lat) &&
+                    typeof p.lon === 'number' && !Number.isNaN(p.lon)
+                ) {
+                    return p;
+                }
+            } catch (e) {}
+            return null;
+        }
+
         function toggleTopMenu(e) {
             e.stopPropagation();
             const menu = document.getElementById('top-dropdown-menu');
@@ -830,24 +850,45 @@
             };
         }
 
+        const startupParams = new URLSearchParams(window.location.search);
+        const startupMode = getPrimaryLocationMode();
+        const savedHomePlace = getSavedPrimaryPlace();
+
         let currentLat = 45.0526;
         let currentLon = 9.6930;
         let currentName = 'Italia - Piacenza';
         let currentTz = 'Europe/Rome';
+        let useExplicitUrlCoords = false;
 
-        try {
-            const savedRaw = localStorage.getItem('sunclock_world_selected_place') || localStorage.getItem('sunclock_selected_place');
-            if (savedRaw) {
-                const savedObj = JSON.parse(savedRaw);
-                if (savedObj && typeof savedObj.lat === 'number' && typeof savedObj.lon === 'number') {
-                    currentLat = savedObj.lat;
-                    currentLon = savedObj.lon;
-                    if (savedObj.name) currentName = savedObj.name;
-                    if (savedObj.tz) currentTz = savedObj.tz;
-                    document.getElementById('selected-place').textContent = currentName;
-                }
+        if (startupParams.has('lat') && startupParams.has('lon')) {
+            const pLat = parseFloat(startupParams.get('lat'));
+            const pLon = parseFloat(startupParams.get('lon'));
+            if (!Number.isNaN(pLat) && !Number.isNaN(pLon)) {
+                currentLat = pLat;
+                currentLon = pLon;
+                currentName = startupParams.get('city') ? decodeURIComponent(startupParams.get('city')) : 'Posizione';
+                useExplicitUrlCoords = true;
             }
-        } catch (e) {}
+        } else if (startupMode === 'manual' && savedHomePlace) {
+            currentLat = savedHomePlace.lat;
+            currentLon = savedHomePlace.lon;
+            currentName = (savedHomePlace.name && savedHomePlace.name.trim()) || 'Posizione Primaria';
+        } else {
+            try {
+                const savedRaw = localStorage.getItem('sunclock_world_selected_place') || localStorage.getItem('sunclock_selected_place');
+                if (savedRaw) {
+                    const savedObj = JSON.parse(savedRaw);
+                    if (savedObj && typeof savedObj.lat === 'number' && typeof savedObj.lon === 'number') {
+                        currentLat = savedObj.lat;
+                        currentLon = savedObj.lon;
+                        if (savedObj.name) currentName = savedObj.name;
+                        if (savedObj.tz) currentTz = savedObj.tz;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        document.getElementById('selected-place').textContent = currentName;
 
         const marker = L.circleMarker([currentLat, currentLon], {
             radius: 7,
@@ -871,7 +912,7 @@
             refreshTimezoneAndOffsetDisplay();
         }
 
-        function handleMapClick(lat, lon, autoNavigate = false) {
+        function handleMapClick(lat, lon, autoNavigate = false, skipReverseGeocode = false) {
             currentLat = lat;
             currentLon = lon;
             marker.setLatLng([lat, lon]);
@@ -888,10 +929,20 @@
             const dstActive = isDstActiveForCoords(lat, lon);
             const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
 
+            document.getElementById('selected-place').textContent = currentName;
             refreshTimezoneAndOffsetDisplay();
             saveSelectedPlaceForIndex(lat, lon, currentName, currentTz, dstActive, effectiveOffset);
-            document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
             updateSelectedClock();
+
+            if (skipReverseGeocode) {
+                document.getElementById('status-msg').textContent =
+                    getPrimaryLocationMode() === 'manual'
+                        ? `Modalità manuale: ${currentName}`
+                        : `Selezionato: ${currentName}`;
+                return;
+            }
+
+            document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
 
             fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=10&accept-language=it`)
                 .then(res => res.json())
@@ -1030,10 +1081,23 @@
             document.getElementById('top-dropdown-menu').classList.remove('open');
         }
 
-        handleMapClick(currentLat, currentLon, false);
+        if (useExplicitUrlCoords) {
+            map.setView([currentLat, currentLon], 6);
+            handleMapClick(currentLat, currentLon, false, Boolean(startupParams.get('city')));
+        } else if (startupMode === 'manual' && savedHomePlace) {
+            map.setView([currentLat, currentLon], 6);
+            handleMapClick(currentLat, currentLon, false, true);
+        } else {
+            handleMapClick(currentLat, currentLon, false);
+            setTimeout(() => {
+                if (getPrimaryLocationMode() !== 'manual') {
+                    goToCurrentLocation(true);
+                }
+            }, 400);
+        }
+
         updateSelectedClock();
         setInterval(updateSelectedClock, 1000);
-        setTimeout(() => goToCurrentLocation(true), 400);
     </script>
 </body>
 </html>
