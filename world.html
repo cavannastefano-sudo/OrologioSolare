@@ -608,15 +608,15 @@
             document.getElementById('btn-bands').classList.add('active');
         }
 
-        function goToCurrentLocation() {
+        function goToCurrentLocation(silent = false) {
             const btnGps = document.getElementById('btn-gps');
             const statusEl = document.getElementById('status-msg');
             if (!navigator.geolocation) {
-                statusEl.textContent = 'Geolocalizzazione non supportata su questo dispositivo.';
+                if (!silent) statusEl.textContent = 'Geolocalizzazione non supportata su questo dispositivo.';
                 return;
             }
-            if (btnGps) btnGps.classList.add('active');
-            statusEl.textContent = 'Rilevamento posizione attuale...';
+            if (!silent && btnGps) btnGps.classList.add('active');
+            if (!silent) statusEl.textContent = 'Rilevamento posizione attuale...';
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
@@ -627,7 +627,7 @@
                     if (btnGps) setTimeout(() => btnGps.classList.remove('active'), 800);
                 },
                 () => {
-                    statusEl.textContent = 'Impossibile ottenere la posizione attuale (verifica permesso GPS).';
+                    if (!silent) statusEl.textContent = 'Impossibile ottenere la posizione attuale (verifica permesso GPS).';
                     if (btnGps) btnGps.classList.remove('active');
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
@@ -745,6 +745,20 @@
                 : `Scostamento: UTC${formattedOffset}`;
         }
 
+        function saveSelectedPlaceForIndex(lat, lon, name, tz, dstActive, effectiveOffset) {
+            try {
+                localStorage.setItem('sunclock_selected_place', JSON.stringify({
+                    lat: lat,
+                    lon: lon,
+                    name: name,
+                    tz: tz,
+                    dstActive: Boolean(dstActive),
+                    offset: effectiveOffset,
+                    updatedAt: Date.now()
+                }));
+            } catch (e) {}
+        }
+
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
 
@@ -811,6 +825,20 @@
         let currentName = 'Italia - Piacenza';
         let currentTz = 'Europe/Rome';
 
+        try {
+            const savedRaw = localStorage.getItem('sunclock_selected_place');
+            if (savedRaw) {
+                const savedObj = JSON.parse(savedRaw);
+                if (savedObj && typeof savedObj.lat === 'number' && typeof savedObj.lon === 'number') {
+                    currentLat = savedObj.lat;
+                    currentLon = savedObj.lon;
+                    if (savedObj.name) currentName = savedObj.name;
+                    if (savedObj.tz) currentTz = savedObj.tz;
+                    document.getElementById('selected-place').textContent = currentName;
+                }
+            }
+        } catch (e) {}
+
         const marker = L.circleMarker([currentLat, currentLon], {
             radius: 7,
             color: '#ffffff',
@@ -846,8 +874,12 @@
                 currentTz = 'UTC';
             }
 
-            refreshTimezoneAndOffsetDisplay();
+            const stdOffset = getPreciseStandardTimezone(lat, lon);
             const dstActive = isDstActiveForCoords(lat, lon);
+            const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
+
+            refreshTimezoneAndOffsetDisplay();
+            saveSelectedPlaceForIndex(lat, lon, currentName, currentTz, dstActive, effectiveOffset);
             document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
             updateSelectedClock();
 
@@ -877,6 +909,7 @@
                     currentName = fullName;
                     document.getElementById('selected-place').textContent = fullName;
                     document.getElementById('status-msg').textContent = `Selezionato: ${fullName}`;
+                    saveSelectedPlaceForIndex(lat, lon, fullName, currentTz, dstActive, effectiveOffset);
 
                     if (autoNavigate) {
                         const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
@@ -887,6 +920,7 @@
                     currentName = 'Posizione';
                     document.getElementById('selected-place').textContent = 'Posizione';
                     document.getElementById('status-msg').textContent = 'Posizione rilevata (offline).';
+                    saveSelectedPlaceForIndex(lat, lon, 'Posizione', currentTz, dstActive, effectiveOffset);
                     if (autoNavigate) {
                         const isAuto = localStorage.getItem('sunclock_auto_dst') !== 'false';
                         window.location.href = `posizione.html?lat=${lat}&lon=${lon}&city=${encodeURIComponent('Posizione')}&auto=${isAuto}&dst=${dstActive}`;
@@ -989,6 +1023,7 @@
         handleMapClick(currentLat, currentLon, false);
         updateSelectedClock();
         setInterval(updateSelectedClock, 1000);
+        setTimeout(() => goToCurrentLocation(true), 400);
     </script>
 </body>
 </html>
