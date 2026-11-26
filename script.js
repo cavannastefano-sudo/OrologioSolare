@@ -63,7 +63,7 @@ if (urlParams.has('dst')) {
 function saveSharedPlaceToStorage(lat, lon, name) {
     if (typeof lat !== 'number' || typeof lon !== 'number' || isNaN(lat) || isNaN(lon)) return;
     try {
-        localStorage.setItem('sunclock_selected_place', JSON.stringify({
+        localStorage.setItem('sunclock_home_place', JSON.stringify({
             lat: lat,
             lon: lon,
             name: (name && String(name).trim()) || 'Posizione',
@@ -74,7 +74,7 @@ function saveSharedPlaceToStorage(lat, lon, name) {
 
 function getSharedPlaceFromStorage() {
     try {
-        const raw = localStorage.getItem('sunclock_selected_place');
+        const raw = localStorage.getItem('sunclock_home_place');
         if (!raw) return null;
         const parsed = JSON.parse(raw);
         if (
@@ -2940,6 +2940,17 @@ function updateHands() {
         updateMoonModalRiseSetStrip(cachedMoonTimes, isTimezoneOnlyMode);
     }
 }
+
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        isTimezoneOnlyMode = false;
+        syncSettingsCoordsDisplay(cachedLat, cachedLon);
+        updateTimeForLocation();
+        updateInputsVal();
+        updateSunClock(cachedLat, cachedLon);
+        adaptBottomPanelHeight(true);
+    }
+});
 
 initClock();
 setInterval(updateHands, 50);
