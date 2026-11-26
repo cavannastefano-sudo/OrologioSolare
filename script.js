@@ -1873,6 +1873,19 @@ function resetToNow() {
         syncStripToSelectedDate(false);
     }
     adaptBottomPanelHeight(true);
+
+    // Aggiorna anche la posizione attuale tramite GPS (mantenendo quella corrente se il GPS non risponde o è disattivato)
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                fetchAndUpdateLocation(position.coords.latitude, position.coords.longitude, "Posizione Corrente");
+            },
+            () => {
+                // Se il GPS è spento o negato mantiene l'ultima posizione senza bloccare nulla
+            },
+            { timeout: 6000, enableHighAccuracy: true, maximumAge: 15000 }
+        );
+    }
 }
 
 function updateTimeForLocation() {
