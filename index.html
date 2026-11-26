@@ -599,7 +599,7 @@
             border: 1px solid #475569;
             display: flex;
             gap: 6px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .compact-top-btn {
             flex: 1;
@@ -851,6 +851,33 @@
                 </a>
             </div>
 
+            <!-- Pulsante compatto e tendina a comparsa per Posizione Primaria + tasto GPS -->
+            <div id="primary-location-box" style="margin: 0 0 10px 0;">
+                <button type="button" id="btn-toggle-primary-place" onclick="togglePrimaryPlaceDrawer()" style="width: 100%; padding: 7px 10px; border-radius: 6px; background: #0f172a; color: #38bdf8; border: 1px solid #38bdf8; font-size: 0.82rem; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box;">
+                    <span>📍 Posizione primaria</span>
+                    <span id="primary-place-arrow">▼</span>
+                </button>
+
+                <div id="primary-place-drawer" style="display: none; margin-top: 6px; padding: 8px; border-radius: 6px; background: #0f172a; border: 1px solid #475569; box-sizing: border-box;">
+                    <div id="primary-place-status" style="font-size: 0.78rem; color: #cbd5e1; margin-bottom: 7px; line-height: 1.3;"></div>
+
+                    <div style="display: flex; gap: 5px; margin-bottom: 6px;">
+                        <input type="text" id="primary-city-input" placeholder="Cerca città (es. Roma)..." style="flex: 1; min-width: 0; padding: 6px 8px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.8rem; box-sizing: border-box;">
+                        <button type="button" onclick="searchAndSetPrimaryCity()" style="padding: 6px 9px; border-radius: 5px; border: 1px solid #38bdf8; background: #0284c7; color: #ffffff; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Cerca</button>
+                    </div>
+
+                    <div style="display: flex; gap: 5px; margin-bottom: 6px;">
+                        <input type="number" step="any" id="primary-lat-input" placeholder="Lat" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
+                        <input type="number" step="any" id="primary-lon-input" placeholder="Lon" style="flex: 1; min-width: 0; padding: 6px 7px; border-radius: 5px; border: 1px solid #475569; background: #1e293b; color: #f8fafc; font-size: 0.78rem; box-sizing: border-box;">
+                        <button type="button" onclick="saveManualPrimaryCoords()" style="padding: 6px 9px; border-radius: 5px; border: 1px solid #22c55e; background: #15803d; color: #ffffff; font-size: 0.78rem; font-weight: bold; cursor: pointer; white-space: nowrap;">Salva</button>
+                    </div>
+
+                    <button type="button" onclick="restoreGpsPrimaryLocation()" style="width: 100%; padding: 6px 9px; border-radius: 5px; border: 1px solid #facc15; background: #1e293b; color: #fef08a; font-size: 0.8rem; font-weight: bold; cursor: pointer; box-sizing: border-box;">
+                        📡 GPS
+                    </button>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label>🌍 Fuso Orario Solare Base (UTC):</label>
                 <select id="timezone-preset" onchange="applyTimezonePreset()">
@@ -977,25 +1004,6 @@
 
     <!-- Collegamento al file JavaScript esterno -->
     <script src="script.js"></script>
-
-    <!-- Apertura pagina world.html dal bottone nelle Impostazioni -->
-    <script>
-        function openWorldMapPage() {
-            const qs = new URLSearchParams();
-            if (typeof currentLat === 'number' && !Number.isNaN(currentLat)) {
-                qs.set('lat', currentLat.toFixed(4));
-            }
-            if (typeof currentLon === 'number' && !Number.isNaN(currentLon)) {
-                qs.set('lon', currentLon.toFixed(4));
-            }
-            if (typeof currentLocationName === 'string' && currentLocationName.trim()) {
-                qs.set('city', currentLocationName.trim());
-            }
-            const query = qs.toString();
-            window.location.href = query ? `world.html?${query}` : 'world.html';
-        }
-        const openFusiMapPage = openWorldMapPage;
-    </script>
 
     <!-- Scorrimento a pressione continua per i cursori laterali ◀ e ▶ della striscia -->
     <script>
