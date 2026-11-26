@@ -283,7 +283,7 @@
             padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 6px;
         }
 
         .place-info {
@@ -292,7 +292,7 @@
         }
 
         .selected-title {
-            font-size: 1.15rem;
+            font-size: 1.38rem;
             font-weight: 700;
             color: var(--accent-gold);
             word-break: break-word;
@@ -300,18 +300,18 @@
         }
 
         .selected-meta {
-            font-size: 0.72rem;
+            font-size: 0.76rem;
             color: var(--text-muted);
             margin-top: 2px;
             word-break: break-word;
-            line-height: 1.2;
+            line-height: 1.25;
         }
 
         .selected-clock {
-            font-size: 1.12rem;
+            font-size: 1.35rem;
             font-weight: 700;
             color: var(--accent-green);
-            margin-top: 3px;
+            margin-top: 4px;
             padding: 0;
             background: none;
             border: none;
@@ -374,18 +374,18 @@
             }
 
             .below-map-panel {
-                padding: 6px 8px;
+                padding: 7px 9px;
                 border-radius: 10px;
-                gap: 4px;
+                gap: 5px;
             }
 
             .selected-title {
-                font-size: 1.08rem;
+                font-size: 1.3rem;
             }
 
             .selected-clock {
-                font-size: 1.05rem;
-                margin-top: 3px;
+                font-size: 1.28rem;
+                margin-top: 4px;
                 padding: 0;
             }
 
@@ -438,6 +438,7 @@
         </main>
 
         <div class="under-map-toolbar">
+            <button type="button" id="btn-gps" class="layer-btn" onclick="goToCurrentLocation()"><i class="fa-solid fa-location-crosshairs"></i> Posizione attuale</button>
             <button type="button" id="btn-grid" class="layer-btn" onclick="toggleGrid()">Griglia 15°</button>
             <button type="button" id="btn-bands" class="layer-btn" onclick="toggleBands()">Fasce UTC</button>
             <button type="button" id="btn-countries" class="layer-btn" onclick="toggleCountries()">Paesi Geo</button>
@@ -607,6 +608,32 @@
             document.getElementById('btn-bands').classList.add('active');
         }
 
+        function goToCurrentLocation() {
+            const btnGps = document.getElementById('btn-gps');
+            const statusEl = document.getElementById('status-msg');
+            if (!navigator.geolocation) {
+                statusEl.textContent = 'Geolocalizzazione non supportata su questo dispositivo.';
+                return;
+            }
+            if (btnGps) btnGps.classList.add('active');
+            statusEl.textContent = 'Rilevamento posizione attuale...';
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+                    map.setView([lat, lon], 8);
+                    handleMapClick(lat, lon, false);
+                    if (btnGps) setTimeout(() => btnGps.classList.remove('active'), 800);
+                },
+                () => {
+                    statusEl.textContent = 'Impossibile ottenere la posizione attuale (verifica permesso GPS).';
+                    if (btnGps) btnGps.classList.remove('active');
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        }
+
         function toggleGrid() {
             showGrid = !showGrid;
             localStorage.setItem('sunclock_layer_grid', showGrid);
@@ -708,6 +735,16 @@
             return getCurrentDstStateForCoords(lat, lon, new Date());
         }
 
+        function formatOffsetText(effectiveOffset, dstActive) {
+            const sign = effectiveOffset >= 0 ? '+' : '';
+            const formattedOffset = Number.isInteger(effectiveOffset)
+                ? `${sign}${effectiveOffset}`
+                : `${sign}${String(effectiveOffset).replace('.', ':')}`;
+            return dstActive
+                ? `Scostamento: UTC${formattedOffset} (Ora legale)`
+                : `Scostamento: UTC${formattedOffset}`;
+        }
+
         function getTimeForCoordinates(lat, lon) {
             const now = new Date();
 
@@ -782,9 +819,18 @@
             fillOpacity: 1
         }).addTo(map);
 
+        function refreshTimezoneAndOffsetDisplay() {
+            const stdOffset = getPreciseStandardTimezone(currentLat, currentLon);
+            const dstActive = isDstActiveForCoords(currentLat, currentLon);
+            const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
+            document.getElementById('selected-offset').textContent = formatOffsetText(effectiveOffset, dstActive);
+            document.getElementById('selected-coords').textContent = `${currentLat.toFixed(2)}°, ${currentLon.toFixed(2)}° • ${currentTz}`;
+        }
+
         function updateSelectedClock() {
             const info = getTimeForCoordinates(currentLat, currentLon);
             document.getElementById('selected-local-time').textContent = `📅 ${info.dateStr} ⏰ ${info.timeStr}`;
+            refreshTimezoneAndOffsetDisplay();
         }
 
         function handleMapClick(lat, lon, autoNavigate = false) {
@@ -800,12 +846,8 @@
                 currentTz = 'UTC';
             }
 
-            const stdOffset = getPreciseStandardTimezone(lat, lon);
+            refreshTimezoneAndOffsetDisplay();
             const dstActive = isDstActiveForCoords(lat, lon);
-            const effectiveOffset = stdOffset + (dstActive ? 1 : 0);
-            const sign = effectiveOffset >= 0 ? '+' : '';
-            document.getElementById('selected-offset').textContent = `Scostamento: UTC${sign}${effectiveOffset}`;
-            document.getElementById('selected-coords').textContent = `${lat.toFixed(2)}°, ${lon.toFixed(2)}° • ${currentTz}`;
             document.getElementById('status-msg').textContent = 'Rilevamento località in corso...';
             updateSelectedClock();
 
