@@ -757,7 +757,7 @@
 
         function saveSelectedPlaceForIndex(lat, lon, name, tz, dstActive, effectiveOffset) {
             try {
-                localStorage.setItem('sunclock_selected_place', JSON.stringify({
+                localStorage.setItem('sunclock_world_selected_place', JSON.stringify({
                     lat: lat,
                     lon: lon,
                     name: name,
@@ -836,7 +836,7 @@
         let currentTz = 'Europe/Rome';
 
         try {
-            const savedRaw = localStorage.getItem('sunclock_selected_place');
+            const savedRaw = localStorage.getItem('sunclock_world_selected_place') || localStorage.getItem('sunclock_selected_place');
             if (savedRaw) {
                 const savedObj = JSON.parse(savedRaw);
                 if (savedObj && typeof savedObj.lat === 'number' && typeof savedObj.lon === 'number') {
